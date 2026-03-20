@@ -140,14 +140,14 @@ services:
       timeout: 5s
       retries: 3
 
-  # KIND Kubernetes Cluster
+  # K3D Kubernetes Cluster
   k8s-api-server: # Service name that will be used for DNS resolution
     image: nishanb/ck-x-simulator-cluster:latest
     build:
       context: ./kind-cluster
     container_name: kind-cluster
     hostname: k8s-api-server
-    privileged: true # Required for running containers inside KIND
+    privileged: true # Required for nested container workloads used by K3D
     expose:
       - "6443"
       - "22"

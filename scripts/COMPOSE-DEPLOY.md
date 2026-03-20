@@ -4,11 +4,15 @@ This guide provides instructions for deploying the CK-X Simulator on different o
 
 ## Prerequisites
 
-- Docker Desktop (Windows/Mac) or Docker Engine (Linux)
+- Docker Desktop / Docker Engine with Docker Compose v2, or Podman with `podman compose` / `podman-compose`
 - 4GB RAM minimum (8GB recommended)
 - 10GB free disk space
 - Internet connection
 - Port 30080 available
+
+Linux Podman deployments should currently use rootful Podman because `jumphost` and `k8s-api-server` require privileged containers.
+The repository includes `docker-compose.podman.yaml`, which mounts the rootful Podman socket into `k8s-api-server` for Podman-based k3d control.
+When Podman is selected, use `sudo` and expect a local image build so the Podman-specific `k8s-api-server` changes are present.
 
 ## Quick Install
 
@@ -25,6 +29,8 @@ or, if the current user does not have the permission to run docker commands:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nishanb/CK-X/master/scripts/install.sh | sudo bash
 ```
+
+For Podman on Linux, prefer the `sudo` form so the install runs against rootful Podman.
 
 ### Windows
 
@@ -44,9 +50,11 @@ irm https://raw.githubusercontent.com/nishanb/CK-X/master/scripts/install.ps1 | 
    cd CK-X
    ```
 
-2. Build and start the services using Docker Compose:
+2. Build and start the services using your compose provider:
    ```bash
    docker compose up -d
+   # or
+   sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build
    ```
 
 ### Via Script 
@@ -80,22 +88,31 @@ http://localhost:30080
 ### Start Services
 ```bash
 docker compose up -d
+# or
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build
 ```
 
 ### Stop Services
 ```bash
 docker compose down
+# or
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml down
 ```
 
 ### View Logs
 ```bash
 docker compose logs -f
+# or
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml logs -f
 ```
 
 ### Update
 ```bash
 docker compose pull
 docker compose up -d
+# or
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml build
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d
 ```
 
 ## Troubleshooting
@@ -108,22 +125,23 @@ docker compose up -d
      - Linux/Mac: `lsof -i :30080`
    - Stop the conflicting service or change the port in docker-compose.yml
 
-2. **Docker Not Running**
-   - Windows/Mac: Start Docker Desktop
-   - Linux: `sudo systemctl start docker`
+2. **Container Runtime Not Running**
+   - Docker on Windows/Mac: Start Docker Desktop
+   - Docker on Linux: `sudo systemctl start docker`
+   - Podman on Linux: ensure the rootful Podman service/socket is available for your setup and run CK-X commands with `sudo`
 
 3. **Permission Issues**
    - Windows: Run PowerShell as Administrator
    - Linux: Add user to docker group or use sudo
 
 4. **Services Not Starting**
-   - Check logs: `docker compose logs -f`
+   - Check logs: `docker compose logs -f` or `sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml logs -f`
    - Ensure sufficient system resources
 
 ### Getting Help
 
 If you encounter issues:
-1. Check the logs: `docker compose logs -f`
+1. Check the logs: `docker compose logs -f` or `sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml logs -f`
 2. Visit our [GitHub Issues](https://github.com/nishanb/CK-X/issues)
 3. Contact support with logs and system information
 
@@ -134,6 +152,8 @@ To completely remove CK-X Simulator:
 ```bash
 # Stop and remove containers
 docker compose down
+# or
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml down
 
 # Remove downloaded files
 cd ..

@@ -4,6 +4,14 @@ exec >> /proc/1/fd/1 2>&1
 # Cleanup script to remove the K3d cluster
 
 CLUSTER_NAME=${1:-cluster}
+RUNTIME_ENV_FILE=/etc/ckx-cluster-runtime.env
+
+if [ -f "$RUNTIME_ENV_FILE" ]; then
+    . "$RUNTIME_ENV_FILE"
+fi
+
+CLUSTER_RUNTIME=${CLUSTER_RUNTIME:-docker}
+K3D_PODMAN_NETWORK=${K3D_PODMAN_NETWORK:-k3d}
 
 # Check if CLUSTER_NAME is set
 if [ -z "$CLUSTER_NAME" ]; then
@@ -27,12 +35,20 @@ else
     exit 0
 fi
 
-# Perform a full Docker system prune (removes all unused containers, networks, images, and build cache)
-# This does NOT remove K3d images, unless you manually want to
-docker volume prune -f 
-docker network prune -f
-docker image prune -f --filter "label!=ghcr.io/k3d-io"
-echo "Docker system cleaned up."
+if [ "$CLUSTER_RUNTIME" = "podman" ]; then
+    echo "Skipping global prune for Podman host runtime."
+
+    if docker network inspect "$K3D_PODMAN_NETWORK" >/dev/null 2>&1; then
+        docker network rm "$K3D_PODMAN_NETWORK" >/dev/null 2>&1 || true
+    fi
+else
+    # Perform a full Docker system prune (removes all unused containers, networks, images, and build cache)
+    # This does NOT remove K3d images, unless you manually want to
+    docker volume prune -f 
+    docker network prune -f
+    docker image prune -f --filter "label!=ghcr.io/k3d-io"
+    echo "Docker system cleaned up."
+fi
 
 # Delete K3d config file if present
 if [ -f "/tmp/k3d-config.yaml" ]; then
