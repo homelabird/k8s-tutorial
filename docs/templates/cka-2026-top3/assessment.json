@@ -1,0 +1,94 @@
+{
+  "questions": [
+    {
+      "id": "101",
+      "namespace": "secure-workloads",
+      "machineHostname": "ckad9999",
+      "question": "Create a namespace named `secure-workloads` and enforce the Pod Security Admission `restricted` profile using the latest version labels.\n\nIn that namespace, create a Pod named `restricted-shell` using the image `busybox:1.36`.\n\nThe Pod must:\n- run the command `sleep 3600`\n- set `runAsNonRoot=true`\n- run as UID `1000`\n- set the seccomp profile to `RuntimeDefault`\n- prevent privilege escalation\n- drop all Linux capabilities",
+      "concepts": ["security", "psa", "pod-security-admission", "pods"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Namespace exists with PSA enforce=restricted",
+          "verificationScriptFile": "q101_s1_validate_namespace_psa.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Pod exists and is running",
+          "verificationScriptFile": "q101_s2_validate_pod_running.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "3",
+          "description": "Pod security context matches restricted requirements",
+          "verificationScriptFile": "q101_s3_validate_security_context.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        }
+      ]
+    },
+    {
+      "id": "102",
+      "namespace": "dns-lab",
+      "machineHostname": "ckad9999",
+      "question": "Cluster DNS resolution is failing for workloads in the namespace `dns-lab`.\n\nA deployment `web` and service `web` already exist, and a test Pod `dns-check` is running.\n\nDiagnose and fix the `CoreDNS` configuration in `kube-system` so that:\n- `dns-check` can resolve `web.dns-lab.svc.cluster.local`\n- `dns-check` can fetch HTTP content from the `web` service\n\nDo not recreate the application resources in `dns-lab`. Focus on restoring internal cluster DNS.",
+      "concepts": ["troubleshooting", "coredns", "networking", "services"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "CoreDNS deployment is available",
+          "verificationScriptFile": "q102_s1_validate_coredns_ready.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "dns-check can resolve the service FQDN",
+          "verificationScriptFile": "q102_s2_validate_dns_resolution.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "dns-check can reach the web service over HTTP",
+          "verificationScriptFile": "q102_s3_validate_http_reachability.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    },
+    {
+      "id": "103",
+      "namespace": "ingress-lab",
+      "machineHostname": "ckad9999",
+      "question": "Install the `ingress-nginx` controller using Helm.\n\nRequirements:\n- add the repo `https://kubernetes.github.io/ingress-nginx`\n- install the release with name `ingress-nginx` in namespace `ingress-nginx`\n- configure the controller service type as `NodePort`\n- set the HTTP `nodePort` to `30080`\n\nA Deployment `web-app`, Service `web-service`, and a broken Ingress `web-ingress` already exist in namespace `ingress-lab`.\n\nFix the Ingress so requests with host `app.example.local` and path `/` route correctly to `web-service` on port `80`.",
+      "concepts": ["ingress", "helm", "networking", "troubleshooting"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "ingress-nginx controller is installed and ready",
+          "verificationScriptFile": "q103_s1_validate_controller.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Controller service uses NodePort 30080",
+          "verificationScriptFile": "q103_s2_validate_nodeport.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "3",
+          "description": "Ingress routes app.example.local to web-service",
+          "verificationScriptFile": "q103_s3_validate_ingress_route.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        }
+      ]
+    }
+  ]
+}
