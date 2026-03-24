@@ -10,7 +10,7 @@ A Node.js service that provides SSH jumphost functionality and exam management c
 - Secure and modular architecture
 - Comprehensive logging
 - Containerization with Docker
-- Integration with Docker Compose for multi-service deployment
+- Integration with Docker Compose or Podman Compose for multi-service deployment
 
 ## Prerequisites
 
@@ -70,16 +70,18 @@ docker build -t facilitator-service .
 docker run -p 3001:3000 --env-file .env facilitator-service
 ```
 
-#### Docker Compose
+#### Compose Stack
 
-The facilitator service is integrated into the main Docker Compose configuration at the project root. To run it with the full stack:
+The facilitator service is integrated into the main compose configuration at the project root. To run it with the full stack:
 
 ```bash
 cd ..
 docker compose up -d
+# or, for Podman on Linux
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build
 ```
 
-This will start the facilitator service along with all other services, including the jumphost that the facilitator connects to for SSH command execution. In Docker Compose, the service is configured to use passwordless SSH authentication with the jumphost.
+This will start the facilitator service along with all other services, including the jumphost that the facilitator connects to for SSH command execution. In the compose stack, the service is configured to use passwordless SSH authentication with the jumphost.
 
 The service is accessible at:
 - URL: http://localhost:3001

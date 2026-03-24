@@ -4,6 +4,15 @@ exec >> /proc/1/fd/1 2>&1
 # Cleanup script to remove the K3d cluster
 
 CLUSTER_NAME=${1:-cluster}
+RUNTIME_ENV_FILE=/etc/ckx-cluster-runtime.env
+
+if [ -f "$RUNTIME_ENV_FILE" ]; then
+    . "$RUNTIME_ENV_FILE"
+fi
+
+cluster_exists() {
+    k3d cluster list | awk 'NR > 1 { print $1 }' | grep -Fxq "$CLUSTER_NAME"
+}
 
 # Check if CLUSTER_NAME is set
 if [ -z "$CLUSTER_NAME" ]; then
@@ -12,12 +21,12 @@ if [ -z "$CLUSTER_NAME" ]; then
 fi
 
 # Check if the K3d cluster is running
-if k3d cluster list | grep -q "$CLUSTER_NAME"; then
+if cluster_exists; then
     # Delete the K3d cluster
     k3d cluster delete "$CLUSTER_NAME"
 
     # Wait until the cluster is fully deleted
-    while k3d cluster list | grep -q "$CLUSTER_NAME"; do
+    while cluster_exists; do
         sleep 1
     done
 
@@ -27,23 +36,10 @@ else
     exit 0
 fi
 
-# Perform a full Docker system prune (removes all unused containers, networks, images, and build cache)
-# This does NOT remove K3d images, unless you manually want to
-docker volume prune -f 
-docker network prune -f
-docker image prune -f --filter "label!=ghcr.io/k3d-io"
-echo "Docker system cleaned up."
-
 # Delete K3d config file if present
 if [ -f "/tmp/k3d-config.yaml" ]; then
     rm -f /tmp/k3d-config.yaml
     echo "K3d config file deleted."
-fi
-
-# Delete kubeconfig file if present in /home/candidate/.kube/kubeconfig (adjust path if needed)
-if [ -f "/home/candidate/.kube/kubeconfig" ]; then
-    rm -f /home/candidate/.kube/kubeconfig
-    echo "Kubeconfig file deleted."
 fi
 
 echo "Cleanup completed."

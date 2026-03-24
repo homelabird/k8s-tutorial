@@ -11,28 +11,29 @@ This document provides step-by-step instructions for setting up and running the 
 - **Storage**: 20GB free space
 
 ### Required Software
-- **Docker**: v20.10.0 or newer
-- **Docker Compose**: v2.0.0 or newer
+- **Docker** with Docker Compose v2, or **Podman** with `podman compose`
+
+If you use Podman on Linux, run CK-X with rootful Podman and include `docker-compose.podman.yaml` in compose commands because `jumphost` and `k8s-api-server` need privileged nested-container support.
 
 ## Installation Steps
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/ck-x-simulator.git
-cd ck-x-simulator
+git clone https://github.com/nishanb/CK-X.git
+cd CK-X
 ```
 
 ### 2. Configure the Environment
 
-Review the `compose.yaml` file to understand the service configuration. Key services include:
+Review the `docker-compose.yaml` file to understand the service configuration. Key services include:
 
 - **remote-desktop**: VNC server (Ubuntu)
 - **webapp**: Web Application frontend
 - **nginx**: Reverse proxy (only service exposed to users)
 - **jumphost**: SSH access host
 - **remote-terminal**: Remote terminal service
-- **k8s-api-server**: KIND Kubernetes cluster
+- **k8s-api-server**: K3D Kubernetes control container
 - **redis**: Redis database for Facilitator
 - **facilitator**: Backend service
 
@@ -40,10 +41,12 @@ Review the `compose.yaml` file to understand the service configuration. Key serv
 
 ```bash
 # Build and start all services
-docker-compose up --build
+docker compose up --build
+# or, for Podman on Linux
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up --build
 ```
 
-This command will build and start all the services defined in the compose.yaml file.
+This command will build and start all the services defined in the compose file.
 
 ## Accessing the Application
 
@@ -60,7 +63,7 @@ http://localhost:30080
 The VNC server is not directly exposed outside the container network. To access it:
 
 1. The web interface proxies VNC connections through Nginx
-2. Default VNC password: `bakku-the-wizard` (configured in compose.yaml)
+2. Default VNC password: `bakku-the-wizard` (configured in `docker-compose.yaml`)
 3. VNC resolution: 1280x800
 
 ### 3. SSH Access
@@ -69,7 +72,7 @@ SSH access is provided through the jumphost service:
 
 - **Hostname**: ckad9999
 - **Username**: candidate
-- **Password**: password (configured in compose.yaml)
+- **Password**: password (configured in `docker-compose.yaml`)
 
 The SSH service is not directly exposed outside the container network and is accessed through the webapp.
 
@@ -78,7 +81,7 @@ The SSH service is not directly exposed outside the container network and is acc
 ### 1. Remote Desktop (VNC)
 
 ```yaml
-# From compose.yaml
+# From docker-compose.yaml
 remote-desktop:
   image: nishanb/ck-x-simulator-remote-desktop:latest
   hostname: terminal
@@ -97,7 +100,7 @@ The remote desktop provides a graphical interface for the exam environment.
 ### 2. Web Application
 
 ```yaml
-# From compose.yaml
+# From docker-compose.yaml
 webapp:
   image: nishanb/ck-x-simulator-webapp:latest
   expose:
@@ -117,7 +120,7 @@ The web application serves as the frontend interface for the simulator.
 ### 3. Nginx (Reverse Proxy)
 
 ```yaml
-# From compose.yaml
+# From docker-compose.yaml
 nginx:
   image: nishanb/ck-x-simulator-nginx:latest
   ports:
@@ -129,12 +132,12 @@ Nginx is the only service directly exposed to users and handles routing to inter
 ### 4. Kubernetes Cluster
 
 ```yaml
-# From compose.yaml
+# From docker-compose.yaml
 k8s-api-server:
   image: nishanb/ck-x-simulator-cluster:latest
   container_name: kind-cluster
   hostname: k8s-api-server
-  privileged: true  # Required for running containers inside KIND
+  privileged: true  # Required for nested container workloads used by K3D
   expose:
     - "6443:6443" 
     - "22"
@@ -142,12 +145,12 @@ k8s-api-server:
     - kube-config:/home/candidate/.kube  # Shared volume for Kubernetes config
 ```
 
-The Kubernetes cluster runs in a KIND container with shared kube-config volume.
+The Kubernetes cluster runs through a K3D control container with a shared kube-config volume.
 
 ### 5. Facilitator Service
 
 ```yaml
-# From compose.yaml
+# From docker-compose.yaml
 facilitator:
   image: nishanb/ck-x-simulator-facilitator:latest
   hostname: facilitator
@@ -177,32 +180,34 @@ To modify a service, edit its corresponding directory and then rebuild:
 ```bash
 # Edit files in the respective service directory
 # Then rebuild and restart the service
-docker-compose up --build <service-name>
+docker compose up --build <service-name>
+# or, for Podman on Linux
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up --build <service-name>
 ```
 
 ### 2. Inspecting Logs
 
 ```bash
 # View logs for all services
-docker-compose logs
+docker compose logs
 
 # View logs for a specific service
-docker-compose logs <service-name>
+docker compose logs <service-name>
 
 # Follow logs
-docker-compose logs -f <service-name>
+docker compose logs -f <service-name>
 ```
 
 ### 3. Accessing Containers
 
 ```bash
 # Get shell access to a container
-docker-compose exec <service-name> bash
+docker compose exec <service-name> bash
 
 # Examples:
-docker-compose exec webapp bash
-docker-compose exec facilitator bash
-docker-compose exec k8s-api-server bash
+docker compose exec webapp bash
+docker compose exec facilitator bash
+docker compose exec k8s-api-server bash
 ```
 
 ## Troubleshooting
@@ -212,32 +217,32 @@ docker-compose exec k8s-api-server bash
 If containers fail to start, check the logs:
 
 ```bash
-docker-compose logs <service-name>
+docker compose logs <service-name>
 ```
 
 ### 2. VNC Connection Issues
 
 ```bash
 # Check if VNC server is running
-docker-compose exec remote-desktop ps aux | grep vnc
+docker compose exec remote-desktop ps aux | grep vnc
 
 # Restart VNC service
-docker-compose restart remote-desktop
+docker compose restart remote-desktop
 ```
 
 ### 3. Kubernetes Cluster Issues
 
 ```bash
 # Check cluster status
-docker-compose exec k8s-api-server kubectl cluster-info
+docker compose exec k8s-api-server kubectl cluster-info
 
 # Restart the cluster
-docker-compose restart k8s-api-server
+docker compose restart k8s-api-server
 ```
 
 ### 4. Resource Constraints
 
-If your system cannot handle the resource requirements, adjust the limits in compose.yaml:
+If your system cannot handle the resource requirements, adjust the limits in `docker-compose.yaml`:
 
 ```yaml
 deploy:
@@ -274,5 +279,5 @@ volumes:
 
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [KIND Documentation](https://kind.sigs.k8s.io/)
+- [K3D Documentation](https://k3d.io/stable/)
 - [VNC Documentation](https://www.realvnc.com/en/connect/docs/) 

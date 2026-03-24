@@ -1,0 +1,28 @@
+{
+  "lab": "cka-005",
+  "workerNodes": 1,
+  "answers": "assets/exams/cka/005/answers.md",
+  "questions": "assessment.json",
+  "totalMarks": 100,
+  "lowScore": 40,
+  "mediumScore": 60,
+  "highScore": 80,
+  "environments": {
+    "shared": {
+      "sshHost": "jumphost",
+      "sshAlias": "ckad9999",
+      "clusterName": "cluster",
+      "k8sApiServerHost": "k8s-api-server",
+      "kubeApiPort": 6443,
+      "workerNodes": 1
+    },
+    "dns-isolated": {
+      "sshHost": "jumphost-dns",
+      "sshAlias": "ckad9998",
+      "clusterName": "cluster-dns",
+      "k8sApiServerHost": "k8s-api-server-dns",
+      "kubeApiPort": 6444,
+      "workerNodes": 1
+    }
+  }
+}

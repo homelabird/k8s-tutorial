@@ -11,6 +11,130 @@ const redisClient = require('../utils/redisClient');
 const jumphostService = require('./jumphostService');
 const MetricService = require('./metricService');
 
+function loadLabsIndex() {
+  const labsPath = path.join(process.cwd(), 'assets', 'exams', 'labs.json');
+
+  if (!fs.existsSync(labsPath)) {
+    throw new Error(`Labs data file not found at ${labsPath}`);
+  }
+
+  const labsData = JSON.parse(fs.readFileSync(labsPath, 'utf8'));
+  return labsData.labs || [];
+}
+
+function resolveExamDefinition(examData = {}) {
+  if (examData.assetPath) {
+    return { ...examData };
+  }
+
+  if (!examData.examId) {
+    throw new Error('Exam definition is missing assetPath and examId');
+  }
+
+  const labs = loadLabsIndex();
+  const labDefinition = labs.find((lab) => lab.id === examData.examId);
+
+  if (!labDefinition) {
+    throw new Error(`Exam definition not found for examId: ${examData.examId}`);
+  }
+
+  return {
+    ...labDefinition,
+    ...examData
+  };
+}
+
+function loadExamConfig(assetPath) {
+  const configPath = path.join(process.cwd(), assetPath, 'config.json');
+
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config file not found at path: ${configPath}`);
+  }
+
+  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+}
+
+function loadExamQuestionsFromAsset(assetPath, config = {}) {
+  const questionsFilePath = config.questions || 'assessment.json';
+  const fullQuestionsPath = path.join(process.cwd(), assetPath, questionsFilePath);
+
+  if (!fs.existsSync(fullQuestionsPath)) {
+    throw new Error(`Questions file not found at path: ${fullQuestionsPath}`);
+  }
+
+  return JSON.parse(fs.readFileSync(fullQuestionsPath, 'utf8'));
+}
+
+function buildEnvironmentPlan(config = {}, rawQuestions = []) {
+  const defaultWorkerNodes = parseInt(config.workerNodes, 10) || 1;
+  const configuredEnvironments = config.environments || {};
+  const environments = [];
+
+  environments.push({
+    id: 'shared',
+    sshHost: 'jumphost',
+    sshAlias: 'ckad9999',
+    clusterName: 'cluster',
+    k8sApiServerHost: 'k8s-api-server',
+    kubeApiPort: 6443,
+    workerNodes: defaultWorkerNodes,
+    ...configuredEnvironments.shared,
+    questionIds: []
+  });
+
+  for (const [environmentId, environmentConfig] of Object.entries(configuredEnvironments)) {
+    if (environmentId === 'shared') {
+      continue;
+    }
+
+    environments.push({
+      id: environmentId,
+      sshHost: environmentConfig.sshHost || environmentId,
+      sshAlias: environmentConfig.sshAlias || environmentId,
+      clusterName: environmentConfig.clusterName || environmentId,
+      k8sApiServerHost: environmentConfig.k8sApiServerHost || 'k8s-api-server',
+      kubeApiPort: environmentConfig.kubeApiPort || environmentConfig.apiPort || 6443,
+      workerNodes: parseInt(environmentConfig.workerNodes, 10) || defaultWorkerNodes,
+      ...environmentConfig,
+      questionIds: []
+    });
+  }
+
+  for (const question of rawQuestions) {
+    const environmentId = question.environmentId || 'shared';
+    const environment = environments.find((candidate) => candidate.id === environmentId);
+
+    if (!environment) {
+      throw new Error(`Environment '${environmentId}' is not defined in config.json`);
+    }
+
+    environment.questionIds.push(String(question.id));
+  }
+
+  return { environments };
+}
+
+function applyEnvironmentPlanToQuestions(rawQuestions = [], environmentPlan = {}) {
+  const environments = Array.isArray(environmentPlan.environments)
+    ? environmentPlan.environments
+    : [];
+
+  return rawQuestions.map((question) => {
+    const environmentId = question.environmentId || 'shared';
+    const environment = environments.find((candidate) => candidate.id === environmentId);
+
+    if (!environment) {
+      return { ...question, environmentId };
+    }
+
+    return {
+      ...question,
+      environmentId,
+      machineHostname: environment.sshAlias || question.machineHostname
+    };
+  });
+}
+
 /**
  * Create a new exam
  * @param {Object} examData - The exam data
@@ -33,16 +157,21 @@ async function createExam(examData) {
     }
     
     const examId = uuidv4();
+    const resolvedExamData = resolveExamDefinition(examData);
     
     // fetch exam config from the asset path and append it to the examData
-    const examConfig = fs.readFileSync(path.join(process.cwd(),  examData.assetPath, 'config.json'), 'utf8');
-    examData.config = JSON.parse(examConfig); 
-    delete examData.answers;
+    resolvedExamData.config = loadExamConfig(resolvedExamData.assetPath);
+    const rawQuestions = loadExamQuestionsFromAsset(resolvedExamData.assetPath, resolvedExamData.config);
+    resolvedExamData.environmentPlan = buildEnvironmentPlan(
+      resolvedExamData.config,
+      rawQuestions.questions || []
+    );
+    delete resolvedExamData.answers;
 
     //persist created at time
-    examData.createdAt = new Date().toISOString();
+    resolvedExamData.createdAt = new Date().toISOString();
     // Store exam information in Redis
-    await redisClient.persistExamInfo(examId, examData);
+    await redisClient.persistExamInfo(examId, resolvedExamData);
     
     // Set initial exam status
     await redisClient.persistExamStatus(examId, 'CREATED');
@@ -52,20 +181,17 @@ async function createExam(examData) {
     
     logger.info(`Exam created successfully with ID: ${examId}`);
     
-    // Determine number of nodes required for the exam (default to 1 if not specified)
-    const nodeCount = examData.config.workerNodes || 1;
-    
     // Set up the exam environment asynchronously
     // This will happen in the background while the response is sent back to the client
-    setupExamEnvironmentAsync(examId, nodeCount);
+    setupExamEnvironmentAsync(examId, resolvedExamData.environmentPlan);
     
     // send metrics to metric server
     MetricService.sendMetrics(examId, {
-      category: examData.category,
-      labId: examData.config.lab,
-      examName: examData.name,
+      category: resolvedExamData.category,
+      labId: resolvedExamData.config.lab,
+      examName: resolvedExamData.name,
       event: {
-        userAgent: examData.userAgent
+        userAgent: resolvedExamData.userAgent
       }
     });
 
@@ -92,12 +218,12 @@ async function createExam(examData) {
  * This function runs in the background and doesn't block the response
  * 
  * @param {string} examId - The exam ID
- * @param {number} nodeCount - Number of nodes to prepare
+ * @param {Object} environmentPlan - Environment routing plan
  */
-async function setupExamEnvironmentAsync(examId, nodeCount) {
+async function setupExamEnvironmentAsync(examId, environmentPlan) {
   try {
     // Call the jumphost service to set up the exam environment
-    const result = await jumphostService.setupExamEnvironment(examId, nodeCount);     
+    const result = await jumphostService.setupExamEnvironment(examId, environmentPlan);     
     
     if (!result.success) {
       logger.error(`Failed to set up exam environment for exam ${examId}`, {
@@ -238,45 +364,17 @@ async function getExamQuestions(examId) {
       };
     }
     
-    // Read the config.json file to find the questions.json path
-    const configPath = path.join(process.cwd(), assetPath, 'config.json');
-    
-    if (!fs.existsSync(configPath)) {
-      logger.error(`Config file not found at path: ${configPath}`);
-      return {
-        success: false,
-        error: 'File Not Found',
-        message: 'Exam configuration file not found'
-      };
-    }
-    
-    // Read and parse config.json
-    const configData = fs.readFileSync(configPath, 'utf8');
-    const config = JSON.parse(configData);
-    
-    // Get the questions file path from config
-    const questionsFilePath = config.questions || 'assessment.json';
-    const fullQuestionsPath = path.join(process.cwd(), assetPath, questionsFilePath);
-    
-    if (!fs.existsSync(fullQuestionsPath)) {
-      logger.error(`Questions file not found at path: ${fullQuestionsPath}`);
-      return {
-        success: false,
-        error: 'File Not Found',
-        message: 'Exam questions file not found'
-      };
-    }
-    
-    // Read and parse questions.json
-    const questionsData = fs.readFileSync(fullQuestionsPath, 'utf8');
-    const questions = JSON.parse(questionsData);
+    const config = examInfo.config || loadExamConfig(assetPath);
+    const questions = loadExamQuestionsFromAsset(assetPath, config);
+    const environmentPlan = examInfo.environmentPlan || buildEnvironmentPlan(config, questions.questions || []);
+    const enrichedQuestions = applyEnvironmentPlanToQuestions(questions.questions || [], environmentPlan);
     
     logger.info(`Successfully retrieved questions for exam ${examId}`);
     
     return {
       success: true,
       data: {
-        questions: questions.questions || []
+        questions: enrichedQuestions
       }
     };
   } catch (error) {
@@ -318,18 +416,21 @@ async function evaluateExam(examId, evaluationData) {
       throw new Error('Failed to get exam questions');
     }
     
-    // Get assessment path information
-    const assetPath = examInfo.assetPath;
-    if (!assetPath) {
-      throw new Error('Asset path not defined in exam info');
-    }
+    const environmentPlan = examInfo.environmentPlan || buildEnvironmentPlan(
+      examInfo.config || loadExamConfig(examInfo.assetPath),
+      questionsResponse.data.questions || []
+    );
     
     // Start evaluation asynchronously using Promise
     // This will happen in the background while the response is sent back to the client
     Promise.resolve().then(async () => {
       try {
         // Call the jumphost service to perform the evaluation
-        await jumphostService.evaluateExamOnJumphost(examId, questionsResponse.data.questions);
+        await jumphostService.evaluateExamOnJumphost(
+          examId,
+          questionsResponse.data.questions,
+          environmentPlan
+        );
       } catch (error) {
         logger.error(`Error in async exam evaluation for exam ${examId}`, { error: error.message });
         // Update exam status to EVALUATION_FAILED
@@ -395,6 +496,7 @@ async function endExam(examId) {
   try {
     // Get current exam ID to verify this is the active exam
     const currentExamId = await redisClient.getCurrentExamId();
+    const examInfo = await redisClient.getExamInfo(examId);
     
     if (currentExamId !== examId) {
       logger.warn(`Attempted to end exam ${examId} but current exam is ${currentExamId || 'not set'}`);
@@ -402,7 +504,7 @@ async function endExam(examId) {
 
     // Clean up the exam environment
     try {
-      await jumphostService.cleanupExamEnvironment(examId);
+      await jumphostService.cleanupExamEnvironment(examId, examInfo?.environmentPlan || {});
       
       // Clear the current exam info 
       await redisClient.deleteCurrentExamId();

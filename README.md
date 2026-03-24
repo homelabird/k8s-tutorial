@@ -11,7 +11,7 @@ A powerful Kubernetes certification practice environment that provides a realist
 - **Realistic exam environment** with web-based interface and remote desktop support
 - Comprehensive practice labs for **CKAD, CKA, CKS**, and other Kubernetes certifications
 - **Smart evaluation system** with real-time solution verification
-- **Docker-based deployment** for easy setup and consistent environment
+- **Container-based deployment** with Docker Compose or Podman Compose
 - **Timed exam mode** with real exam-like conditions and countdown timer 
 
 
@@ -27,6 +27,15 @@ Watch live demo video showcasing the CK-X Simulator in action:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.sh | bash
 ```
+
+Linux Podman users should currently run CK-X with rootful Podman because the `jumphost` and `k8s-api-server` services require privileged containers.
+For Podman installs, prefer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.sh | sudo bash
+```
+
+For Podman installs, use `sudo` and expect a local image build instead of a registry-only pull.
 
 #### Windows ( make sure WSL2 is enabled in the docker desktop )
 ```powershell

@@ -8,6 +8,78 @@ exec >> /proc/1/fd/1 2>&1
 
 NUM_WORKERS=${1:-0}  # Default to 1 worker if not provided
 CLUSTER_NAME=${2:-cluster}
+KUBE_API_PORT=${3:-${KUBE_API_PORT:-6443}}
+RUNTIME_ENV_FILE=/etc/ckx-cluster-runtime.env
+
+if [ -f "$RUNTIME_ENV_FILE" ]; then
+    . "$RUNTIME_ENV_FILE"
+fi
+
+CLUSTER_RUNTIME=${CLUSTER_RUNTIME:-docker}
+KUBE_API_ENDPOINT=${KUBE_API_ENDPOINT:-k8s-api-server}
+K3D_PODMAN_NETWORK=${K3D_PODMAN_NETWORK:-k3d}
+USE_SERVERLB=true
+
+if [ "$CLUSTER_RUNTIME" = "podman" ]; then
+    USE_SERVERLB=false
+fi
+
+cluster_exists() {
+    k3d cluster list | awk 'NR > 1 { print $1 }' | grep -Fxq "$CLUSTER_NAME"
+}
+
+cluster_container_names() {
+    if [ "$USE_SERVERLB" = "true" ]; then
+        docker ps -a --format '{{.Names}}' \
+            | grep -E "^k3d-${CLUSTER_NAME}-(serverlb|server-[0-9]+|agent-[0-9]+)$" || true
+    else
+        docker ps -a --format '{{.Names}}' \
+            | grep -E "^k3d-${CLUSTER_NAME}-(server-[0-9]+|agent-[0-9]+)$" || true
+    fi
+}
+
+required_cluster_container_count() {
+    if [ "$USE_SERVERLB" = "true" ]; then
+        echo $((NUM_WORKERS + 2))
+    else
+        echo $((NUM_WORKERS + 1))
+    fi
+}
+
+cluster_runtime_nodes_running() {
+    expected_count="$(required_cluster_container_count)"
+    observed_count=0
+
+    for container_name in $(cluster_container_names); do
+        observed_count=$((observed_count + 1))
+        running_state="$(docker inspect -f '{{.State.Running}}' "$container_name" 2>/dev/null || echo false)"
+
+        if [ "$running_state" != "true" ]; then
+            return 1
+        fi
+    done
+
+    [ "$observed_count" -ge "$expected_count" ]
+}
+
+ensure_cluster_runtime_nodes_started() {
+    attempt=0
+
+    while [ "$attempt" -lt 180 ]; do
+        attempt=$((attempt + 1))
+
+        for container_name in $(cluster_container_names); do
+            running_state="$(docker inspect -f '{{.State.Running}}' "$container_name" 2>/dev/null || echo false)"
+
+            if [ "$running_state" != "true" ]; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Starting pending cluster container '$container_name'"
+                docker start "$container_name" >/dev/null 2>&1 || true
+            fi
+        done
+
+        sleep 1
+    done
+}
 
 # Check if k3d is installed, if not install it
 if ! command -v k3d &> /dev/null; then
@@ -47,6 +119,17 @@ if [ -f "k3d-config.yaml" ]; then
 fi
 
 # Generate K3d config
+EXTRA_TLS_SAN_CONFIG=""
+
+if [ "$KUBE_API_ENDPOINT" != "k8s-api-server" ] && [ "$KUBE_API_ENDPOINT" != "127.0.0.1" ] && [ "$KUBE_API_ENDPOINT" != "localhost" ]; then
+EXTRA_TLS_SAN_CONFIG=$(cat <<EOF
+      - arg: "--tls-san=${KUBE_API_ENDPOINT}"
+        nodeFilters:
+          - server:*
+EOF
+)
+fi
+
 cat <<EOF > /tmp/k3d-config.yaml
 apiVersion: k3d.io/v1alpha5
 kind: Simple
@@ -54,9 +137,6 @@ metadata:
   name: $CLUSTER_NAME
 servers: 1
 agents: $NUM_WORKERS
-kubeAPI:
-  host: "127.0.0.1"
-  hostPort: "6443"
 options:
   k3s:
     extraArgs:
@@ -69,17 +149,77 @@ options:
       - arg: "--tls-san=localhost"
         nodeFilters:
           - server:*
+${EXTRA_TLS_SAN_CONFIG}
 EOF
+
+if [ "$USE_SERVERLB" = "true" ]; then
+cat <<EOF >> /tmp/k3d-config.yaml
+kubeAPI:
+  host: "127.0.0.1"
+  hostPort: "$KUBE_API_PORT"
+EOF
+fi
 
 echo "Cluster config with $NUM_WORKERS worker nodes generated: /tmp/k3d-config.yaml"
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') | Creating K3d cluster with configuration..."
 echo "$(date '+%Y-%m-%d %H:%M:%S') | ├── Name:  $CLUSTER_NAME"
 echo "$(date '+%Y-%m-%d %H:%M:%S') | ├── Config: /tmp/k3d-config.yaml"
+echo "$(date '+%Y-%m-%d %H:%M:%S') | ├── API Port: $KUBE_API_PORT"
 echo "$(date '+%Y-%m-%d %H:%M:%S') | └── Number of nodes: $((NUM_WORKERS + 1)) (1 server + $NUM_WORKERS agents)"
 
-# Create k3d cluster
-k3d cluster create --config /tmp/k3d-config.yaml
+if cluster_exists; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Removing stale K3d cluster '$CLUSTER_NAME' before recreation"
+    k3d cluster delete "$CLUSTER_NAME"
+
+    while cluster_exists; do
+        sleep 1
+    done
+fi
+
+if [ "$CLUSTER_RUNTIME" = "podman" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Ensuring Podman network '$K3D_PODMAN_NETWORK' exists"
+
+    if ! docker network inspect "$K3D_PODMAN_NETWORK" >/dev/null 2>&1; then
+        docker network create "$K3D_PODMAN_NETWORK" >/dev/null
+    fi
+
+    ensure_cluster_runtime_nodes_started &
+    NODE_HELPER_PID=$!
+    k3d cluster create \
+        --config /tmp/k3d-config.yaml \
+        --network "$K3D_PODMAN_NETWORK" \
+        --no-lb \
+        -p "${KUBE_API_PORT}:6443@server:0" &
+    K3D_CREATE_PID=$!
+
+    while ! cluster_exists; do
+        if ! kill -0 "$K3D_CREATE_PID" >/dev/null 2>&1; then
+            wait "$K3D_CREATE_PID"
+            CREATE_EXIT_CODE=$?
+            kill "$NODE_HELPER_PID" >/dev/null 2>&1 || true
+            wait "$NODE_HELPER_PID" 2>/dev/null || true
+
+            if [ "$CREATE_EXIT_CODE" -ne 0 ]; then
+                exit "$CREATE_EXIT_CODE"
+            fi
+        fi
+
+        sleep 2
+    done
+
+    while ! cluster_runtime_nodes_running; do
+        sleep 2
+    done
+
+    kill "$K3D_CREATE_PID" >/dev/null 2>&1 || true
+    wait "$K3D_CREATE_PID" 2>/dev/null || true
+    kill "$NODE_HELPER_PID" >/dev/null 2>&1 || true
+    wait "$NODE_HELPER_PID" 2>/dev/null || true
+else
+    # Create k3d cluster
+    k3d cluster create --config /tmp/k3d-config.yaml
+fi
 
 # ===============================================================================
 #   Cluster Readiness Check
@@ -89,7 +229,7 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') | Verifying cluster status..."
 CLUSTER_CHECK_COUNT=0
 
 # Wait for k3d cluster to be ready
-while ! k3d cluster list | grep -q "$CLUSTER_NAME"; do
+while ! cluster_exists; do
     CLUSTER_CHECK_COUNT=$((CLUSTER_CHECK_COUNT+1))
     echo "$(date '+%Y-%m-%d %H:%M:%S') | [WAITING] K3d cluster '$CLUSTER_NAME' not ready yet... (attempt $CLUSTER_CHECK_COUNT)"
     sleep 5
@@ -101,21 +241,8 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') | ✅ K3d cluster '$CLUSTER_NAME' is up and r
 #   Setup Complete
 # ===============================================================================
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') | Docker and KIND environment is ready for use"
-
-k3d kubeconfig get $CLUSTER_NAME > /home/candidate/.kube/kubeconfig
-echo "Kubeconfig file created: /home/candidate/.kube/kubeconfig"
-
-# Save kubeconfig and set API server address
-sed -i 's|server: https://127\.0\.0\.1:\([0-9]*\)|server: https://k8s-api-server:\1|' /home/candidate/.kube/kubeconfig
-
-echo "Kubeconfig file content:"
-cat /home/candidate/.kube/kubeconfig
-
-export KUBECONFIG=/home/candidate/.kube/kubeconfig
-
-#info on config file setup done 
-echo "$(date '+%Y-%m-%d %H:%M:%S') | Config file setup done"
+echo "$(date '+%Y-%m-%d %H:%M:%S') | Cluster runtime environment is ready for use"
+echo "$(date '+%Y-%m-%d %H:%M:%S') | Cluster kubeconfig can be fetched with env-kubeconfig $CLUSTER_NAME"
 
 #info on cluster setup done 
 echo "$(date '+%Y-%m-%d %H:%M:%S') | Cluster setup done"

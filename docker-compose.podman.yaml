@@ -1,0 +1,25 @@
+services:
+  jumphost:
+    security_opt:
+      - label=disable
+    command:
+      - /bin/bash
+      - -c
+      - service ssh start && dockerd --storage-driver=vfs & tail -f /dev/null
+  jumphost-dns:
+    security_opt:
+      - label=disable
+    command:
+      - /bin/bash
+      - -c
+      - service ssh start && dockerd --storage-driver=vfs & tail -f /dev/null
+  k8s-api-server:
+    security_opt:
+      - label=disable
+    environment:
+      - DOCKER_STORAGE_DRIVER=vfs
+  k8s-api-server-dns:
+    security_opt:
+      - label=disable
+    environment:
+      - DOCKER_STORAGE_DRIVER=vfs

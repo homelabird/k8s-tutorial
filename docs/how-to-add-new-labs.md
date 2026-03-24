@@ -12,6 +12,26 @@ Each lab in CK-X Simulator consists of:
 4. **Setup and Verification Scripts** to prepare environments and validate student solutions
 5. **Answers File** with solution documentation
 
+## Quick Start Template
+
+If you want a ready-made single-question scaffold before writing a full lab pack, start from:
+
+`docs/templates/ckad-single-question/`
+
+That directory contains a minimal CKAD-style template with:
+
+- `labs.entry.json` snippet for `labs.json`
+- `config.json`
+- `assessment.json`
+- `answers.md`
+- `scripts/setup/q1_setup.sh`
+- `scripts/validation/q1_s*_validate_*.sh`
+
+You can either:
+
+1. Copy the whole template into a new exam folder such as `facilitator/assets/exams/ckad/003/`
+2. Copy only the question block and matching scripts into an existing exam pack
+
 # Considerations Before Creating a Lab
 1. The cluster will consist of one control-plane node and multiple worker nodes.
 2. SSH access to the nodes is not provided, which may restrict the development of labs that require access to Kubernetes internals or node internals.

@@ -21,6 +21,16 @@
         "examDurationInMinutes": 120
       },
       {
+        "id": "ckad-003",
+        "assetPath": "assets/exams/ckad/003",
+        "name": "CKAD Quick Drill - Deployment Basics",
+        "category": "CKAD",
+        "description": "Single-question drill focused on namespaces, deployments, labels, and replica management.",
+        "warmUpTimeInSeconds": 60,
+        "difficulty": "Easy",
+        "examDurationInMinutes": 15
+      },
+      {
         "id": "cks-001",
         "assetPath": "assets/exams/cks/001",
         "name": "CKS Practice Lab - Kubernetes Security Essentials",
@@ -39,6 +49,36 @@
         "warmUpTimeInSeconds": 360,
         "difficulty": "Hard",
         "examDurationInMinutes": 120
+      },
+      {
+        "id": "cka-003",
+        "assetPath": "assets/exams/cka/003",
+        "name": "CKA 2026 Domain Drill - Security, Ingress, DNS",
+        "category": "CKA",
+        "description": "Three-question CKA drill aligned to the current curriculum, focused on Pod Security Admission, ingress-nginx installation and repair, and CoreDNS troubleshooting.",
+        "warmUpTimeInSeconds": 180,
+        "difficulty": "Hard",
+        "examDurationInMinutes": 60
+      },
+      {
+        "id": "cka-004",
+        "assetPath": "assets/exams/cka/004",
+        "name": "CKA 2026 Single Domain Drill - Cluster DNS Recovery",
+        "category": "CKA",
+        "description": "Standalone cluster-wide CoreDNS recovery drill focused on diagnosing and restoring Kubernetes service discovery.",
+        "warmUpTimeInSeconds": 90,
+        "difficulty": "Hard",
+        "examDurationInMinutes": 20
+      },
+      {
+        "id": "cka-005",
+        "assetPath": "assets/exams/cka/005",
+        "name": "CKA 2026 Mixed Environment Drill - Security, Ingress, Cluster DNS",
+        "category": "CKA",
+        "description": "Three-question CKA drill that mixes shared and isolated SSH environments so cluster-wide DNS recovery can coexist with regular security and ingress tasks.",
+        "warmUpTimeInSeconds": 180,
+        "difficulty": "Hard",
+        "examDurationInMinutes": 60
       },
       {
         "id": "cka-001",

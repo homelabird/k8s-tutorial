@@ -96,6 +96,9 @@ services:
       context: ./jumphost
     hostname: ckad9999
     privileged: true
+    environment:
+      - CLUSTER_NAME=cluster
+      - K8S_API_SERVER_HOST=k8s-api-server
     # No external port mappings - only accessible internally
     expose:
       - "22" # SSH port (internal only)
@@ -109,7 +112,37 @@ services:
           cpus: "0.5"
           memory: 512M
     networks:
-      - ckx-network
+      ckx-network:
+        aliases:
+          - ckad9999
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "22"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  jumphost-dns:
+    image: nishanb/ck-x-simulator-jumphost:latest
+    build:
+      context: ./jumphost
+    hostname: ckad9998
+    privileged: true
+    environment:
+      - CLUSTER_NAME=cluster-dns
+      - K8S_API_SERVER_HOST=k8s-api-server-dns
+    expose:
+      - "22"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      ckx-network:
+        aliases:
+          - ckad9998
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "22"]
       interval: 10s
@@ -140,19 +173,52 @@ services:
       timeout: 5s
       retries: 3
 
-  # KIND Kubernetes Cluster
+  # K3D Kubernetes Cluster
   k8s-api-server: # Service name that will be used for DNS resolution
     image: nishanb/ck-x-simulator-cluster:latest
     build:
       context: ./kind-cluster
     container_name: kind-cluster
     hostname: k8s-api-server
-    privileged: true # Required for running containers inside KIND
+    privileged: true # Required for nested container workloads used by K3D
     expose:
       - "6443"
       - "22"
+    environment:
+      - CLUSTER_NAME=cluster
+      - KUBE_API_ENDPOINT=k8s-api-server
     volumes:
       - kube-config:/home/candidate/.kube # Shared volume for Kubernetes config
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+        reservations:
+          cpus: "1"
+          memory: 2G
+    networks:
+      - ckx-network
+    healthcheck:
+      test: ["CMD", "ls", "/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  k8s-api-server-dns:
+    image: nishanb/ck-x-simulator-cluster:latest
+    build:
+      context: ./kind-cluster
+    container_name: kind-cluster-dns
+    hostname: k8s-api-server-dns
+    privileged: true
+    expose:
+      - "6443"
+      - "22"
+    environment:
+      - CLUSTER_NAME=cluster-dns
+      - KUBE_API_ENDPOINT=k8s-api-server-dns
     deploy:
       resources:
         limits:
@@ -216,6 +282,7 @@ services:
     restart: unless-stopped
     depends_on:
       - jumphost
+      - jumphost-dns
       - redis
     networks:
       - ckx-network

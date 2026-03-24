@@ -1,0 +1,10 @@
+{
+  "id": "ckad-003",
+  "assetPath": "assets/exams/ckad/003",
+  "name": "CKAD Practice Lab - Single Question Template",
+  "category": "CKAD",
+  "description": "Minimal one-question CKAD template pack for authoring new labs.",
+  "warmUpTimeInSeconds": 60,
+  "difficulty": "Medium",
+  "examDurationInMinutes": 15
+}
