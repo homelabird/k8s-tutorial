@@ -21,7 +21,15 @@ if [ "${CLUSTER_RUNTIME:-docker}" = "podman" ]; then
 else
     # Execute current entrypoint script
     if [ -f /usr/local/bin/startup.sh ]; then
-        sh /usr/local/bin/startup.sh &
+        STORAGE_DRIVER_ARGS=""
+
+        if [ -n "${DOCKER_STORAGE_DRIVER:-}" ]; then
+            STORAGE_DRIVER_ARGS="--storage-driver=${DOCKER_STORAGE_DRIVER}"
+        elif [ -n "${DOCKER_DRIVER:-}" ]; then
+            STORAGE_DRIVER_ARGS="--storage-driver=${DOCKER_DRIVER}"
+        fi
+
+        sh /usr/local/bin/startup.sh ${STORAGE_DRIVER_ARGS} &
     else
         echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Default startup script not found at /usr/local/bin/startup.sh"
     fi
@@ -64,6 +72,35 @@ adduser -S -D -H -s /sbin/nologin -G sshd sshd
 #install k3d
 echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Installing k3d"
 TAG=v5.8.3 bash /usr/local/bin/k3d-install.sh
+
+cluster_exists() {
+    target_cluster="$1"
+    [ -n "$target_cluster" ] || return 1
+    k3d cluster list | awk 'NR > 1 { print $1 }' | grep -Fxq "$target_cluster"
+}
+
+reconcile_default_cluster() {
+    target_cluster="${CLUSTER_NAME:-}"
+    [ -n "$target_cluster" ] || return 0
+
+    if ! cluster_exists "$target_cluster"; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] No stale cluster reconciliation needed for '$target_cluster'"
+        return 0
+    fi
+
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Removing stale cluster '$target_cluster' left behind by a previous hard shutdown"
+    k3d cluster delete "$target_cluster"
+
+    while cluster_exists "$target_cluster"; do
+        sleep 1
+    done
+
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Stale cluster '$target_cluster' removed"
+}
+
+if [ "${CKX_RECONCILE_STALE_CLUSTER_ON_BOOT:-true}" = "true" ]; then
+    reconcile_default_cluster
+fi
 
 sleep 10
 touch /ready
