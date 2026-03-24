@@ -11,8 +11,8 @@ This guide provides instructions for deploying the CK-X Simulator on different o
 - Port 30080 available
 
 Linux Podman deployments should currently use rootful Podman because `jumphost` and `k8s-api-server` require privileged containers.
-The repository includes `docker-compose.podman.yaml`, which mounts the rootful Podman socket into `k8s-api-server` for Podman-based k3d control.
-When Podman is selected, use `sudo` and expect a local image build so the Podman-specific `k8s-api-server` changes are present.
+The repository includes `docker-compose.podman.yaml` for Podman rootful compatibility, but `k3d` still runs on the inner Docker daemon inside `k8s-api-server`.
+When Podman is selected, use `sudo` and expect a local image build so the Podman-specific compatibility overrides are present.
 
 ## Quick Install
 

@@ -1,18 +1,25 @@
 services:
   jumphost:
+    security_opt:
+      - label=disable
+    command:
+      - /bin/bash
+      - -c
+      - service ssh start && dockerd --storage-driver=vfs & tail -f /dev/null
+  jumphost-dns:
+    security_opt:
+      - label=disable
     command:
       - /bin/bash
       - -c
       - service ssh start && dockerd --storage-driver=vfs & tail -f /dev/null
   k8s-api-server:
-    environment:
-      - CLUSTER_RUNTIME=podman
-      - DOCKER_HOST=unix:///run/podman/podman.sock
-      - DOCKER_SOCK=/run/podman/podman.sock
-      - KUBE_API_ENDPOINT=host.containers.internal
-      - K3D_PODMAN_NETWORK=k3d
     security_opt:
       - label=disable
-    volumes:
-      - kube-config:/home/candidate/.kube
-      - /run/podman/podman.sock:/run/podman/podman.sock
+    environment:
+      - DOCKER_STORAGE_DRIVER=vfs
+  k8s-api-server-dns:
+    security_opt:
+      - label=disable
+    environment:
+      - DOCKER_STORAGE_DRIVER=vfs
