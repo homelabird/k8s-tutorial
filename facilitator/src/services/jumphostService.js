@@ -14,6 +14,36 @@ const logger = require('../utils/logger');
 const remoteDesktopService = require('./remoteDesktopService');
 const MetricService = require('./metricService');
 
+function quoteArg(value) {
+  return `'${String(value ?? '').replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function getPlannedEnvironments(environmentPlan = {}) {
+  const environments = Array.isArray(environmentPlan.environments)
+    ? [...environmentPlan.environments]
+    : [];
+
+  environments.sort((left, right) => {
+    if (left.id === 'shared') return -1;
+    if (right.id === 'shared') return 1;
+    return String(left.id).localeCompare(String(right.id));
+  });
+
+  return environments;
+}
+
+function getEnvironmentForQuestion(question, environmentPlan = {}) {
+  const environmentId = question.environmentId || 'shared';
+  return getPlannedEnvironments(environmentPlan).find((env) => env.id === environmentId)
+    || {
+      id: environmentId,
+      sshHost: 'jumphost',
+      sshAlias: question.machineHostname || 'ckad9999',
+      clusterName: 'cluster',
+      workerNodes: 1
+    };
+}
+
 /**
  * Prepare the exam environment on the jumphost
  * 
@@ -22,50 +52,67 @@ const MetricService = require('./metricService');
  * the exam status in Redis to reflect the preparation process.
  * 
  * @param {string} examId - The ID of the exam to prepare
- * @param {number} nodeCount - The number of nodes to prepare (default: 1)
+ * @param {Object} environmentPlan - Environment routing plan for the exam
  * @returns {Promise<Object>} Result object with success status and data
  */
-async function setupExamEnvironment(examId, nodeCount = 1) {
+async function setupExamEnvironment(examId, environmentPlan = {}) {
   try {
+    let lastResult = null;
+
     // Update exam status to PREPARING
     await redisClient.persistExamStatus(examId, 'PREPARING');
-    logger.info(`Started preparing environment for exam ${examId} with ${nodeCount} nodes`);
+    logger.info(`Started preparing environment for exam ${examId}`);
     
     //restart vnc session
     await remoteDesktopService.restartVncSession();
 
-    // Execute the prepare-exam-env command on the jumphost
-    const command = `prepare-exam-env ${nodeCount} ${examId}`;
-    
-    logger.info(`Executing command on jumphost: ${command}`);
-    const result = await sshService.executeCommand(command);
-    
-    logger.info('Command : prepare-exam-env, host: jumphost, result', { exitCode: result.exitCode });
-    logger.info(result.stdout);
+    for (const environment of getPlannedEnvironments(environmentPlan)) {
+      const questionIdsCsv = (environment.questionIds || []).join(',');
+      const workerNodes = environment.workerNodes || 1;
+      const clusterName = environment.clusterName || 'cluster';
+      const kubeApiPort = environment.kubeApiPort || environment.apiPort || 6443;
+      const k8sApiServerHost = environment.k8sApiServerHost || 'k8s-api-server';
+      const command = `prepare-exam-env ${workerNodes} ${quoteArg(examId)} ${quoteArg(clusterName)} ${quoteArg(questionIdsCsv)} ${quoteArg(kubeApiPort)} ${quoteArg(k8sApiServerHost)}`;
 
-    if (result.exitCode !== 0) {
-      logger.error('Failed to prepare exam environment', {
-        stdout: result.stdout,
-        stderr: result.stderr,
+      logger.info(`Executing command on jumphost ${environment.sshHost}: ${command}`);
+      const result = await sshService.executeCommand(command, { host: environment.sshHost });
+      lastResult = result;
+
+      logger.info('Command : prepare-exam-env, result', {
+        host: environment.sshHost,
+        environmentId: environment.id,
         exitCode: result.exitCode
       });
-      
-      await redisClient.persistExamStatus(examId, 'PREPARATION_FAILED');
-      MetricService.sendMetrics(examId, {
-        event: {
-          examLabState: 'PREPARATION_FAILED'
-        }
-      });
-      
-      return {
-        success: false,
-        error: 'Failed to prepare exam environment',
-        details: {
+      logger.info(result.stdout);
+
+      if (result.exitCode !== 0) {
+        logger.error('Failed to prepare exam environment', {
+          host: environment.sshHost,
+          environmentId: environment.id,
           stdout: result.stdout,
           stderr: result.stderr,
           exitCode: result.exitCode
-        }
-      };
+        });
+
+        await redisClient.persistExamStatus(examId, 'PREPARATION_FAILED');
+        MetricService.sendMetrics(examId, {
+          event: {
+            examLabState: 'PREPARATION_FAILED'
+          }
+        });
+
+        return {
+          success: false,
+          error: 'Failed to prepare exam environment',
+          details: {
+            host: environment.sshHost,
+            environmentId: environment.id,
+            stdout: result.stdout,
+            stderr: result.stderr,
+            exitCode: result.exitCode
+          }
+        };
+      }
     }
     
     // Update exam status to READY
@@ -81,7 +128,7 @@ async function setupExamEnvironment(examId, nodeCount = 1) {
       success: true,
       message: 'Exam environment prepared successfully',
       details: {
-        stdout: result.stdout
+        stdout: lastResult?.stdout || ''
       }
     };
   } catch (error) {
@@ -107,47 +154,59 @@ async function setupExamEnvironment(examId, nodeCount = 1) {
  * @param {string} examId - The ID of the exam to clean up
  * @returns {Promise<Object>} Result object with success status and data
  */
-async function cleanupExamEnvironment(examId) {
+async function cleanupExamEnvironment(examId, environmentPlan = {}) {
   try {
+    let lastResult = null;
+
     // Update exam status to CLEANING_UP
     await redisClient.persistExamStatus(examId, 'CLEANING_UP');
     logger.info(`Started cleaning up environment for exam ${examId}`);
 
-    // Execute the cleanup command on the jumphost
-    // Assuming a cleanup script exists on the jumphost
-    const command = 'cleanup-exam-env';
-    
-    logger.info(`Executing command on jumphost: ${command}`);
-    const result = await sshService.executeCommand(command);
+    for (const environment of getPlannedEnvironments(environmentPlan)) {
+      const clusterName = environment.clusterName || 'cluster';
+      const k8sApiServerHost = environment.k8sApiServerHost || 'k8s-api-server';
+      const command = `cleanup-exam-env ${quoteArg(clusterName)} ${quoteArg(k8sApiServerHost)}`;
 
-    logger.info('Command : cleanup-exam-env, host: jumphost, result', { exitCode: result.exitCode });
-    logger.info(result.stdout);
+      logger.info(`Executing command on jumphost ${environment.sshHost}: ${command}`);
+      const result = await sshService.executeCommand(command, { host: environment.sshHost });
+      lastResult = result;
 
-
-    if (result.exitCode !== 0) {
-      logger.error('Failed to clean up exam environment', {
-        stdout: result.stdout,
-        stderr: result.stderr,
+      logger.info('Command : cleanup-exam-env, result', {
+        host: environment.sshHost,
+        environmentId: environment.id,
         exitCode: result.exitCode
       });
+      logger.info(result.stdout);
 
-      MetricService.sendMetrics(examId, {
-        event: {
-          cleanupLabState: 'CLEANUP_FAILED'
-        }
-      });
-      
-      await redisClient.persistExamStatus(examId, 'CLEANUP_FAILED');
-      
-      return {
-        success: false,
-        error: 'Failed to clean up exam environment',
-        details: {
+      if (result.exitCode !== 0) {
+        logger.error('Failed to clean up exam environment', {
+          host: environment.sshHost,
+          environmentId: environment.id,
           stdout: result.stdout,
           stderr: result.stderr,
           exitCode: result.exitCode
-        }
-      };
+        });
+
+        MetricService.sendMetrics(examId, {
+          event: {
+            cleanupLabState: 'CLEANUP_FAILED'
+          }
+        });
+
+        await redisClient.persistExamStatus(examId, 'CLEANUP_FAILED');
+
+        return {
+          success: false,
+          error: 'Failed to clean up exam environment',
+          details: {
+            host: environment.sshHost,
+            environmentId: environment.id,
+            stdout: result.stdout,
+            stderr: result.stderr,
+            exitCode: result.exitCode
+          }
+        };
+      }
     }
     
     // Update exam status to COMPLETED
@@ -162,7 +221,7 @@ async function cleanupExamEnvironment(examId) {
       success: true,
       message: 'Exam environment cleaned up successfully',
       details: {
-        stdout: result.stdout
+        stdout: lastResult?.stdout || ''
       }
     };
   } catch (error) {
@@ -188,9 +247,10 @@ async function cleanupExamEnvironment(examId) {
  * 
  * @param {string} examId - The ID of the exam to evaluate
  * @param {Array} questions - Array of questions with verification steps
+ * @param {Object} environmentPlan - Environment routing plan for the exam
  * @returns {Promise<Object>} Result object with evaluation data
  */
-async function evaluateExamOnJumphost(examId, questions) {
+async function evaluateExamOnJumphost(examId, questions, environmentPlan = {}) {
   try {
     let totalScore = 0;
     let totalPossibleScore = 0;
@@ -201,6 +261,7 @@ async function evaluateExamOnJumphost(examId, questions) {
     
     // Process each question
     for (const question of questions) {
+      const environment = getEnvironmentForQuestion(question, environmentPlan);
       logger.info(`Evaluating question ${question.id}`);
       const questionResult = {
         id: question.id,
@@ -229,8 +290,8 @@ async function evaluateExamOnJumphost(examId, questions) {
           // Add KUBECONFIG environment variable to ensure all verifications use the correct kube config
           const commandWithKubeconfig = `export KUBECONFIG=/home/candidate/.kube/kubeconfig && ${scriptPath}`;
           
-          logger.info(`Executing verification script: ${scriptPath} with KUBECONFIG set`);
-          const result = await sshService.executeCommand(commandWithKubeconfig);
+          logger.info(`Executing verification script on ${environment.sshHost}: ${scriptPath} with KUBECONFIG set`);
+          const result = await sshService.executeCommand(commandWithKubeconfig, { host: environment.sshHost });
           
           // Determine if the verification passed
           const isValid = result.exitCode === 0;
@@ -256,6 +317,8 @@ async function evaluateExamOnJumphost(examId, questions) {
           // Log the result for debugging but don't include in response
           // Only include stderr in logs when exit code is 1 (failed verification)
           const logData = {
+            host: environment.sshHost,
+            environmentId: environment.id,
             stdout: result.stdout,
             exitCode: result.exitCode
           };
