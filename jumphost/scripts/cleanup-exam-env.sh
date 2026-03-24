@@ -15,9 +15,12 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+TARGET_CLUSTER_NAME=${1:-${CLUSTER_NAME:-cluster}}
+K8S_API_SERVER_HOST=${2:-${K8S_API_SERVER_HOST:-k8s-api-server}}
+
 log "Starting exam environment cleanup"
-log "Cleaning up cluster $CLUSTER_NAME"
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null candidate@k8s-api-server "env-cleanup $CLUSTER_NAME"
+log "Cleaning up cluster $TARGET_CLUSTER_NAME"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null candidate@"$K8S_API_SERVER_HOST" "env-cleanup $TARGET_CLUSTER_NAME"
 
 #cleanup docker env
 log "Cleaning up docker environment"
@@ -29,6 +32,11 @@ docker image prune -fa
 log "Removing exam environment directory"
 rm -rf /tmp/exam-env
 rm -rf /tmp/exam
+
+# Remove stale kubeconfig files so the next session always gets a fresh cluster context
+log "Removing local kubeconfig files"
+rm -f /home/candidate/.kube/config /home/candidate/.kube/kubeconfig
+rm -rf /home/candidate/.kube/cache
 
 # Remove the exam assets directory
 log "Removing exam assets directory"
