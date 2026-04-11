@@ -33,14 +33,6 @@ cleanup() {
 
 trap cleanup EXIT
 
-remote_terminal_ssh() {
-  local alias="$1"
-  local remote_cmd="$2"
-
-  sudo podman exec k8s-tutorial_remote-terminal_1 sh -lc \
-    "su - candidate -c 'ssh -o StrictHostKeyChecking=no ${alias} \"export KUBECONFIG=/home/candidate/.kube/kubeconfig; ${remote_cmd}\"'"
-}
-
 wait_for_http() {
   local attempt
   for attempt in $(seq 1 "$HTTP_WAIT_ATTEMPTS"); do
@@ -58,9 +50,9 @@ wait_for_health() {
   local status_output=""
   for attempt in $(seq 1 "$HEALTH_WAIT_ATTEMPTS"); do
     status_output="$(sudo podman ps --format '{{.Names}} {{.Status}}')"
-    if printf '%s\n' "$status_output" | grep -qE '^(kind-cluster|kind-cluster-dns|k8s-tutorial_jumphost_1|k8s-tutorial_jumphost-dns_1|k8s-tutorial_facilitator_1) ' \
+    if printf '%s\n' "$status_output" | grep -qE '^(kind-cluster|k8s-tutorial_jumphost_1|k8s-tutorial_facilitator_1) ' \
       && ! printf '%s\n' "$status_output" \
-        | grep -E '^(kind-cluster|kind-cluster-dns|k8s-tutorial_jumphost_1|k8s-tutorial_jumphost-dns_1|k8s-tutorial_facilitator_1) ' \
+        | grep -E '^(kind-cluster|k8s-tutorial_jumphost_1|k8s-tutorial_facilitator_1) ' \
         | grep -vq '(healthy)'; then
       return 0
     fi
@@ -83,6 +75,20 @@ wait_for_exam_status() {
     sleep 2
   done
   echo "Timed out waiting for exam status '$expected_status' (last status: '${observed_status:-empty}')" >&2
+  return 1
+}
+
+wait_for_evaluated() {
+  local attempt
+  local observed_status=""
+  for attempt in $(seq 1 "$EVALUATED_WAIT_ATTEMPTS"); do
+    observed_status="$(curl -s "$BASE_URL/facilitator/api/v1/exams/current" | jq -r '.status // empty')"
+    if [ "$observed_status" = "EVALUATED" ]; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Timed out waiting for exam evaluation (last status: '${observed_status:-empty}')" >&2
   return 1
 }
 
@@ -115,26 +121,8 @@ wait_for_no_inner_clusters() {
   return 1
 }
 
-wait_for_evaluated() {
-  local attempt
-  local observed_status=""
-  for attempt in $(seq 1 "$EVALUATED_WAIT_ATTEMPTS"); do
-    observed_status="$(curl -s "$BASE_URL/facilitator/api/v1/exams/current" | jq -r '.status // empty')"
-    if [ "$observed_status" = "EVALUATED" ]; then
-      return 0
-    fi
-    sleep 2
-  done
-  echo "Timed out waiting for exam evaluation (last status: '${observed_status:-empty}')" >&2
-  return 1
-}
-
 shared_exec() {
   sudo podman exec k8s-tutorial_jumphost_1 bash -lc "export KUBECONFIG=/home/candidate/.kube/kubeconfig; $*"
-}
-
-isolated_exec() {
-  sudo podman exec k8s-tutorial_jumphost-dns_1 bash -lc "export KUBECONFIG=/home/candidate/.kube/kubeconfig; $*"
 }
 
 require_command curl
@@ -155,10 +143,10 @@ log "Waiting for stack readiness"
 wait_for_http
 wait_for_health
 
-log "Creating cka-005 exam"
+log "Creating cka-003 exam"
 CREATE_RESPONSE="$(curl -fsS -X POST "$BASE_URL/facilitator/api/v1/exams" \
   -H 'Content-Type: application/json' \
-  -d '{"examId":"cka-005"}')"
+  -d '{"examId":"cka-003"}')"
 CURRENT_EXAM="$(printf '%s' "$CREATE_RESPONSE" | jq -r '.id')"
 
 wait_for_exam_status READY
@@ -168,37 +156,37 @@ QUESTION_SUMMARY="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/
   | jq -r '.questions[] | "Q\(.id):\(.machineHostname):\(.environmentId)"')"
 printf '%s\n' "$QUESTION_SUMMARY" | grep -Fx 'Q1:ckad9999:shared' >/dev/null
 printf '%s\n' "$QUESTION_SUMMARY" | grep -Fx 'Q2:ckad9999:shared' >/dev/null
-printf '%s\n' "$QUESTION_SUMMARY" | grep -Fx 'Q3:ckad9998:dns-isolated' >/dev/null
+printf '%s\n' "$QUESTION_SUMMARY" | grep -Fx 'Q3:ckad9999:shared' >/dev/null
 
-log "Checking remote-terminal SSH aliases"
-SHARED_REMOTE="$(remote_terminal_ssh ckad9999 'hostname; kubectl config current-context; kubectl config view --minify -o jsonpath={.clusters[0].cluster.server}; echo; kubectl get nodes -o name')"
-ISOLATED_REMOTE="$(remote_terminal_ssh ckad9998 'hostname; kubectl config current-context; kubectl config view --minify -o jsonpath={.clusters[0].cluster.server}; echo; kubectl get nodes -o name')"
+log "Waiting for helper pods used by the regression checks"
+shared_exec "kubectl wait --for=condition=Ready pod/ingress-check -n ingress-lab --timeout=180s >/dev/null"
+shared_exec "kubectl wait --for=condition=Ready pod/dns-check -n dns-lab --timeout=180s >/dev/null"
 
-printf '%s\n' "$SHARED_REMOTE" | grep -Fx 'ckad9999' >/dev/null
-printf '%s\n' "$SHARED_REMOTE" | grep -Fx 'k3d-cluster' >/dev/null
-printf '%s\n' "$SHARED_REMOTE" | grep -Fx 'https://k8s-api-server:6443' >/dev/null
-
-printf '%s\n' "$ISOLATED_REMOTE" | grep -Fx 'ckad9998' >/dev/null
-printf '%s\n' "$ISOLATED_REMOTE" | grep -Fx 'k3d-cluster-dns' >/dev/null
-printf '%s\n' "$ISOLATED_REMOTE" | grep -Fx 'https://k8s-api-server-dns:6444' >/dev/null
-
-log "Checking shared DNS stays healthy while isolated DNS is broken"
+log "Checking cluster DNS stays healthy outside the dedicated dns-lab drill"
 SHARED_DNS="$(shared_exec "kubectl -n ingress-lab exec ingress-check -- nslookup kubernetes.default.svc.cluster.local")"
 printf '%s\n' "$SHARED_DNS" | grep -F 'kubernetes.default.svc.cluster.local' >/dev/null
 
+log "Checking dedicated dns-lab CoreDNS is the only broken DNS path"
+DEDICATED_DNS_POLICY="$(shared_exec "kubectl get pod dns-check -n dns-lab -o jsonpath='{.spec.dnsPolicy}'")"
+DEDICATED_DNS_IP="$(shared_exec "kubectl get service coredns -n dns-lab -o jsonpath='{.spec.clusterIP}'")"
+DEDICATED_NAMESERVER="$(shared_exec "kubectl get pod dns-check -n dns-lab -o jsonpath='{.spec.dnsConfig.nameservers[0]}'")"
+
+[ "$DEDICATED_DNS_POLICY" = "None" ]
+[ "$DEDICATED_NAMESERVER" = "$DEDICATED_DNS_IP" ]
+
 set +e
-ISOLATED_DNS_OUTPUT="$(isolated_exec "kubectl -n dns-lab exec dns-check -- nslookup kubernetes.default.svc.cluster.local" 2>&1)"
-ISOLATED_DNS_EXIT=$?
+DEDICATED_DNS_OUTPUT="$(shared_exec "kubectl exec -n dns-lab dns-check -- nslookup web.dns-lab.svc.cluster.local" 2>&1)"
+DEDICATED_DNS_EXIT=$?
 set -e
 
-if [ "$ISOLATED_DNS_EXIT" -eq 0 ]; then
-  echo "Expected isolated DNS probe to fail before fixing CoreDNS" >&2
+if [ "$DEDICATED_DNS_EXIT" -eq 0 ]; then
+  echo "Expected dedicated dns-lab CoreDNS lookup to fail before fixing the drill" >&2
   exit 1
 fi
 
-printf '%s\n' "$ISOLATED_DNS_OUTPUT" | grep -E 'SERVFAIL|REFUSED|Connection refused|no servers could be reached' >/dev/null
+printf '%s\n' "$DEDICATED_DNS_OUTPUT" | grep -E 'NXDOMAIN|SERVFAIL|REFUSED|can.t resolve|server can.t find|no servers could be reached' >/dev/null
 
-log "Solving shared questions"
+log "Solving PSA, dedicated CoreDNS, and ingress questions"
 shared_exec "kubectl apply -f - <<'EOF'
 apiVersion: v1
 kind: Namespace
@@ -228,7 +216,21 @@ spec:
       capabilities:
         drop: [\"ALL\"]
 EOF
-kubectl wait --for=condition=Ready pod/restricted-shell -n secure-workloads --timeout=180s
+kubectl wait --for=condition=Ready pod/restricted-shell -n secure-workloads --timeout=180s >/dev/null
+kubectl get configmap coredns -n dns-lab -o yaml \
+  | sed 's/kubernetes broken.local in-addr.arpa ip6.arpa/kubernetes cluster.local in-addr.arpa ip6.arpa/' \
+  | kubectl apply -f - >/dev/null
+kubectl rollout restart deployment coredns -n dns-lab >/dev/null
+kubectl rollout status deployment coredns -n dns-lab --timeout=180s >/dev/null
+resolved=0
+for attempt in \$(seq 1 60); do
+  if kubectl exec -n dns-lab dns-check -- sh -lc 'nslookup web.dns-lab.svc.cluster.local && wget -qO- http://web.dns-lab.svc.cluster.local >/dev/null'; then
+    resolved=1
+    break
+  fi
+  sleep 2
+done
+[ \"\$resolved\" -eq 1 ]
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null 2>&1 || true
 helm repo update >/dev/null
 helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --set controller.service.type=NodePort --set controller.service.nodePorts.http=30080 >/dev/null
@@ -256,110 +258,31 @@ spec:
             port:
               number: 80
 EOF
-kubectl rollout status deployment ingress-nginx-controller -n ingress-nginx --timeout=300s >/dev/null"
-
-log "Creating a false-positive dns-lab only in the shared cluster to verify host routing"
-shared_exec "kubectl create namespace dns-lab --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-kubectl apply -f - <<'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: web
-  namespace: dns-lab
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: web
-  template:
-    metadata:
-      labels:
-        app: web
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.27.0-alpine
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: web
-  namespace: dns-lab
-spec:
-  selector:
-    app: web
-  ports:
-  - port: 80
-    targetPort: 80
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: dns-check
-  namespace: dns-lab
-spec:
-  containers:
-  - name: busybox
-    image: busybox:1.36
-    command: [\"sh\", \"-c\", \"sleep 3600\"]
-EOF
-kubectl wait --for=condition=Ready pod/dns-check -n dns-lab --timeout=180s >/dev/null
-kubectl exec -n dns-lab dns-check -- sh -lc 'nslookup web.dns-lab.svc.cluster.local && wget -qO- http://web.dns-lab.svc.cluster.local >/dev/null'"
-
-log "Running first evaluation and expecting only shared questions to pass"
-curl -fsS -X POST "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/evaluate" \
-  -H 'Content-Type: application/json' \
-  -d '{}' >/dev/null
-wait_for_evaluated
-RESULT_ONE="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
-
-printf '%s' "$RESULT_ONE" | jq -e '
-  .data.totalScore == 14 and
-  ([.data.evaluationResults[] | select(.id == "1") | .verificationResults[].validAnswer] | all) and
-  ([.data.evaluationResults[] | select(.id == "2") | .verificationResults[].validAnswer] | all) and
-  ([.data.evaluationResults[] | select(.id == "3") | .verificationResults[].validAnswer] | any | not)
-' >/dev/null
-
-log "Fixing isolated CoreDNS and dns-check"
-isolated_exec "kubectl get configmap coredns -n kube-system -o yaml \
-  | sed 's/kubernetes broken.local in-addr.arpa ip6.arpa/kubernetes cluster.local in-addr.arpa ip6.arpa/' \
-  | kubectl apply -f - >/dev/null
-kubectl rollout restart deployment coredns -n kube-system >/dev/null
-kubectl rollout status deployment coredns -n kube-system --timeout=180s >/dev/null
-kubectl get pod dns-check -n dns-lab >/dev/null 2>&1 || kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: Pod
-metadata:
-  name: dns-check
-  namespace: dns-lab
-spec:
-  containers:
-  - name: busybox
-    image: busybox:1.36
-    command: [\"sh\", \"-c\", \"sleep 3600\"]
-EOF
-kubectl wait --for=condition=Ready pod/dns-check -n dns-lab --timeout=180s >/dev/null
-for attempt in \$(seq 1 90); do
-  if kubectl exec -n dns-lab dns-check -- sh -lc 'nslookup web.dns-lab.svc.cluster.local && wget -qO- http://web.dns-lab.svc.cluster.local >/dev/null'; then
-    exit 0
+CONTROLLER_IP=\$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.spec.clusterIP}')
+routed=0
+for attempt in \$(seq 1 60); do
+  if kubectl exec -n ingress-lab ingress-check -- sh -lc \"curl -fsS -H 'Host: app.example.local' http://\${CONTROLLER_IP}/ | grep -qi 'Welcome to nginx'\"; then
+    routed=1
+    break
   fi
   sleep 2
 done
-exit 1"
+[ \"\$routed\" -eq 1 ]"
 
-log "Running second evaluation and expecting a full pass"
+log "Running evaluation and expecting a full pass"
 curl -fsS -X POST "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/evaluate" \
   -H 'Content-Type: application/json' \
   -d '{}' >/dev/null
 wait_for_evaluated
-RESULT_TWO="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
+RESULT="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
 
-printf '%s' "$RESULT_TWO" | jq -e '
+printf '%s' "$RESULT" | jq -e '
   .data.percentageScore == 100 and
   ([.data.evaluationResults[].verificationResults[].validAnswer] | all)
-' >/dev/null
+' >/dev/null || {
+  printf '%s\n' "$RESULT" >&2
+  exit 1
+}
 
 log "Terminating exam and verifying cleanup"
 curl -fsS -X POST "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/terminate" >/dev/null
@@ -367,4 +290,4 @@ CURRENT_EXAM=""
 wait_for_no_current_exam
 wait_for_no_inner_clusters
 
-log "cka-005 isolated-environment regression passed"
+log "cka-003 dedicated DNS regression passed"
