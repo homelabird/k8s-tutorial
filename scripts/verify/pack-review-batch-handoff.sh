@@ -9,21 +9,28 @@ LANDING_RENDERER="$ROOT_DIR/scripts/verify/render-review-landing-summary.sh"
 LANDING_DRAFT_RENDERER="$ROOT_DIR/scripts/verify/render-review-landing-drafts.sh"
 NOTE_MANIFEST="${NOTE_MANIFEST_PATH:-$ROOT_DIR/.artifacts/review-batch-note-manifest.txt}"
 MEMO_MANIFEST="${MEMO_MANIFEST_PATH:-$ROOT_DIR/.artifacts/review-batch-memo-manifest.txt}"
+OUTSIDE_LANDING_DRAFT_MANIFEST="${OUTSIDE_LANDING_DRAFT_MANIFEST_PATH:-$ROOT_DIR/.artifacts/review-draft-manifest.txt}"
 REVIEW_NOTES_DIR="${REVIEW_NOTES_DIR:-$ROOT_DIR/.artifacts/review-notes}"
 REVIEW_MEMOS_DIR="${REVIEW_MEMOS_DIR:-$ROOT_DIR/.artifacts/review-memos}"
+REVIEW_DRAFTS_DIR="${REVIEW_DRAFTS_DIR:-$ROOT_DIR/.artifacts/review-drafts}"
 
 export NOTE_MANIFEST_PATH="$NOTE_MANIFEST"
 export MEMO_MANIFEST_PATH="$MEMO_MANIFEST"
 
 mkdir -p "$(dirname "$OUTPUT_DIR")" "$(dirname "$ARCHIVE_PATH")"
 rm -rf "$OUTPUT_DIR"
-mkdir -p "$OUTPUT_DIR/review-notes" "$OUTPUT_DIR/review-memos"
+mkdir -p "$OUTPUT_DIR/review-notes" "$OUTPUT_DIR/review-memos" "$OUTPUT_DIR/review-drafts"
 
 bash "$RUNNER" --handoff-index > "$OUTPUT_DIR/handoff-index.txt"
 bash "$RUNNER" --landing-plan > "$OUTPUT_DIR/landing-plan.txt"
 bash "$RUNNER" --landing-plan --show > "$OUTPUT_DIR/landing-plan-expanded.txt"
-bash "$LANDING_RENDERER" "$OUTPUT_DIR/landing-plan-expanded.txt" > "$OUTPUT_DIR/landing-summary.md"
-bash "$LANDING_DRAFT_RENDERER" "$OUTPUT_DIR/landing-plan-expanded.txt" > "$OUTPUT_DIR/landing-drafts.md"
+bash "$RUNNER" --landing-commands > "$OUTPUT_DIR/landing-commands.txt"
+bash "$RUNNER" --outside-batch-plan > "$OUTPUT_DIR/outside-batch-plan.txt"
+bash "$RUNNER" --outside-batch-plan --show > "$OUTPUT_DIR/outside-batch-plan-expanded.txt"
+bash "$RUNNER" --outside-landing-batches > "$OUTPUT_DIR/outside-landing-batches.txt"
+bash "$RUNNER" --outside-landing-batches --show > "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
+bash "$LANDING_RENDERER" "$OUTPUT_DIR/landing-plan-expanded.txt" "$OUTPUT_DIR/outside-landing-batches-expanded.txt" "$OUTPUT_DIR/landing-commands.txt" > "$OUTPUT_DIR/landing-summary.md"
+bash "$LANDING_DRAFT_RENDERER" "$OUTPUT_DIR/landing-plan-expanded.txt" "$OUTPUT_DIR/outside-landing-batches-expanded.txt" "$OUTPUT_DIR/landing-commands.txt" > "$OUTPUT_DIR/landing-drafts.md"
 bash "$RUNNER" --status-all > "$OUTPUT_DIR/status-all.txt"
 bash "$RUNNER" --next > "$OUTPUT_DIR/next.txt"
 bash "$RUNNER" --next --verbose > "$OUTPUT_DIR/next-verbose.txt"
@@ -38,6 +45,10 @@ if [ -f "$MEMO_MANIFEST" ]; then
   cp "$MEMO_MANIFEST" "$OUTPUT_DIR/review-batch-memo-manifest.txt"
 fi
 
+if [ -f "$OUTSIDE_LANDING_DRAFT_MANIFEST" ]; then
+  cp "$OUTSIDE_LANDING_DRAFT_MANIFEST" "$OUTPUT_DIR/review-draft-manifest.txt"
+fi
+
 if [ -d "$REVIEW_NOTES_DIR" ]; then
   find "$REVIEW_NOTES_DIR" -maxdepth 1 -type f -name '*.txt' -print0 \
     | while IFS= read -r -d '' file; do
@@ -49,6 +60,13 @@ if [ -d "$REVIEW_MEMOS_DIR" ]; then
   find "$REVIEW_MEMOS_DIR" -maxdepth 1 -type f -name '*.txt' -print0 \
     | while IFS= read -r -d '' file; do
         cp "$file" "$OUTPUT_DIR/review-memos/"
+      done
+fi
+
+if [ -d "$REVIEW_DRAFTS_DIR" ]; then
+  find "$REVIEW_DRAFTS_DIR" -maxdepth 1 -type f \( -name '*.txt' -o -name '*.md' \) -print0 \
+    | while IFS= read -r -d '' file; do
+        cp "$file" "$OUTPUT_DIR/review-drafts/"
       done
 fi
 

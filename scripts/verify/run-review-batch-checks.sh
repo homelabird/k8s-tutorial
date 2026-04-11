@@ -6,6 +6,17 @@ BATCH_TIMEOUT_SECONDS="${BATCH_TIMEOUT_SECONDS:-0}"
 RUN_FULL_BROWSER_UI_SMOKE="${RUN_FULL_BROWSER_UI_SMOKE:-0}"
 NOTE_MANIFEST_PATH="${NOTE_MANIFEST_PATH:-$ROOT_DIR/.artifacts/review-batch-note-manifest.txt}"
 MEMO_MANIFEST_PATH="${MEMO_MANIFEST_PATH:-$ROOT_DIR/.artifacts/review-batch-memo-manifest.txt}"
+OUTSIDE_LANDING_DRAFT_MANIFEST_PATH="${OUTSIDE_LANDING_DRAFT_MANIFEST_PATH:-$ROOT_DIR/.artifacts/review-draft-manifest.txt}"
+
+outside_landing_commit_title() {
+  local batch_name="$1"
+  printf '%s\n' "chore(review): land ${batch_name} batch"
+}
+
+outside_landing_pr_title() {
+  local batch_name="$1"
+  printf '%s\n' "Land ${batch_name} handoff bundle"
+}
 
 usage() {
   cat <<'EOF'
@@ -39,8 +50,24 @@ Usage:
   ./scripts/verify/run-review-batch-checks.sh --handoff-index batch-2 --show
   ./scripts/verify/run-review-batch-checks.sh --landing-plan
   ./scripts/verify/run-review-batch-checks.sh --landing-plan batch-2 --show
+  ./scripts/verify/run-review-batch-checks.sh --landing-commands
+  ./scripts/verify/run-review-batch-checks.sh --landing-commands batch-2 outside-frontend-runtime
   ./scripts/verify/run-review-batch-checks.sh --status batch-4
   ./scripts/verify/run-review-batch-checks.sh --status-all
+  ./scripts/verify/run-review-batch-checks.sh --outside-batches
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-groups
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-groups --name facilitator-runtime
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-plan
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-plan --show
+  ./scripts/verify/run-review-batch-checks.sh --outside-landing-batches
+  ./scripts/verify/run-review-batch-checks.sh --outside-landing-batches --name outside-frontend-runtime --show
+  ./scripts/verify/run-review-batch-checks.sh --outside-landing-batches --show
+  ./scripts/verify/run-review-batch-checks.sh --outside-landing-draft --name outside-frontend-runtime
+  ./scripts/verify/run-review-batch-checks.sh --outside-landing-draft --name outside-frontend-runtime --write .artifacts/review-drafts/outside-frontend-runtime.md
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-note --name frontend-runtime
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-note --name frontend-runtime --write .artifacts/review-notes/outside-batches-frontend-runtime.txt
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-memo
+  ./scripts/verify/run-review-batch-checks.sh --outside-batch-memo --write .artifacts/review-memos/outside-batches-outside-batch-memo.txt
   ./scripts/verify/run-review-batch-checks.sh --next
   ./scripts/verify/run-review-batch-checks.sh --next --verbose
 
@@ -79,11 +106,27 @@ Notes:
   - Use --handoff-index --show to expand one or more batches into NOTE-ARTIFACT and MEMO-ARTIFACT lines.
   - Use --landing-plan to print the commit-order landing plan once handoff artifacts exist.
   - Use --landing-plan --show to expand one or more batches into landing files and latest artifact references.
+  - Use --landing-commands to print copy-pasteable git add / git commit drafts for ready-for-landing batches and outside landing groups.
+  - Use --landing-commands <target> to narrow that output to one primary batch such as batch-2 or one formal outside landing batch such as outside-frontend-runtime.
   - Set MEMO_MANIFEST_PATH to override where memo write records are appended.
   - Use --status to print file counts, git state drift, and readiness for one or more review batches.
   - Use --status-all to print readiness-sorted summaries for every batch plus aggregate verdict lines.
+  - Use --outside-batches to print tracked-modified and untracked changes that are not covered by any current batch manifest.
+  - Use --outside-batch-groups to print curated landing groups for files currently outside the review-batch manifests.
+  - Use --outside-batch-groups --name <group> to narrow that view to one group such as facilitator-runtime.
+  - Use --outside-batch-plan to print those outside-batch groups as ordered next landing candidates.
+  - Use --outside-batch-plan --show to expand the plan into per-file rows.
+  - Use --outside-landing-batches to print those outside-batch groups as formal LANDING-STEP rows once note/memo handoff is complete.
+  - Use --outside-landing-batches --name <outside-group> --show to narrow that formal landing view to one outside landing batch such as outside-frontend-runtime.
+  - Use --outside-landing-batches --show to expand those landing steps into LANDING-HANDOFF, LANDING-FILE, and LANDING-ARTIFACT rows.
+  - Use --outside-landing-draft --name <outside-group> to print a commit/PR draft for one formal outside landing batch.
+  - Use --outside-landing-draft --name <outside-group> --write <path> to materialize that draft under .artifacts/review-drafts/.
+  - Use --outside-batch-note --name <group> to turn one curated outside-batch group into a reusable handoff note.
+  - Use --outside-batch-note --name <group> --write <path> to materialize that outside-batch handoff note on disk.
+  - Use --outside-batch-memo to collapse all matched outside-batch groups into one grouped memo.
+  - Use --outside-batch-memo --write <path> to materialize that outside-batch memo on disk.
   - Use --next to print only the next recommended review command.
-  - Use --next --verbose to print the next command plus the batch, cause, counts, and focus file behind that recommendation.
+  - Use --next --verbose to print the next command plus the batch or outside-batch cause, counts, and focus file behind that recommendation.
   - Set BATCH_TIMEOUT_SECONDS=0 to disable the per-batch timeout wrapper.
   - Set RUN_FULL_BROWSER_UI_SMOKE=1 to include the Playwright-backed browser smoke in batch-3.
 EOF
@@ -119,6 +162,43 @@ resolve_batch_commit_scope() {
       exit 1
       ;;
   esac
+}
+
+resolve_batch_commit_title() {
+  local batch="$1"
+  local scope=""
+
+  scope="$(resolve_batch_commit_scope "$batch")"
+  printf '%s\n' "chore(review): land ${scope} batch"
+}
+
+resolve_batch_pr_title() {
+  local batch="$1"
+  local scope=""
+
+  scope="$(resolve_batch_commit_scope "$batch")"
+  printf '%s\n' "Land ${batch} (${scope}) handoff bundle"
+}
+
+build_git_add_command() {
+  local files=("$@")
+  local file=""
+
+  if [ "${#files[@]}" -eq 0 ]; then
+    printf '%s\n' "echo no-files-to-stage"
+    return 0
+  fi
+
+  printf '%s' "git add --"
+  for file in "${files[@]}"; do
+    printf ' %q' "$file"
+  done
+  printf '\n'
+}
+
+build_git_commit_command() {
+  local title="$1"
+  printf 'git commit -m %q\n' "$title"
 }
 
 describe_batch() {
@@ -383,6 +463,570 @@ print_batch_untracked_groups() {
     "${selected_name:-all}" \
     "$group_count" \
     "$file_count"
+}
+
+resolve_outside_batch_groups() {
+  cat <<'EOF'
+frontend-runtime|app/public/js/index.js|app/public/js/components/terminal-service.js;app/public/js/exam.js;app/public/js/index.js;app/public/js/results.js;docs/webapp/index-functionality.md
+facilitator-runtime|facilitator/src/services/examService.js|facilitator/package.json;facilitator/src/app.js;facilitator/src/controllers/examController.js;facilitator/src/middleware/validators.js;facilitator/src/routes/assessmentRoutes.js;facilitator/src/services/examService.js;facilitator/src/utils/redisClient.js;facilitator/tests/jumphostService.test.js
+exam-content|facilitator/assets/exams/cka/003/assessment.json|docs/templates/cka-2026-top3/README.md;facilitator/assets/exams/cka/003/answers.md;facilitator/assets/exams/cka/003/assessment.json;facilitator/assets/exams/cka/003/scripts/validation/q1_s2_validate_pod_running.sh;facilitator/assets/exams/cka/003/scripts/validation/q2_s1_validate_coredns_ready.sh;facilitator/assets/exams/cka/003/scripts/validation/q2_s2_validate_dns_resolution.sh;facilitator/assets/exams/cka/003/scripts/validation/q3_s1_validate_controller.sh;facilitator/assets/exams/cka/003/scripts/validation/q3_s3_validate_ingress_route.sh;facilitator/assets/exams/cka/004/scripts/validation/q1_s1_validate_coredns_config.sh;facilitator/assets/exams/cka/004/scripts/validation/q1_s2_validate_dns_resolution.sh;facilitator/assets/exams/cka/005/scripts/validation/q1_s2_validate_pod_running.sh;facilitator/assets/exams/cka/005/scripts/validation/q2_s1_validate_controller.sh;facilitator/assets/exams/cka/005/scripts/validation/q2_s3_validate_ingress_route.sh;facilitator/assets/exams/cka/005/scripts/validation/q3_s1_validate_coredns_config.sh;facilitator/assets/exams/cka/005/scripts/validation/q3_s2_validate_dns_resolution.sh;facilitator/assets/exams/labs.json
+infra-runtime|jumphost/scripts/prepare-exam-env.sh|compose-deploy.sh;jumphost/scripts/cleanup-exam-env.sh;jumphost/scripts/prepare-exam-env.sh;kind-cluster/scripts/env-kubeconfig;kind-cluster/scripts/env-setup;nginx/default.conf;remote-desktop/Dockerfile;remote-desktop/Dockerfile.qemu;scripts/lib/container-runtime.sh;scripts/verify/ckad-003-podman-smoke.sh
+rollout-docs|README.md|.gitignore;README.md;docs/development-setup.md;docs/local-setup-guide.md;facilitator/README.md;scripts/COMPOSE-DEPLOY.md;scripts/install.ps1;scripts/install.sh
+EOF
+}
+
+print_outside_batch_groups() {
+  local selected_name="${1:-}"
+  local definition name focus files_csv file state
+  local group_total=0 matched_groups=0 matched_files=0 unmatched_files=0
+  local -a group_files=()
+  local -a matched_paths=()
+
+  collect_outside_batch_changes
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    group_total=$((group_total + 1))
+    if [ -n "$selected_name" ] && [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+
+    matched_paths=()
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_paths+=("$file")
+      fi
+    done
+
+    if [ "${#matched_paths[@]}" -eq 0 ]; then
+      continue
+    fi
+
+    matched_groups=$((matched_groups + 1))
+    matched_files=$((matched_files + ${#matched_paths[@]}))
+    printf '%s | name=%s | focus=%s | file-count=%s\n' \
+      "OUTSIDE-BATCH-GROUP" \
+      "$name" \
+      "$focus" \
+      "${#matched_paths[@]}"
+    for file in "${matched_paths[@]}"; do
+      state="tracked-modified"
+      if printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        state="untracked"
+      fi
+      printf '%s | %s | %s | %s\n' \
+        "OUTSIDE-BATCH-GROUP-FILE" \
+        "$name" \
+        "$state" \
+        "$file"
+    done
+  done < <(resolve_outside_batch_groups)
+
+  unmatched_files=$((OUTSIDE_BATCH_TOTAL - matched_files))
+  printf '%s | total=%s | matched-groups=%s | unmatched-files=%s\n' \
+    "OUTSIDE-BATCH-GROUPS" \
+    "$OUTSIDE_BATCH_TOTAL" \
+    "$matched_groups" \
+    "$unmatched_files"
+}
+
+print_outside_batch_plan() {
+  local show="${1:-0}"
+  local definition name focus files_csv file state
+  local matched_groups=0 matched_files=0 unmatched_files=0 tracked_modified=0 untracked=0 order=0
+  local -a group_files=()
+  local -a matched_paths=()
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+
+    matched_paths=()
+    tracked_modified=0
+    untracked=0
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_paths+=("$file")
+        tracked_modified=$((tracked_modified + 1))
+      elif printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_paths+=("$file")
+        untracked=$((untracked + 1))
+      fi
+    done
+
+    if [ "${#matched_paths[@]}" -eq 0 ]; then
+      continue
+    fi
+
+    order=$((order + 1))
+    matched_groups=$((matched_groups + 1))
+    matched_files=$((matched_files + ${#matched_paths[@]}))
+    printf '%s | order=%s | name=%s | focus=%s | file-count=%s | tracked-modified=%s | untracked=%s\n' \
+      "OUTSIDE-LANDING-STEP" \
+      "$order" \
+      "$name" \
+      "$focus" \
+      "${#matched_paths[@]}" \
+      "$tracked_modified" \
+      "$untracked"
+    if [ "$show" = "1" ]; then
+      for file in "${matched_paths[@]}"; do
+        state="tracked-modified"
+        if printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+          state="untracked"
+        fi
+        printf '%s | %s | %s | %s\n' \
+          "OUTSIDE-LANDING-FILE" \
+          "$name" \
+          "$state" \
+          "$file"
+      done
+    fi
+  done < <(resolve_outside_batch_groups)
+
+  unmatched_files=$((OUTSIDE_BATCH_TOTAL - matched_files))
+  printf '%s | groups=%s | total=%s | matched-files=%s | unmatched-files=%s\n' \
+    "OUTSIDE-LANDING-SUMMARY" \
+    "$matched_groups" \
+    "$OUTSIDE_BATCH_TOTAL" \
+    "$matched_files" \
+    "$unmatched_files"
+}
+
+resolve_outside_landing_batch_name() {
+  local name="$1"
+  printf '%s\n' "outside-${name}"
+}
+
+normalize_outside_landing_batch_selection() {
+  local name="${1:-}"
+
+  case "$name" in
+    outside-*)
+      printf '%s\n' "${name#outside-}"
+      ;;
+    *)
+      printf '%s\n' "$name"
+      ;;
+  esac
+}
+
+resolve_outside_landing_batch_next_command() {
+  local name="$1"
+  local batch_name=""
+
+  if ! note_manifest_has_recorded_output "outside-batches" "outside-batch" "$name"; then
+    printf '%s\n' "./scripts/verify/run-review-batch-checks.sh --outside-batch-note --name ${name} --write $(default_outside_batch_note_write_path "$name")"
+    return 0
+  fi
+
+  if ! memo_manifest_has_recorded_output "outside-batches" "outside-batch"; then
+    printf '%s\n' "./scripts/verify/run-review-batch-checks.sh --outside-batch-memo --write $(default_outside_batch_memo_write_path)"
+    return 0
+  fi
+
+  batch_name="$(resolve_outside_landing_batch_name "$name")"
+  if outside_landing_draft_manifest_has_recorded_output "$name"; then
+    printf '%s\n' "echo no-pending-review-actions"
+    return 0
+  fi
+  printf '%s\n' "./scripts/verify/run-review-batch-checks.sh --outside-landing-draft --name ${batch_name} --write $(default_outside_landing_draft_write_path "$batch_name")"
+}
+
+resolve_outside_landing_batch_artifact_state() {
+  local name="$1"
+  local note_present="0"
+  local memo_present="0"
+
+  if note_manifest_has_recorded_output "outside-batches" "outside-batch" "$name"; then
+    note_present="1"
+  fi
+  if memo_manifest_has_recorded_output "outside-batches" "outside-batch"; then
+    memo_present="1"
+  fi
+
+  if [ "$note_present" = "1" ] && [ "$memo_present" = "1" ]; then
+    printf '%s\n' "complete"
+    return 0
+  fi
+  if [ "$note_present" = "0" ] && [ "$memo_present" = "0" ]; then
+    printf '%s\n' "none"
+    return 0
+  fi
+  printf '%s\n' "partial"
+}
+
+resolve_outside_landing_batch_state() {
+  local artifact_state="$1"
+
+  case "$artifact_state" in
+    complete) printf '%s\n' "ready-for-landing" ;;
+    *) printf '%s\n' "pending-handoff" ;;
+  esac
+}
+
+print_outside_landing_batches() {
+  local show="${1:-0}"
+  local selected_name_raw="${2:-}"
+  local selected_name=""
+  local name focus files_csv file state
+  local -a matched_paths=()
+  local -a group_files=()
+  local order=0 matched_groups=0
+  local total_selected_groups=0
+  local tracked_modified=0 untracked=0
+  local ready_for_landing=0 pending_handoff=0 blocked=0
+  local batch_name artifact_state landing_state next_command
+
+  collect_outside_batch_changes
+  selected_name="$(normalize_outside_landing_batch_selection "$selected_name_raw")"
+  total_selected_groups="$(count_selected_outside_landing_batches "$selected_name")"
+  printf '%s | batches=%s\n' "LANDING-PLAN" "$total_selected_groups"
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    if [ -n "$selected_name" ] && [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+
+    matched_paths=()
+    tracked_modified=0
+    untracked=0
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_paths+=("$file")
+        tracked_modified=$((tracked_modified + 1))
+      elif printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_paths+=("$file")
+        untracked=$((untracked + 1))
+      fi
+    done
+
+    if [ "${#matched_paths[@]}" -eq 0 ]; then
+      continue
+    fi
+
+    order=$((order + 1))
+    matched_groups=$((matched_groups + 1))
+    batch_name="$(resolve_outside_landing_batch_name "$name")"
+    artifact_state="$(resolve_outside_landing_batch_artifact_state "$name")"
+    landing_state="$(resolve_outside_landing_batch_state "$artifact_state")"
+    next_command="$(resolve_outside_landing_batch_next_command "$name")"
+
+    printf '%s | LANDING-STEP | order=%s | landing-state=%s | readiness=needs-landing | handoff=%s | artifact-state=%s | commit-scope=%s | focus=%s | files=%s | tracked-modified=%s | untracked=%s | missing=0\n' \
+      "$batch_name" \
+      "$order" \
+      "$landing_state" \
+      "$artifact_state" \
+      "$artifact_state" \
+      "$batch_name" \
+      "$focus" \
+      "${#matched_paths[@]}" \
+      "$tracked_modified" \
+      "$untracked"
+
+    case "$landing_state" in
+      ready-for-landing) ready_for_landing=$((ready_for_landing + 1)) ;;
+      pending-handoff) pending_handoff=$((pending_handoff + 1)) ;;
+      blocked) blocked=$((blocked + 1)) ;;
+    esac
+
+    if [ "$show" = "1" ]; then
+      printf '%s | LANDING-HANDOFF | next=%s\n' "$batch_name" "$next_command"
+      for file in "${matched_paths[@]}"; do
+        state="tracked-modified"
+        if printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+          state="untracked"
+        fi
+        printf '%s | LANDING-FILE | %s | %s\n' "$batch_name" "$state" "$file"
+      done
+      printf '%s | LANDING-ARTIFACT | type=latest-note | path=%s\n' "$batch_name" "$(default_outside_batch_note_write_path "$name")"
+      printf '%s | LANDING-ARTIFACT | type=latest-memo | path=%s\n' "$batch_name" "$(default_outside_batch_memo_write_path)"
+    fi
+  done < <(resolve_outside_batch_groups)
+
+  printf '%s | ready-for-landing=%s | pending-handoff=%s | blocked=%s\n' \
+    "LANDING-PLAN-SUMMARY" \
+    "$ready_for_landing" \
+    "$pending_handoff" \
+    "$blocked"
+}
+
+print_outside_landing_draft() {
+  local selected_name_raw="$1"
+  local selected_name=""
+  local name focus files_csv file state
+  local artifact_note=""
+  local artifact_memo=""
+  local -a group_files=()
+  local -a tracked_files=()
+  local -a untracked_files=()
+  local batch_name=""
+
+  if [ -z "$selected_name_raw" ]; then
+    echo "--outside-landing-draft requires --name <outside-group>" >&2
+    return 1
+  fi
+
+  collect_outside_batch_changes
+  selected_name="$(normalize_outside_landing_batch_selection "$selected_name_raw")"
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    if [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+
+    batch_name="$(resolve_outside_landing_batch_name "$name")"
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file"; then
+        tracked_files+=("$file")
+      elif printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        untracked_files+=("$file")
+      fi
+    done
+    if [ "${#tracked_files[@]}" -eq 0 ] && [ "${#untracked_files[@]}" -eq 0 ]; then
+      echo "No outside landing batch named '${selected_name_raw}' currently matches repo drift" >&2
+      return 1
+    fi
+
+    artifact_note="$(default_outside_batch_note_write_path "$name")"
+    artifact_memo="$(default_outside_batch_memo_write_path)"
+
+    printf '## %s\n\n' "$batch_name"
+    printf -- '- Commit title: `%s`\n' "$(outside_landing_commit_title "$batch_name")"
+    printf -- '- PR title: `%s`\n' "$(outside_landing_pr_title "$batch_name")"
+    printf -- '- Landing state: `%s`\n' "ready-for-landing"
+    printf -- '- Readiness: `%s`\n' "needs-landing"
+    printf -- '- Handoff: `%s`\n' "complete"
+    printf -- '- Artifact state: `%s`\n' "complete"
+    printf -- '- Focus: `%s`\n' "$focus"
+    printf -- '- File counts: `%d total / %d tracked-modified / %d untracked`\n' "$(( ${#tracked_files[@]} + ${#untracked_files[@]} ))" "${#tracked_files[@]}" "${#untracked_files[@]}"
+    printf -- '- Next command: `%s`\n' "echo no-pending-review-actions"
+    printf -- '- Latest note: `%s`\n' "$artifact_note"
+    printf -- '- Grouped memo: `%s`\n' "$artifact_memo"
+    printf '\nFiles:\n'
+    for file in "${tracked_files[@]}"; do
+      printf -- '- `tracked-modified`: `%s`\n' "$file"
+    done
+    for file in "${untracked_files[@]}"; do
+      printf -- '- `untracked`: `%s`\n' "$file"
+    done
+    printf '\nSuggested PR body:\n\n```text\n'
+    printf 'Landing scope: %s\n' "$batch_name"
+    printf 'Group: %s\n' "$batch_name"
+    printf 'Focus: %s\n' "$focus"
+    printf 'Handoff artifacts: note=%s memo=%s\n' "$artifact_note" "$artifact_memo"
+    printf 'Files: %d total, %d tracked-modified, %d untracked\n' "$(( ${#tracked_files[@]} + ${#untracked_files[@]} ))" "${#tracked_files[@]}" "${#untracked_files[@]}"
+    printf '```\n'
+    return 0
+  done < <(resolve_outside_batch_groups)
+
+  echo "Unknown outside landing batch: ${selected_name_raw}" >&2
+  return 1
+}
+
+collect_outside_landing_batch_state() {
+  local selected_name_raw="$1"
+  local selected_name=""
+  local name focus files_csv file
+  local -a group_files=()
+
+  OUTSIDE_LANDING_BATCH_FOUND="0"
+  OUTSIDE_LANDING_BATCH_NAME=""
+  OUTSIDE_LANDING_BATCH_FOCUS=""
+  OUTSIDE_LANDING_BATCH_TRACKED_FILES=()
+  OUTSIDE_LANDING_BATCH_UNTRACKED_FILES=()
+
+  collect_outside_batch_changes
+  selected_name="$(normalize_outside_landing_batch_selection "$selected_name_raw")"
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    if [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+
+    OUTSIDE_LANDING_BATCH_NAME="$(resolve_outside_landing_batch_name "$name")"
+    OUTSIDE_LANDING_BATCH_FOCUS="$focus"
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file"; then
+        OUTSIDE_LANDING_BATCH_TRACKED_FILES+=("$file")
+      elif printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        OUTSIDE_LANDING_BATCH_UNTRACKED_FILES+=("$file")
+      fi
+    done
+
+    if [ "${#OUTSIDE_LANDING_BATCH_TRACKED_FILES[@]}" -gt 0 ] || [ "${#OUTSIDE_LANDING_BATCH_UNTRACKED_FILES[@]}" -gt 0 ]; then
+      OUTSIDE_LANDING_BATCH_FOUND="1"
+    fi
+    return 0
+  done < <(resolve_outside_batch_groups)
+}
+
+resolve_next_pending_outside_batch_group_name() {
+  local name focus files_csv file
+  local -a matched_paths=()
+  local -a group_files=()
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    matched_paths=()
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_paths+=("$file")
+      fi
+    done
+    if [ "${#matched_paths[@]}" -eq 0 ]; then
+      continue
+    fi
+    if ! note_manifest_has_recorded_output "outside-batches" "outside-batch" "$name"; then
+      printf '%s\n' "$name"
+      return 0
+    fi
+  done < <(resolve_outside_batch_groups)
+
+  return 1
+}
+
+resolve_first_matched_outside_batch_group_name() {
+  local name focus files_csv file
+  local -a group_files=()
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        printf '%s\n' "$name"
+        return 0
+      fi
+    done
+  done < <(resolve_outside_batch_groups)
+
+  return 1
+}
+
+resolve_next_pending_outside_landing_batch_group_name() {
+  local name focus files_csv file
+  local -a group_files=()
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        if ! outside_landing_draft_manifest_has_recorded_output "$name"; then
+          printf '%s\n' "$name"
+          return 0
+        fi
+        break
+      fi
+    done
+  done < <(resolve_outside_batch_groups)
+
+  return 1
+}
+
+resolve_outside_batch_group_focus_file() {
+  local selected_name="$1"
+  local name focus files_csv file
+  local -a group_files=()
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    if [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        printf '%s\n' "$file"
+        return 0
+      fi
+    done
+  done < <(resolve_outside_batch_groups)
+
+  return 1
+}
+
+emit_outside_batch_group_note_points_for_name() {
+  local name="$1"
+
+  case "$name" in
+    frontend-runtime)
+      printf '%s\n' \
+        'keeps browser runtime changes grouped as one landing slice before backend or exam-content follow-ups' \
+        'treats terminal, dashboard, results, and frontend behavior docs as one review surface'
+      ;;
+    facilitator-runtime)
+      printf '%s\n' \
+        'keeps facilitator package, runtime routes, services, redis handling, and lifecycle tests grouped as one landing slice' \
+        'treats backend runtime hardening and facilitator-side validation as one subsystem review surface'
+      ;;
+    exam-content)
+      printf '%s\n' \
+        'keeps exam assets, validators, answers, and labs metadata grouped as one content landing slice' \
+        'treats CKA assessment text and validator hardening as one review surface separate from runtime code'
+      ;;
+    infra-runtime)
+      printf '%s\n' \
+        'keeps compose, jumphost, cluster, nginx, remote desktop, and container-runtime changes grouped as one infra landing slice' \
+        'treats runtime environment orchestration and podman smoke coverage as one subsystem handoff'
+      ;;
+    rollout-docs)
+      printf '%s\n' \
+        'keeps top-level rollout and installation docs grouped as one landing slice after runtime changes are understood' \
+        'treats operator-facing setup and rollout guidance as one documentation handoff surface'
+      ;;
+    *)
+      printf '%s\n' \
+        'review the selected outside-batch group as a single landing slice' \
+        'treat the selected outside-batch group as one subsystem handoff unit'
+      ;;
+  esac
+}
+
+default_outside_batch_note_write_path() {
+  local selected_name="$1"
+  printf '%s\n' ".artifacts/review-notes/outside-batches-${selected_name}.txt"
+}
+
+default_outside_batch_memo_write_path() {
+  printf '%s\n' ".artifacts/review-memos/outside-batches-outside-batch-memo.txt"
+}
+
+default_outside_landing_draft_write_path() {
+  local selected_name="$1"
+  printf '.artifacts/review-drafts/%s.md\n' "$selected_name"
 }
 
 resolve_next_untracked_group_name() {
@@ -1104,6 +1748,123 @@ print_batch_memo() {
   done
 }
 
+print_outside_batch_note() {
+  local selected_name="$1"
+  local name focus files_csv file point
+  local -a group_files=()
+  local -a matched_files=()
+  local -a note_lines=()
+  local -a note_points=()
+
+  if [ -z "$selected_name" ]; then
+    echo "--outside-batch-note requires --name <group>" >&2
+    return 1
+  fi
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    if [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_files+=("$file")
+        note_lines+=("outside-batches | NOTE | outside-batch | name=${selected_name} | file=${file} | state=tracked-modified | lines=full-file | focus=${focus}")
+      elif printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_files+=("$file")
+        note_lines+=("outside-batches | NOTE | outside-batch | name=${selected_name} | file=${file} | state=untracked | lines=full-file | focus=${focus}")
+      fi
+    done
+    while IFS= read -r point; do
+      [ -n "$point" ] || continue
+      note_points+=("$point")
+    done < <(emit_outside_batch_group_note_points_for_name "$selected_name")
+  done < <(resolve_outside_batch_groups)
+
+  if [ "${#matched_files[@]}" -eq 0 ]; then
+    echo "No outside-batch group named '${selected_name}' currently matches repo drift" >&2
+    return 1
+  fi
+
+  printf '%s | note-subset=outside-batch | name=%s | file-count=%s | note-point-count=%s\n' \
+    "outside-batches" \
+    "$selected_name" \
+    "${#matched_files[@]}" \
+    "${#note_points[@]}"
+
+  for line in "${note_lines[@]}"; do
+    printf '%s\n' "$line"
+  done
+
+  for point in "${note_points[@]}"; do
+    printf '%s | NOTE-POINT | outside-batch | name=%s | point=%s\n' \
+      "outside-batches" \
+      "$selected_name" \
+      "$point"
+  done
+}
+
+print_outside_batch_memo() {
+  local name focus files_csv file point
+  local -a group_files=()
+  local -a subchange_lines=()
+  local -a memo_points=()
+  local -a matched_files=()
+  local total_files=0
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    matched_files=()
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_files+=("$file")
+        subchange_lines+=("outside-batches | SUBCHANGE | outside-batch | name=${name} | file=${file} | lines=full-file | focus=${focus}")
+      elif printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched_files+=("$file")
+        subchange_lines+=("outside-batches | SUBCHANGE | outside-batch | name=${name} | file=${file} | lines=full-file | focus=${focus}")
+      fi
+    done
+    if [ "${#matched_files[@]}" -eq 0 ]; then
+      continue
+    fi
+    total_files=$((total_files + ${#matched_files[@]}))
+    while IFS= read -r point; do
+      [ -n "$point" ] || continue
+      memo_points+=("${name}|${point}")
+    done < <(emit_outside_batch_group_note_points_for_name "$name")
+  done < <(resolve_outside_batch_groups)
+
+  printf '%s | memo-subset=outside-batch | file-count=%s | section-count=%s | point-count=%s\n' \
+    "outside-batches" \
+    "$total_files" \
+    "${#subchange_lines[@]}" \
+    "${#memo_points[@]}"
+
+  for line in "${subchange_lines[@]}"; do
+    printf '%s | MEMO-SECTION | outside-batch | name=%s | file=%s | lines=%s | focus=%s\n' \
+      "outside-batches" \
+      "$(extract_subchange_field "$line" "name")" \
+      "$(extract_subchange_field "$line" "file")" \
+      "$(extract_subchange_field "$line" "lines")" \
+      "$(extract_subchange_field "$line" "focus")"
+  done
+
+  for point in "${memo_points[@]}"; do
+    printf '%s | MEMO-POINT | outside-batch | name=%s | point=%s\n' \
+      "outside-batches" \
+      "${point%%|*}" \
+      "${point#*|}"
+  done
+}
+
 write_output_file() {
   local output_path="$1"
   local output_text="$2"
@@ -1154,6 +1915,21 @@ append_note_manifest() {
     "$filter" \
     "$selected_name" \
     "$note_path" \
+    "$bytes" \
+    >> "$manifest_path"
+}
+
+append_outside_landing_draft_manifest() {
+  local manifest_path="$1"
+  local draft_path="$2"
+  local selected_name="$3"
+  local bytes="$4"
+
+  mkdir -p "$(dirname "$manifest_path")"
+  printf '%s | batches=outside-batches | filter=outside-landing-draft | name=%s | output=%s | bytes=%s\n' \
+    "$(date -Iseconds)" \
+    "$selected_name" \
+    "$draft_path" \
     "$bytes" \
     >> "$manifest_path"
 }
@@ -1264,6 +2040,35 @@ memo_manifest_has_recorded_output() {
       fi
     fi
   done < <(grep -ve '^$' "$MEMO_MANIFEST_PATH")
+
+  return 1
+}
+
+outside_landing_draft_manifest_has_recorded_output() {
+  local selected_name_raw="$1"
+  local selected_name=""
+  local line output_path
+
+  selected_name="$(normalize_outside_landing_batch_selection "$selected_name_raw")"
+  selected_name="$(resolve_outside_landing_batch_name "$selected_name")"
+
+  if [ ! -f "$OUTSIDE_LANDING_DRAFT_MANIFEST_PATH" ]; then
+    return 1
+  fi
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    if [ "$(extract_memo_manifest_field "$line" "filter")" != "outside-landing-draft" ]; then
+      continue
+    fi
+    if [ "$(extract_memo_manifest_field "$line" "name")" != "$selected_name" ]; then
+      continue
+    fi
+    output_path="$(extract_memo_manifest_field "$line" "output")"
+    if [ -f "$output_path" ]; then
+      return 0
+    fi
+  done < <(grep -ve '^$' "$OUTSIDE_LANDING_DRAFT_MANIFEST_PATH")
 
   return 1
 }
@@ -1664,6 +2469,68 @@ collect_memo_artifact_stats() {
   done
 }
 
+count_matched_outside_batch_groups() {
+  local name focus files_csv file
+  local -a group_files=()
+  local matched_count=0
+  local has_match="0"
+
+  collect_outside_batch_changes
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    has_match="0"
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        has_match="1"
+        break
+      fi
+    done
+    if [ "$has_match" = "1" ]; then
+      matched_count=$((matched_count + 1))
+    fi
+  done < <(resolve_outside_batch_groups)
+
+  printf '%s\n' "$matched_count"
+}
+
+count_selected_outside_landing_batches() {
+  local selected_name_raw="${1:-}"
+  local selected_name=""
+  local name focus files_csv file
+  local -a group_files=()
+  local matched_count=0
+  local has_match="0"
+
+  collect_outside_batch_changes
+  selected_name="$(normalize_outside_landing_batch_selection "$selected_name_raw")"
+
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    if [ -n "$selected_name" ] && [ "$name" != "$selected_name" ]; then
+      continue
+    fi
+    has_match="0"
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        has_match="1"
+        break
+      fi
+    done
+    if [ "$has_match" = "1" ]; then
+      matched_count=$((matched_count + 1))
+    fi
+  done < <(resolve_outside_batch_groups)
+
+  printf '%s\n' "$matched_count"
+}
+
 emit_curated_tracked_subchange_names_for_batch() {
   local batch="$1"
 
@@ -1813,11 +2680,91 @@ print_batch_handoff_index() {
   done
 }
 
+print_outside_batch_handoff_index() {
+  local show_rows="${1:-0}"
+  local outside_expected_notes="0"
+  local outside_expected_memos="0"
+  local artifact_state="none"
+  local row remainder filter name output_path bytes output_state timestamp
+
+  collect_outside_batch_changes
+  collect_note_artifact_stats "outside-batches"
+  collect_memo_artifact_stats "outside-batches"
+
+  outside_expected_notes="$(count_matched_outside_batch_groups)"
+  if [ "$outside_expected_notes" -gt 0 ]; then
+    outside_expected_memos=1
+  fi
+
+  artifact_state="$(resolve_batch_artifact_index_state "$NOTE_ARTIFACT_COUNT" "$outside_expected_notes" "$NOTE_ARTIFACT_PRESENT_COUNT" "$MEMO_ARTIFACT_COUNT" "$outside_expected_memos" "$MEMO_ARTIFACT_PRESENT_COUNT")"
+
+  printf '%s | HANDOFF-ARTIFACTS | artifact-state=%s | notes=%s/%s | outside-notes=%s/%s | present-notes=%s | memos=%s/%s | outside-memos=%s | present-memos=%s | latest-note=%s | latest-memo=%s\n' \
+    "outside-batches" \
+    "$artifact_state" \
+    "$NOTE_ARTIFACT_COUNT" \
+    "$outside_expected_notes" \
+    "$NOTE_ARTIFACT_COUNT" \
+    "$outside_expected_notes" \
+    "$NOTE_ARTIFACT_PRESENT_COUNT" \
+    "$MEMO_ARTIFACT_COUNT" \
+    "$outside_expected_memos" \
+    "$MEMO_ARTIFACT_COUNT" \
+    "$MEMO_ARTIFACT_PRESENT_COUNT" \
+    "${NOTE_ARTIFACT_LATEST_PATH:-"(none)"}" \
+    "${MEMO_ARTIFACT_LATEST_PATH:-"(none)"}"
+
+  if [ "$show_rows" != "1" ]; then
+    return 0
+  fi
+
+  for row in "${NOTE_ARTIFACT_ROWS[@]}"; do
+    remainder="${row#*|}"
+    filter="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    name="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    output_path="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    bytes="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    output_state="${remainder%%|*}"
+    timestamp="${remainder#*|}"
+    printf '%s | NOTE-ARTIFACT | filter=%s | name=%s | output=%s | bytes=%s | state=%s | timestamp=%s\n' \
+      "outside-batches" \
+      "$filter" \
+      "$name" \
+      "$output_path" \
+      "$bytes" \
+      "$output_state" \
+      "$timestamp"
+  done
+
+  for row in "${MEMO_ARTIFACT_ROWS[@]}"; do
+    remainder="${row#*|}"
+    filter="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    output_path="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    bytes="${remainder%%|*}"
+    remainder="${remainder#*|}"
+    output_state="${remainder%%|*}"
+    timestamp="${remainder#*|}"
+    printf '%s | MEMO-ARTIFACT | filter=%s | output=%s | bytes=%s | state=%s | timestamp=%s\n' \
+      "outside-batches" \
+      "$filter" \
+      "$output_path" \
+      "$bytes" \
+      "$output_state" \
+      "$timestamp"
+  done
+}
+
 print_handoff_index() {
   local show_rows="${1:-0}"
   shift || true
   local batches=("$@")
   local batch
+  local outside_target_present="0"
   local total_notes=0
   local total_expected_notes=0
   local total_memos=0
@@ -1837,11 +2784,17 @@ print_handoff_index() {
     batches=(batch-1 batch-2 batch-3 batch-4 batch-5)
   fi
 
-  printf '%s | note-manifest=%s | memo-manifest=%s | batches=%s\n' \
+  collect_outside_batch_changes
+  if [ "$OUTSIDE_BATCH_TOTAL" -gt 0 ]; then
+    outside_target_present="1"
+  fi
+
+  printf '%s | note-manifest=%s | memo-manifest=%s | batches=%s | outside-batches=%s\n' \
     "HANDOFF-INDEX" \
     "$NOTE_MANIFEST_PATH" \
     "$MEMO_MANIFEST_PATH" \
-    "${#batches[@]}"
+    "${#batches[@]}" \
+    "$outside_target_present"
 
   for batch in "${batches[@]}"; do
     print_batch_handoff_index "$batch" "$show_rows"
@@ -1869,7 +2822,25 @@ print_handoff_index() {
     esac
   done
 
-  printf '%s | notes=%s/%s | present-notes=%s | memos=%s/%s | present-memos=%s | complete=%s | partial=%s | none=%s\n' \
+  if [ "$outside_target_present" = "1" ]; then
+    print_outside_batch_handoff_index "$show_rows"
+    total_notes=$((total_notes + NOTE_ARTIFACT_COUNT))
+    total_expected_notes=$((total_expected_notes + $(count_matched_outside_batch_groups)))
+    total_memos=$((total_memos + MEMO_ARTIFACT_COUNT))
+    total_present_notes=$((total_present_notes + NOTE_ARTIFACT_PRESENT_COUNT))
+    total_present_memos=$((total_present_memos + MEMO_ARTIFACT_PRESENT_COUNT))
+    if [ "$(count_matched_outside_batch_groups)" -gt 0 ]; then
+      total_expected_memos=$((total_expected_memos + 1))
+    fi
+    artifact_state="$(resolve_batch_artifact_index_state "$NOTE_ARTIFACT_COUNT" "$(count_matched_outside_batch_groups)" "$NOTE_ARTIFACT_PRESENT_COUNT" "$MEMO_ARTIFACT_COUNT" "$([ "$(count_matched_outside_batch_groups)" -gt 0 ] && printf '1' || printf '0')" "$MEMO_ARTIFACT_PRESENT_COUNT")"
+    case "$artifact_state" in
+      complete) handoff_complete=$((handoff_complete + 1)) ;;
+      partial) handoff_partial=$((handoff_partial + 1)) ;;
+      none) handoff_none=$((handoff_none + 1)) ;;
+    esac
+  fi
+
+  printf '%s | notes=%s/%s | present-notes=%s | memos=%s/%s | present-memos=%s | complete=%s | partial=%s | none=%s | outside-batches=%s\n' \
     "HANDOFF-INDEX-SUMMARY" \
     "$total_notes" \
     "$total_expected_notes" \
@@ -1879,7 +2850,8 @@ print_handoff_index() {
     "$total_present_memos" \
     "$handoff_complete" \
     "$handoff_partial" \
-    "$handoff_none"
+    "$handoff_none" \
+    "$outside_target_present"
 }
 
 resolve_batch_landing_state() {
@@ -1993,6 +2965,181 @@ print_landing_plan() {
     "$blocked"
 }
 
+emit_default_landing_command_targets() {
+  local name focus files_csv file
+  local -a group_files=()
+  local matched="0"
+
+  printf '%s\n' batch-1 batch-2 batch-3 batch-4 batch-5
+
+  collect_outside_batch_changes
+  while IFS='|' read -r name focus files_csv; do
+    [ -n "$name" ] || continue
+    matched="0"
+    IFS=';' read -r -a group_files <<< "$files_csv"
+    for file in "${group_files[@]}"; do
+      [ -n "$file" ] || continue
+      if printf '%s\n' "${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" | grep -Fxq "$file" || \
+         printf '%s\n' "${OUTSIDE_BATCH_UNTRACKED_FILES[@]}" | grep -Fxq "$file"; then
+        matched="1"
+        break
+      fi
+    done
+    if [ "$matched" = "1" ]; then
+      resolve_outside_landing_batch_name "$name"
+    fi
+  done < <(resolve_outside_batch_groups)
+}
+
+print_batch_landing_commands() {
+  local batch="$1"
+  local readiness="" reason="" landing_state="" commit_scope="" commit_title="" pr_title="" next_command=""
+  local command_state="" stage_command="" commit_command="" file_count=0
+  local -a staged_files=()
+
+  compute_batch_status "$batch"
+  readiness="$(resolve_batch_readiness "$BATCH_STATUS_MISSING" "$BATCH_STATUS_TRACKED_MODIFIED" "$BATCH_STATUS_UNTRACKED")"
+  reason="$(resolve_batch_reason "$BATCH_STATUS_MISSING" "$BATCH_STATUS_TRACKED_MODIFIED" "$BATCH_STATUS_UNTRACKED")"
+  resolve_batch_handoff_fields "$batch" "$readiness" "$reason"
+  landing_state="$(resolve_batch_landing_state "$readiness" "$BATCH_HANDOFF_STATE")"
+  commit_scope="$(resolve_batch_commit_scope "$batch")"
+  commit_title="$(resolve_batch_commit_title "$batch")"
+  pr_title="$(resolve_batch_pr_title "$batch")"
+  next_command="$BATCH_HANDOFF_NEXT"
+  staged_files=("${BATCH_STATUS_TRACKED_MODIFIED_FILES[@]}" "${BATCH_STATUS_UNTRACKED_FILES[@]}")
+  file_count="${#staged_files[@]}"
+
+  if [ "$landing_state" = "blocked" ]; then
+    command_state="blocked"
+  elif [ "$landing_state" != "ready-for-landing" ]; then
+    command_state="pending-handoff"
+  elif [ "$file_count" -eq 0 ]; then
+    command_state="noop"
+  else
+    command_state="actionable"
+  fi
+
+  printf '%s | LANDING-COMMAND-STEP | state=%s | landing-state=%s | commit-scope=%s | files=%s | tracked-modified=%s | untracked=%s | missing=%s\n' \
+    "$batch" \
+    "$command_state" \
+    "$landing_state" \
+    "$commit_scope" \
+    "$file_count" \
+    "$BATCH_STATUS_TRACKED_MODIFIED" \
+    "$BATCH_STATUS_UNTRACKED" \
+    "$BATCH_STATUS_MISSING"
+
+  if [ "$command_state" = "actionable" ]; then
+    stage_command="$(build_git_add_command "${staged_files[@]}")"
+    commit_command="$(build_git_commit_command "$commit_title")"
+    printf '%s | LANDING-COMMAND | type=stage | command=%s\n' "$batch" "$stage_command"
+    printf '%s | LANDING-COMMAND | type=commit | command=%s\n' "$batch" "$commit_command"
+    printf '%s | LANDING-COMMAND | type=commit-title | value=%s\n' "$batch" "$commit_title"
+    printf '%s | LANDING-COMMAND | type=pr-title | value=%s\n' "$batch" "$pr_title"
+  elif [ "$command_state" = "noop" ]; then
+    printf '%s | LANDING-COMMAND | type=stage | command=echo no-files-to-stage\n' "$batch"
+    printf '%s | LANDING-COMMAND | type=commit-title | value=%s\n' "$batch" "$commit_title"
+    printf '%s | LANDING-COMMAND | type=pr-title | value=%s\n' "$batch" "$pr_title"
+  else
+    printf '%s | LANDING-COMMAND | type=next | command=%s\n' "$batch" "$next_command"
+  fi
+}
+
+print_outside_landing_batch_commands() {
+  local selected_name_raw="$1"
+  local selected_name=""
+  local commit_title="" pr_title="" artifact_state="" landing_state="" next_command=""
+  local command_state="" stage_command="" commit_command="" file_count=0
+  local -a staged_files=()
+
+  selected_name="$(normalize_outside_landing_batch_selection "$selected_name_raw")"
+  collect_outside_landing_batch_state "$selected_name"
+  if [ "$OUTSIDE_LANDING_BATCH_FOUND" != "1" ]; then
+    echo "Unknown outside landing batch: ${selected_name_raw}" >&2
+    return 1
+  fi
+
+  artifact_state="$(resolve_outside_landing_batch_artifact_state "$selected_name")"
+  landing_state="$(resolve_outside_landing_batch_state "$artifact_state")"
+  next_command="$(resolve_outside_landing_batch_next_command "$selected_name")"
+  commit_title="$(outside_landing_commit_title "$OUTSIDE_LANDING_BATCH_NAME")"
+  pr_title="$(outside_landing_pr_title "$OUTSIDE_LANDING_BATCH_NAME")"
+  staged_files=("${OUTSIDE_LANDING_BATCH_TRACKED_FILES[@]}" "${OUTSIDE_LANDING_BATCH_UNTRACKED_FILES[@]}")
+  file_count="${#staged_files[@]}"
+
+  if [ "$landing_state" != "ready-for-landing" ]; then
+    command_state="pending-handoff"
+  elif [ "$file_count" -eq 0 ]; then
+    command_state="noop"
+  else
+    command_state="actionable"
+  fi
+
+  printf '%s | LANDING-COMMAND-STEP | state=%s | landing-state=%s | commit-scope=%s | focus=%s | files=%s | tracked-modified=%s | untracked=%s | missing=0\n' \
+    "$OUTSIDE_LANDING_BATCH_NAME" \
+    "$command_state" \
+    "$landing_state" \
+    "$OUTSIDE_LANDING_BATCH_NAME" \
+    "$OUTSIDE_LANDING_BATCH_FOCUS" \
+    "$file_count" \
+    "${#OUTSIDE_LANDING_BATCH_TRACKED_FILES[@]}" \
+    "${#OUTSIDE_LANDING_BATCH_UNTRACKED_FILES[@]}"
+
+  if [ "$command_state" = "actionable" ]; then
+    stage_command="$(build_git_add_command "${staged_files[@]}")"
+    commit_command="$(build_git_commit_command "$commit_title")"
+    printf '%s | LANDING-COMMAND | type=stage | command=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$stage_command"
+    printf '%s | LANDING-COMMAND | type=commit | command=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$commit_command"
+    printf '%s | LANDING-COMMAND | type=commit-title | value=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$commit_title"
+    printf '%s | LANDING-COMMAND | type=pr-title | value=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$pr_title"
+  elif [ "$command_state" = "noop" ]; then
+    printf '%s | LANDING-COMMAND | type=stage | command=echo no-files-to-stage\n' "$OUTSIDE_LANDING_BATCH_NAME"
+    printf '%s | LANDING-COMMAND | type=commit-title | value=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$commit_title"
+    printf '%s | LANDING-COMMAND | type=pr-title | value=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$pr_title"
+  else
+    printf '%s | LANDING-COMMAND | type=next | command=%s\n' "$OUTSIDE_LANDING_BATCH_NAME" "$next_command"
+  fi
+}
+
+print_landing_commands() {
+  local targets=("$@")
+  local target="" actionable=0 noop=0 pending_handoff=0 blocked=0 total_steps=0
+  local output=""
+
+  if [ "${#targets[@]}" -eq 0 ]; then
+    mapfile -t targets < <(emit_default_landing_command_targets)
+  fi
+
+  for target in "${targets[@]}"; do
+    [ -n "$target" ] || continue
+    if [[ "$target" == batch-* ]]; then
+      output="$(print_batch_landing_commands "$target")"
+    elif [[ "$target" == outside-* ]]; then
+      output="$(print_outside_landing_batch_commands "$target")"
+    else
+      echo "Unknown landing command target: $target" >&2
+      exit 1
+    fi
+
+    printf '%s\n' "$output"
+    total_steps=$((total_steps + 1))
+    case "$output" in
+      *"LANDING-COMMAND-STEP | state=actionable"*) actionable=$((actionable + 1)) ;;
+      *"LANDING-COMMAND-STEP | state=noop"*) noop=$((noop + 1)) ;;
+      *"LANDING-COMMAND-STEP | state=blocked"*) blocked=$((blocked + 1)) ;;
+      *) pending_handoff=$((pending_handoff + 1)) ;;
+    esac
+  done
+
+  printf '%s | steps=%s | actionable=%s | noop=%s | pending-handoff=%s | blocked=%s\n' \
+    "LANDING-COMMANDS" \
+    "$total_steps" \
+    "$actionable" \
+    "$noop" \
+    "$pending_handoff" \
+    "$blocked"
+}
+
 resolve_git_file_state() {
   local file="$1"
   local porcelain
@@ -2088,13 +3235,155 @@ resolve_first_action() {
       printf '%s\n' "./scripts/verify/run-review-batch-checks.sh --split ${batch} --filter untracked"
       ;;
     all-files-clean)
-      printf '%s\n' "./scripts/verify/run-review-batch-checks.sh ${batch}"
+      printf '%s\n' "echo no-pending-review-actions"
       ;;
     *)
       echo "Unknown batch reason for first action: $reason" >&2
       exit 1
       ;;
   esac
+}
+
+print_git_changed_paths_with_state() {
+  local entry="" status="" path="" renamed_path=""
+
+  while IFS= read -r -d '' entry; do
+    [ -n "$entry" ] || continue
+    status="${entry:0:2}"
+    path="${entry:3}"
+    case "$status" in
+      R*|*R|C*|*C)
+        if IFS= read -r -d '' renamed_path; then
+          path="$renamed_path"
+        fi
+        ;;
+    esac
+    if [ "$status" = "??" ]; then
+      printf '%s\t%s\n' "untracked" "$path"
+    else
+      printf '%s\t%s\n' "tracked-modified" "$path"
+    fi
+  done < <(git -C "$ROOT_DIR" status --porcelain=v1 --untracked-files=all -z)
+}
+
+collect_outside_batch_changes() {
+  local batch_manifest_file="" state="" file=""
+
+  OUTSIDE_BATCH_TOTAL=0
+  OUTSIDE_BATCH_TRACKED_MODIFIED=0
+  OUTSIDE_BATCH_UNTRACKED=0
+  OUTSIDE_BATCH_STATE_LINES=()
+  OUTSIDE_BATCH_TRACKED_MODIFIED_FILES=()
+  OUTSIDE_BATCH_UNTRACKED_FILES=()
+
+  batch_manifest_file="$(mktemp)"
+  {
+    resolve_batch_files batch-1
+    resolve_batch_files batch-2
+    resolve_batch_files batch-3
+    resolve_batch_files batch-4
+    resolve_batch_files batch-5
+  } | sort -u > "$batch_manifest_file"
+
+  while IFS=$'\t' read -r state file; do
+    [ -n "$file" ] || continue
+    if grep -Fxq "$file" "$batch_manifest_file"; then
+      continue
+    fi
+    OUTSIDE_BATCH_TOTAL=$((OUTSIDE_BATCH_TOTAL + 1))
+    OUTSIDE_BATCH_STATE_LINES+=("OUTSIDE-BATCH | $state | $file")
+    case "$state" in
+      tracked-modified)
+        OUTSIDE_BATCH_TRACKED_MODIFIED=$((OUTSIDE_BATCH_TRACKED_MODIFIED + 1))
+        OUTSIDE_BATCH_TRACKED_MODIFIED_FILES+=("$file")
+        ;;
+      untracked)
+        OUTSIDE_BATCH_UNTRACKED=$((OUTSIDE_BATCH_UNTRACKED + 1))
+        OUTSIDE_BATCH_UNTRACKED_FILES+=("$file")
+        ;;
+      *)
+        echo "Unknown outside-batch git state for $file: $state" >&2
+        rm -f "$batch_manifest_file"
+        exit 1
+        ;;
+    esac
+  done < <(print_git_changed_paths_with_state | sort -t $'\t' -k2,2)
+
+  rm -f "$batch_manifest_file"
+}
+
+resolve_outside_batch_readiness() {
+  local total="$1"
+
+  if [ "$total" -gt 0 ]; then
+    printf '%s\n' "needs-batching"
+  else
+    printf '%s\n' "ready"
+  fi
+}
+
+resolve_outside_batch_reason() {
+  local total="$1"
+
+  if [ "$total" -gt 0 ]; then
+    printf '%s\n' "outside-batch-changes-present"
+  else
+    printf '%s\n' "no-outside-batch-changes"
+  fi
+}
+
+resolve_overall_review_readiness() {
+  local missing="$1"
+  local tracked_modified="$2"
+  local untracked="$3"
+  local outside_total="$4"
+
+  if [ "$missing" -gt 0 ]; then
+    printf '%s\n' "blocked"
+  elif [ "$tracked_modified" -gt 0 ] || [ "$untracked" -gt 0 ]; then
+    printf '%s\n' "needs-landing"
+  elif [ "$outside_total" -gt 0 ]; then
+    printf '%s\n' "needs-batching"
+  else
+    printf '%s\n' "ready"
+  fi
+}
+
+resolve_overall_review_reason() {
+  local missing="$1"
+  local tracked_modified="$2"
+  local untracked="$3"
+  local outside_total="$4"
+
+  if [ "$missing" -gt 0 ]; then
+    printf '%s\n' "missing-files-present"
+  elif [ "$tracked_modified" -gt 0 ]; then
+    printf '%s\n' "tracked-modified-present"
+  elif [ "$untracked" -gt 0 ]; then
+    printf '%s\n' "untracked-present"
+  elif [ "$outside_total" -gt 0 ]; then
+    printf '%s\n' "outside-batch-changes-present"
+  else
+    printf '%s\n' "all-files-clean"
+  fi
+}
+
+print_outside_batch_changes() {
+  local readiness="" reason="" line=""
+
+  collect_outside_batch_changes
+  readiness="$(resolve_outside_batch_readiness "$OUTSIDE_BATCH_TOTAL")"
+  reason="$(resolve_outside_batch_reason "$OUTSIDE_BATCH_TOTAL")"
+  printf '%s | readiness=%s | reason=%s | total=%s | tracked-modified=%s | untracked=%s\n' \
+    "OUTSIDE-BATCHES" \
+    "$readiness" \
+    "$reason" \
+    "$OUTSIDE_BATCH_TOTAL" \
+    "$OUTSIDE_BATCH_TRACKED_MODIFIED" \
+    "$OUTSIDE_BATCH_UNTRACKED"
+  for line in "${OUTSIDE_BATCH_STATE_LINES[@]}"; do
+    printf '%s\n' "$line"
+  done
 }
 
 resolve_batch_next_action_fields() {
@@ -2170,9 +3459,6 @@ resolve_batch_next_action_fields() {
         fi
       fi
       ;;
-    all-files-clean)
-      BATCH_ACTION_COMMAND="./scripts/verify/run-review-batch-checks.sh ${batch}"
-      ;;
   esac
 
   [ -n "$BATCH_ACTION_COMMAND" ]
@@ -2244,6 +3530,54 @@ resolve_first_batch_action_fields() {
   done < <(printf '%s\n' "${BATCH_STATUS_ROWS[@]}" | sort -t'|' -k1,1n -k2,2n -k3,3)
 
   if [ -z "$FIRST_ACTION_BATCH" ] && [ "${#BATCH_STATUS_ROWS[@]}" -gt 0 ]; then
+    local outside_group_name=""
+    local outside_landing_group_name=""
+    collect_outside_batch_changes
+    if [ "$OUTSIDE_BATCH_TOTAL" -gt 0 ]; then
+      FIRST_ACTION_BATCH="outside-batches"
+      FIRST_ACTION_READINESS="needs-batching"
+      FIRST_ACTION_REASON="outside-batch-changes-present"
+      FIRST_ACTION_TOTAL="$OUTSIDE_BATCH_TOTAL"
+      FIRST_ACTION_TRACKED_MODIFIED="$OUTSIDE_BATCH_TRACKED_MODIFIED"
+      FIRST_ACTION_UNTRACKED="$OUTSIDE_BATCH_UNTRACKED"
+      FIRST_ACTION_MISSING=0
+      outside_group_name="$(resolve_next_pending_outside_batch_group_name || true)"
+      if [ -n "$outside_group_name" ]; then
+        FIRST_ACTION_FOCUS="$(resolve_outside_batch_group_focus_file "$outside_group_name" || true)"
+        if [ -z "$FIRST_ACTION_FOCUS" ]; then
+          if [ "${#OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" -gt 0 ]; then
+            FIRST_ACTION_FOCUS="${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[0]}"
+          elif [ "${#OUTSIDE_BATCH_UNTRACKED_FILES[@]}" -gt 0 ]; then
+            FIRST_ACTION_FOCUS="${OUTSIDE_BATCH_UNTRACKED_FILES[0]}"
+          fi
+        fi
+        FIRST_ACTION_COMMAND="./scripts/verify/run-review-batch-checks.sh --outside-batch-note --name ${outside_group_name} --write $(default_outside_batch_note_write_path "$outside_group_name")"
+      elif ! memo_manifest_has_recorded_output "outside-batches" "outside-batch"; then
+        if [ "${#OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" -gt 0 ]; then
+          FIRST_ACTION_FOCUS="${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[0]}"
+        elif [ "${#OUTSIDE_BATCH_UNTRACKED_FILES[@]}" -gt 0 ]; then
+          FIRST_ACTION_FOCUS="${OUTSIDE_BATCH_UNTRACKED_FILES[0]}"
+        fi
+        FIRST_ACTION_COMMAND="./scripts/verify/run-review-batch-checks.sh --outside-batch-memo --write $(default_outside_batch_memo_write_path)"
+      else
+        outside_landing_group_name="$(resolve_next_pending_outside_landing_batch_group_name || true)"
+        if [ -n "$outside_landing_group_name" ]; then
+          FIRST_ACTION_FOCUS="$(resolve_outside_batch_group_focus_file "$outside_landing_group_name" || true)"
+          if [ -z "$FIRST_ACTION_FOCUS" ]; then
+            FIRST_ACTION_FOCUS="$(resolve_outside_landing_batch_name "$outside_landing_group_name")"
+          fi
+          FIRST_ACTION_COMMAND="$(resolve_outside_landing_batch_next_command "$outside_landing_group_name")"
+        else
+          if [ "${#OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[@]}" -gt 0 ]; then
+            FIRST_ACTION_FOCUS="${OUTSIDE_BATCH_TRACKED_MODIFIED_FILES[0]}"
+          elif [ "${#OUTSIDE_BATCH_UNTRACKED_FILES[@]}" -gt 0 ]; then
+            FIRST_ACTION_FOCUS="${OUTSIDE_BATCH_UNTRACKED_FILES[0]}"
+          fi
+          FIRST_ACTION_COMMAND="echo no-pending-review-actions"
+        fi
+      fi
+      return 0
+    fi
     FIRST_ACTION_READINESS="ready"
     FIRST_ACTION_REASON="no-pending-review-actions"
     FIRST_ACTION_COMMAND="echo no-pending-review-actions"
@@ -2291,7 +3625,7 @@ resolve_batch_handoff_fields() {
 
 print_next_action_verbose() {
   resolve_first_batch_action_fields
-  if [ -z "$FIRST_ACTION_BATCH" ]; then
+  if [ -z "$FIRST_ACTION_BATCH" ] || [ "${FIRST_ACTION_COMMAND:-}" = "echo no-pending-review-actions" ]; then
     printf '%s | state=complete | next=%s\n' \
       "NEXT" \
       "$FIRST_ACTION_COMMAND"
@@ -2417,6 +3751,11 @@ print_all_batch_status() {
   local handoff_blocked=0
   local handoff_pending_run=0
   local batch_count=0
+  local outside_total=0
+  local outside_tracked_modified=0
+  local outside_untracked=0
+  local outside_readiness=""
+  local outside_reason=""
 
   build_batch_status_rows
 
@@ -2459,6 +3798,12 @@ print_all_batch_status() {
   done
 
   resolve_first_batch_action_fields
+  collect_outside_batch_changes
+  outside_total="$OUTSIDE_BATCH_TOTAL"
+  outside_tracked_modified="$OUTSIDE_BATCH_TRACKED_MODIFIED"
+  outside_untracked="$OUTSIDE_BATCH_UNTRACKED"
+  outside_readiness="$(resolve_outside_batch_readiness "$outside_total")"
+  outside_reason="$(resolve_outside_batch_reason "$outside_total")"
 
   while IFS= read -r row; do
     [ -n "$row" ] || continue
@@ -2470,7 +3815,15 @@ print_all_batch_status() {
     printf '%s\n' "$remainder"
   done < <(printf '%s\n' "${BATCH_STATUS_ROWS[@]}" | sort -t'|' -k1,1n -k2,2n -k3,3)
 
-  if [ -n "$FIRST_ACTION_BATCH" ]; then
+  printf '%s | readiness=%s | reason=%s | total=%s | tracked-modified=%s | untracked=%s\n' \
+    "OUTSIDE-BATCHES" \
+    "$outside_readiness" \
+    "$outside_reason" \
+    "$outside_total" \
+    "$outside_tracked_modified" \
+    "$outside_untracked"
+
+  if [ -n "$FIRST_ACTION_BATCH" ] && [ "${FIRST_ACTION_COMMAND:-}" != "echo no-pending-review-actions" ]; then
     printf '%s | batch=%s | readiness=%s | reason=%s | next=%s\n' \
       "FIRST-ACTION" \
       "$FIRST_ACTION_BATCH" \
@@ -2479,8 +3832,8 @@ print_all_batch_status() {
       "$FIRST_ACTION_COMMAND"
   fi
 
-  overall_readiness="$(resolve_batch_readiness "$batches_with_missing" "$batches_with_tracked_modified" "$batches_with_untracked")"
-  overall_reason="$(resolve_batch_reason "$batches_with_missing" "$batches_with_tracked_modified" "$batches_with_untracked")"
+  overall_readiness="$(resolve_overall_review_readiness "$batches_with_missing" "$batches_with_tracked_modified" "$batches_with_untracked" "$outside_total")"
+  overall_reason="$(resolve_overall_review_reason "$batches_with_missing" "$batches_with_tracked_modified" "$batches_with_untracked" "$outside_total")"
   printf '%s | complete=%s | pending-artifact=%s | direct-review=%s | pending-run=%s | blocked=%s | next=%s\n' \
     "HANDOFF" \
     "$handoff_complete" \
@@ -2616,9 +3969,15 @@ PY
       grep -Fq -- '--landing-plan' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq -- '--landing-plan' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq -- '--landing-plan' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq -- '--landing-commands' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq -- '--landing-commands' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq -- '--landing-commands' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
       grep -Fq 'LANDING-PLAN' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq 'LANDING-PLAN' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq 'LANDING-PLAN' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq 'LANDING-COMMANDS' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq 'LANDING-COMMANDS' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq 'LANDING-COMMANDS' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
       grep -Fq 'MEMO_MANIFEST_PATH' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq 'MEMO_MANIFEST_PATH' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq 'MEMO_MANIFEST_PATH' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
@@ -2652,12 +4011,39 @@ PY
       grep -Fq -- '--status-all' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq -- '--status-all' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq -- '--status-all' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq -- '--outside-batches' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq -- '--outside-batches' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq -- '--outside-batches' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq -- '--outside-batch-groups' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq -- '--outside-batch-groups' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq -- '--outside-batch-groups' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq -- '--outside-batch-plan' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq -- '--outside-batch-plan' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq -- '--outside-batch-plan' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq -- '--outside-batch-note' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq -- '--outside-batch-note' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq -- '--outside-batch-note' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq -- '--outside-batch-memo' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq -- '--outside-batch-memo' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq -- '--outside-batch-memo' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
       grep -Fq -- '--next' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq -- '--next' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq -- '--next' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
       grep -Fq -- '--next --verbose' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq -- '--next --verbose' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq -- '--next --verbose' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq 'OUTSIDE-BATCHES' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq 'OUTSIDE-BATCHES' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq 'OUTSIDE-BATCHES' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq 'OUTSIDE-BATCH-GROUP' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq 'OUTSIDE-BATCH-GROUP' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq 'OUTSIDE-BATCH-GROUP' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq 'OUTSIDE-LANDING-STEP' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq 'OUTSIDE-LANDING-STEP' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq 'OUTSIDE-LANDING-STEP' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
+      grep -Fq 'outside-batches-' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
+      grep -Fq 'outside-batches-' "$ROOT_DIR/scripts/verify/README.md"
+      grep -Fq 'outside-batches-' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
       grep -Fq 'review-notes' "$ROOT_DIR/docs/reports/review-inventory-2026-04-10.md"
       grep -Fq 'review-notes' "$ROOT_DIR/scripts/verify/README.md"
       grep -Fq 'review-notes' "$ROOT_DIR/docs/reports/codebase-audit-2026-04-10.md"
@@ -3139,6 +4525,12 @@ if [ "${1:-}" = "--landing-plan" ]; then
   exit 0
 fi
 
+if [ "${1:-}" = "--landing-commands" ]; then
+  shift
+  print_landing_commands "$@"
+  exit 0
+fi
+
 if [ "${1:-}" = "--status" ]; then
   shift
   if [ "$#" -eq 0 ]; then
@@ -3152,6 +4544,222 @@ fi
 
 if [ "${1:-}" = "--status-all" ]; then
   print_all_batch_status
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-batches" ]; then
+  print_outside_batch_changes
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-batch-groups" ]; then
+  shift
+  outside_group_name=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--name requires a group name" >&2
+          exit 1
+        fi
+        outside_group_name="$1"
+        ;;
+      *)
+        echo "Unknown argument for --outside-batch-groups: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+  print_outside_batch_groups "$outside_group_name"
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-batch-plan" ]; then
+  shift
+  outside_plan_show="0"
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --show)
+        outside_plan_show="1"
+        ;;
+      *)
+        echo "Unknown argument for --outside-batch-plan: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+  print_outside_batch_plan "$outside_plan_show"
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-landing-batches" ]; then
+  shift
+  outside_landing_show="0"
+  outside_landing_name=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --show)
+        outside_landing_show="1"
+        ;;
+      --name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--name requires an outside landing batch name" >&2
+          exit 1
+        fi
+        outside_landing_name="$1"
+        ;;
+      *)
+        echo "Unknown argument for --outside-landing-batches: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+  print_outside_landing_batches "$outside_landing_show" "$outside_landing_name"
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-landing-draft" ]; then
+  shift
+  outside_landing_draft_name=""
+  outside_landing_draft_write_path=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--name requires an outside landing batch name" >&2
+          exit 1
+        fi
+        outside_landing_draft_name="$1"
+        ;;
+      --write)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--write requires a file path" >&2
+          exit 1
+        fi
+        outside_landing_draft_write_path="$1"
+        ;;
+      *)
+        echo "Unknown argument for --outside-landing-draft: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+  draft_output="$(print_outside_landing_draft "$outside_landing_draft_name")"
+  printf '%s\n' "$draft_output"
+  if [ -n "$outside_landing_draft_write_path" ]; then
+    write_output_file "$outside_landing_draft_write_path" "$draft_output"
+    append_outside_landing_draft_manifest \
+      "$OUTSIDE_LANDING_DRAFT_MANIFEST_PATH" \
+      "$outside_landing_draft_write_path" \
+      "$outside_landing_draft_name" \
+      "$(wc -c < "$outside_landing_draft_write_path" | tr -d '[:space:]')"
+    printf '%s | path=%s | bytes=%s\n' \
+      "OUTSIDE-LANDING-DRAFT-WRITE" \
+      "$outside_landing_draft_write_path" \
+      "$(wc -c < "$outside_landing_draft_write_path" | tr -d '[:space:]')"
+  fi
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-batch-note" ]; then
+  shift
+  outside_note_name=""
+  outside_note_write_path=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--name requires a group name" >&2
+          exit 1
+        fi
+        outside_note_name="$1"
+        ;;
+      --write)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--write requires a file path" >&2
+          exit 1
+        fi
+        outside_note_write_path="$1"
+        ;;
+      *)
+        echo "Unknown argument for --outside-batch-note: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+  if [ -z "$outside_note_name" ]; then
+    echo "--outside-batch-note requires --name <group>" >&2
+    exit 1
+  fi
+  outside_note_output="$(print_outside_batch_note "$outside_note_name")"
+  printf '%s\n' "$outside_note_output"
+  if [ -n "$outside_note_write_path" ]; then
+    write_output_file "$outside_note_write_path" "$outside_note_output"
+    append_note_manifest "$NOTE_MANIFEST_PATH" "$outside_note_write_path" "outside-batch" "$outside_note_name" "$(wc -c < "$outside_note_write_path" | tr -d '[:space:]')" "outside-batches"
+    printf '%s | path=%s | bytes=%s\n' \
+      "NOTE-WRITE" \
+      "$outside_note_write_path" \
+      "$(wc -c < "$outside_note_write_path" | tr -d '[:space:]')"
+    printf '%s | path=%s | entries=%s\n' \
+      "NOTE-MANIFEST" \
+      "$NOTE_MANIFEST_PATH" \
+      "$(wc -l < "$NOTE_MANIFEST_PATH" | tr -d '[:space:]')"
+  fi
+  exit 0
+fi
+
+if [ "${1:-}" = "--outside-batch-memo" ]; then
+  shift
+  outside_memo_write_path=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --write)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "--write requires a file path" >&2
+          exit 1
+        fi
+        outside_memo_write_path="$1"
+        ;;
+      *)
+        echo "Unknown argument for --outside-batch-memo: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+  outside_memo_output="$(print_outside_batch_memo)"
+  printf '%s\n' "$outside_memo_output"
+  if [ -n "$outside_memo_write_path" ]; then
+    write_output_file "$outside_memo_write_path" "$outside_memo_output"
+    outside_memo_bytes="$(wc -c < "$outside_memo_write_path" | tr -d '[:space:]')"
+    append_memo_manifest "$MEMO_MANIFEST_PATH" "$outside_memo_write_path" "outside-batch" "$outside_memo_bytes" "outside-batches"
+    printf '%s | path=%s | bytes=%s\n' \
+      "MEMO-WRITE" \
+      "$outside_memo_write_path" \
+      "$outside_memo_bytes"
+    printf '%s | path=%s | entries=%s\n' \
+      "MEMO-MANIFEST" \
+      "$MEMO_MANIFEST_PATH" \
+      "$(wc -l < "$MEMO_MANIFEST_PATH" | tr -d '[:space:]')"
+  fi
   exit 0
 fi
 
