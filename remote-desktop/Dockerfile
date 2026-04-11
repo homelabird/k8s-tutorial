@@ -1,5 +1,5 @@
 # Base Image
-FROM nishanb/ck-x-simulator-vnc-base:v3
+FROM docker.io/nishanb/ck-x-simulator-vnc-base:v3
 
 # Switch to root user for installations
 USER 0

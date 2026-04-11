@@ -67,10 +67,48 @@ is_root_user() {
     [ "$(id -u)" -eq 0 ]
 }
 
-compose_display_cmd() {
-    if is_podman_runtime && is_root_user && [ -n "${SUDO_USER:-}" ]; then
-        printf 'sudo %s' "${COMPOSE_PROVIDER}"
-    else
-        printf '%s' "${COMPOSE_PROVIDER}"
+service_is_running() {
+    local service="$1"
+    local output
+
+    if is_podman_runtime; then
+        output=$(podman ps --filter "label=io.podman.compose.service=${service}" --format '{{.Names}} {{.Status}}')
+        [ -n "${output}" ]
+        return
     fi
+
+    output=$(run_compose ps "$service" 2>/dev/null || true)
+    printf '%s\n' "${output}" | grep -q "Up"
+}
+
+service_is_healthy() {
+    local service="$1"
+    local output
+
+    if is_podman_runtime; then
+        output=$(podman ps --filter "label=io.podman.compose.service=${service}" --format '{{.Status}}')
+        printf '%s\n' "${output}" | grep -q "(healthy)"
+        return
+    fi
+
+    output=$(run_compose ps "$service" 2>/dev/null || true)
+    printf '%s\n' "${output}" | grep -q "healthy"
+}
+
+compose_display_cmd() {
+    local parts=()
+    local rendered
+
+    if is_podman_runtime && is_root_user && [ -n "${SUDO_USER:-}" ]; then
+        parts+=(sudo)
+    fi
+
+    parts+=("${COMPOSE_CMD[@]}")
+
+    if [ "${#COMPOSE_FILE_ARGS[@]}" -gt 0 ]; then
+        parts+=("${COMPOSE_FILE_ARGS[@]}")
+    fi
+
+    printf -v rendered '%q ' "${parts[@]}"
+    printf '%s' "${rendered% }"
 }

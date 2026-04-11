@@ -189,7 +189,11 @@ print_success "All container images built successfully"
 print_header "COMPOSE DEPLOYMENT"
 
 print_progress "Starting services with ${COMPOSE_PROVIDER}..."
-run_compose up -d --remove-orphans
+if is_podman_runtime; then
+  run_compose up -d --force-recreate --remove-orphans
+else
+  run_compose up -d --remove-orphans
+fi
 print_success "All services started successfully"
 
 # ===============================================================================
@@ -202,49 +206,39 @@ print_progress "${CLOCK} Waiting for services to be ready..."
 sleep 15 # Give some time for services to start
 
 # Check if the VNC service is running
-if run_compose ps remote-desktop | grep -q "Up"; then
+if service_is_running remote-desktop; then
   print_success "VNC service is running"
 else
   print_warning "VNC service may not be running properly"
 fi
 
 # Check if the webapp service is running
-if run_compose ps webapp | grep -q "Up"; then
+if service_is_running webapp; then
   print_success "Webapp service is running"
 else
   print_warning "Webapp service may not be running properly"
 fi
 
 # Check if the Nginx service is running
-if run_compose ps nginx | grep -q "Up"; then
+if service_is_running nginx; then
   print_success "Nginx service is running"
 else
   print_warning "Nginx service may not be running properly"
 fi
 
 # Check if the jumphost service is running
-if run_compose ps jumphost | grep -q "Up"; then
+if service_is_running jumphost; then
   print_success "Jump host service is running"
 else
   print_warning "Jump host service may not be running properly"
 fi
 
 # Check if the Kubernetes cluster service is running
-if run_compose ps k8s-api-server | grep -q "Up"; then
-  print_success "Kubernetes cluster is running"
-  
-  # Wait for the K3D cluster to be fully ready
-  print_progress "${CLOCK} Waiting for Kubernetes cluster to be fully initialized..."
-  sleep 30
-  
-  # Check if cluster is accessible
-  if run_compose exec k8s-api-server sh -lc "k3d cluster list | awk 'NR > 1 && \$1 == \"cluster\" {found=1} END {exit !found}'"; then
-    print_success "K3D cluster is operational and accessible"
-  else
-    print_warning "K3D cluster may still be initializing"
-  fi
+if service_is_running k8s-api-server; then
+  print_success "Kubernetes cluster runtime service is running"
+  print_info "K3D clusters are provisioned on demand when an exam environment is prepared"
 else
-  print_warning "Kubernetes cluster may not be running properly"
+  print_warning "Kubernetes cluster runtime service may not be running properly"
 fi
 
 # ===============================================================================
@@ -291,6 +285,13 @@ echo -e "  ${GREEN}$(compose_display_cmd) down --volumes --remove-orphans${NC}"
 
 echo -e "\n${CYAN}To restart the environment:${NC}"
 echo -e "  ${GREEN}$(compose_display_cmd) restart${NC}"
+
+echo -e "\n${CYAN}To rebuild and redeploy after code changes:${NC}"
+if is_podman_runtime; then
+  echo -e "  ${GREEN}$(compose_display_cmd) build && $(compose_display_cmd) up -d --force-recreate --remove-orphans${NC}"
+else
+  echo -e "  ${GREEN}$(compose_display_cmd) build && $(compose_display_cmd) up -d --remove-orphans${NC}"
+fi
 
 echo -e "\n${CYAN}To view logs:${NC}"
 echo -e "  ${GREEN}$(compose_display_cmd) logs -f${NC}"
