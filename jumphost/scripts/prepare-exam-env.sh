@@ -1,5 +1,5 @@
 #!/bin/bash
-exec >> /proc/1/fd/1 2>&1
+set -euo pipefail
 
 
 # Log function with timestamp
@@ -52,10 +52,15 @@ if ! [[ "$NUMBER_OF_NODES" =~ ^[0-9]+$ ]]; then
 fi
 
 # Setup kind cluster
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null candidate@"$K8S_API_SERVER_HOST" "env-setup $NUMBER_OF_NODES $TARGET_CLUSTER_NAME $TARGET_API_PORT"
+if ! ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  candidate@"$K8S_API_SERVER_HOST" \
+  "env-setup $NUMBER_OF_NODES $TARGET_CLUSTER_NAME $TARGET_API_PORT"; then
+  log "ERROR: Failed to create cluster runtime for $TARGET_CLUSTER_NAME on $K8S_API_SERVER_HOST"
+  exit 1
+fi
 
 #Pull assets from URL
-curl facilitator:3000/api/v1/exams/$EXAM_ID/assets -o assets.tar.gz
+curl -fsS facilitator:3000/api/v1/exams/$EXAM_ID/assets -o assets.tar.gz
 
 mkdir -p /tmp/exam-assets
 #Unzip assets
@@ -71,7 +76,13 @@ echo "Exam assets downloaded and prepared successfully"
 
 mkdir -p /home/candidate/.kube
 rm -f /home/candidate/.kube/config /home/candidate/.kube/kubeconfig
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null candidate@"$K8S_API_SERVER_HOST" "env-kubeconfig $TARGET_CLUSTER_NAME" > /home/candidate/.kube/kubeconfig
+if ! ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  candidate@"$K8S_API_SERVER_HOST" \
+  "env-kubeconfig $TARGET_CLUSTER_NAME" > /home/candidate/.kube/kubeconfig; then
+  log "ERROR: Failed to fetch kubeconfig for $TARGET_CLUSTER_NAME from $K8S_API_SERVER_HOST"
+  rm -f /home/candidate/.kube/kubeconfig /home/candidate/.kube/config
+  exit 1
+fi
 cp /home/candidate/.kube/kubeconfig /home/candidate/.kube/config
 chmod 600 /home/candidate/.kube/kubeconfig /home/candidate/.kube/config
 
@@ -80,7 +91,13 @@ export KUBECONFIG=/home/candidate/.kube/kubeconfig
 sleep 5
 
 #wait till api-server is ready
-while ! kubectl get nodes > /dev/null 2>&1; do
+API_SERVER_READY_ATTEMPTS=0
+until kubectl get nodes > /dev/null 2>&1; do
+  API_SERVER_READY_ATTEMPTS=$((API_SERVER_READY_ATTEMPTS + 1))
+  if [ "$API_SERVER_READY_ATTEMPTS" -ge 60 ]; then
+    log "ERROR: API server for $TARGET_CLUSTER_NAME did not become ready in time"
+    exit 1
+  fi
   log "API server is not ready, retrying..."
   sleep 5
 done
