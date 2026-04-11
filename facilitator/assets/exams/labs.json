@@ -53,9 +53,9 @@
       {
         "id": "cka-003",
         "assetPath": "assets/exams/cka/003",
-        "name": "CKA 2026 Domain Drill - Security, Ingress, DNS",
+        "name": "CKA 2026 Domain Drill - Security, Ingress, Dedicated DNS",
         "category": "CKA",
-        "description": "Three-question CKA drill aligned to the current curriculum, focused on Pod Security Admission, ingress-nginx installation and repair, and CoreDNS troubleshooting.",
+        "description": "Three-question CKA drill aligned to the current curriculum, focused on Pod Security Admission, ingress-nginx installation and repair, and a namespace-scoped dedicated CoreDNS troubleshooting exercise.",
         "warmUpTimeInSeconds": 180,
         "difficulty": "Hard",
         "examDurationInMinutes": 60

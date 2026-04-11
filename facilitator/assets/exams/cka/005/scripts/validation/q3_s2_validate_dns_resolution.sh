@@ -8,6 +8,11 @@ if [ -n "$DNS_POLICY" ] && [ "$DNS_POLICY" != "ClusterFirst" ]; then
   exit 1
 fi
 
-kubectl exec -n dns-lab dns-check -- nslookup web.dns-lab.svc.cluster.local >/tmp/q1-nslookup.out 2>/tmp/q1-nslookup.err
+OUTPUT="$(kubectl exec -n dns-lab dns-check -- sh -lc 'nslookup web.dns-lab.svc.cluster.local && nslookup kubernetes.default.svc.cluster.local' 2>&1)" || {
+  echo "dns-check failed to resolve one or more cluster service names"
+  exit 1
+}
+
+printf '%s\n' "$OUTPUT" >/tmp/q1-nslookup.out
 echo "dns-check resolves web.dns-lab.svc.cluster.local"
 exit 0

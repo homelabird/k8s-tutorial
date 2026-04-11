@@ -70,27 +70,28 @@ spec:
       command: ["sh", "-c", "sleep 3600"]
 EOF
 
-cat <<'EOF' | kubectl create configmap coredns --dry-run=client -n kube-system --from-file=Corefile=/dev/stdin -o yaml | kubectl apply -f -
-.:53 {
-    errors
-    health
-    ready
-    kubernetes broken.local in-addr.arpa ip6.arpa {
-      pods insecure
-      fallthrough in-addr.arpa ip6.arpa
-      ttl 30
-    }
-    prometheus :9153
-    forward . /etc/resolv.conf
-    cache 30
-    loop
-    reload
-    loadbalance
-}
-EOF
+broken_ready=0
+for attempt in $(seq 1 10); do
+  kubectl get configmap coredns -n kube-system -o yaml \
+    | sed 's/kubernetes cluster\.local in-addr\.arpa ip6\.arpa/kubernetes broken.local in-addr.arpa ip6.arpa/' \
+    | kubectl apply -f -
 
-kubectl rollout restart deployment coredns -n kube-system
-kubectl rollout status deployment coredns -n kube-system --timeout=120s
+  kubectl rollout restart deployment coredns -n kube-system
+  kubectl rollout status deployment coredns -n kube-system --timeout=120s
+
+  corefile="$(kubectl get configmap coredns -n kube-system -o jsonpath='{.data.Corefile}')"
+  if printf '%s' "$corefile" | grep -F 'kubernetes broken.local in-addr.arpa ip6.arpa' >/dev/null; then
+    broken_ready=1
+    break
+  fi
+
+  sleep 2
+done
+
+if [ "$broken_ready" -ne 1 ]; then
+  echo "Failed to persist broken.local CoreDNS config" >&2
+  exit 1
+fi
 
 echo "Setup complete for Question 3"
 exit 0

@@ -1,6 +1,6 @@
 # CKA 2026 Top 3 Drafts
 
-These are draft question assets for the top three CKA-aligned additions identified from the current Linux Foundation and CNCF curriculum:
+These are draft question assets for three high-value CKA-aligned focus areas identified from the current Linux Foundation and CNCF curriculum:
 
 1. Pod Security Admission restricted profile
 2. CoreDNS troubleshooting

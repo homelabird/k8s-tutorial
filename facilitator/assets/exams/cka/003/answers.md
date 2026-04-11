@@ -1,4 +1,4 @@
-# CKA 2026 Domain Drill - Security, Ingress, DNS
+# CKA 2026 Domain Drill - Security, Ingress, Dedicated DNS
 
 ## Question 1: Pod Security Admission restricted profile
 
@@ -35,9 +35,10 @@ spec:
 EOF
 ```
 
-## Question 2: CoreDNS troubleshooting
+## Question 2: Dedicated CoreDNS troubleshooting
 
 The setup intentionally misconfigures a dedicated `CoreDNS` instance inside `dns-lab`.
+This is a namespace-scoped DNS drill. It does not use the cluster-wide `kube-system/coredns` deployment.
 
 One valid recovery flow is:
 
@@ -61,11 +62,12 @@ kubectl rollout status deployment coredns -n dns-lab
 Verify:
 
 ```bash
+kubectl get pod dns-check -n dns-lab -o yaml | grep -A3 dnsConfig
 kubectl exec -n dns-lab dns-check -- nslookup web.dns-lab.svc.cluster.local
 kubectl exec -n dns-lab dns-check -- wget -qO- http://web.dns-lab.svc.cluster.local
 ```
 
-The validator also checks that the `dns-lab/coredns` Corefile directly serves `cluster.local`.
+The validator also checks that the `dns-lab/coredns` Corefile directly serves `cluster.local`, no longer references `broken.local`, and that `dns-check` still uses the dedicated `dns-lab/coredns` service IP.
 
 ## Question 3: ingress-nginx installation and Ingress repair
 

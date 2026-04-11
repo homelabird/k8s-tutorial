@@ -10,5 +10,10 @@ if ! printf '%s\n' "$CORE_FILE" | grep -q 'kubernetes cluster.local in-addr.arpa
   exit 1
 fi
 
+if printf '%s\n' "$CORE_FILE" | grep -q 'broken.local'; then
+  echo "CoreDNS Corefile still references broken.local"
+  exit 1
+fi
+
 echo "CoreDNS in kube-system is restored to cluster.local and available"
 exit 0

@@ -34,19 +34,19 @@
       "id": "2",
       "namespace": "dns-lab",
       "machineHostname": "ckad9999",
-      "question": "DNS resolution is failing for workloads in the namespace `dns-lab`.\n\nA deployment `web`, service `web`, test Pod `dns-check`, and a dedicated `CoreDNS` deployment `coredns` already exist in `dns-lab`.\n\nDiagnose and fix the `CoreDNS` configuration in `dns-lab` so that:\n- `dns-check` can resolve `web.dns-lab.svc.cluster.local`\n- `dns-check` can fetch HTTP content from the `web` service\n\nDo not recreate the application resources in `dns-lab`. Focus on restoring the `CoreDNS` resources used by that namespace.",
+      "question": "Dedicated DNS resolution is failing for workloads in the namespace `dns-lab`.\n\nA deployment `web`, service `web`, test Pod `dns-check`, and a dedicated `CoreDNS` deployment `coredns` already exist in `dns-lab`.\n\nThe Pod `dns-check` is already configured to query the `dns-lab/coredns` service directly. This is a namespace-scoped DNS repair task, not a cluster-wide `kube-system` CoreDNS recovery task.\n\nDiagnose and fix the dedicated `CoreDNS` configuration in `dns-lab` so that:\n- `dns-check` can resolve `web.dns-lab.svc.cluster.local`\n- `dns-check` can fetch HTTP content from the `web` service\n\nDo not recreate the application resources in `dns-lab`. Focus on restoring the dedicated `CoreDNS` resources used by that namespace.",
       "concepts": ["troubleshooting", "coredns", "networking", "services"],
       "verification": [
         {
           "id": "1",
-          "description": "Dedicated CoreDNS deployment in dns-lab serves cluster.local and is available",
+          "description": "Dedicated CoreDNS deployment in dns-lab serves cluster.local and has ready endpoints",
           "verificationScriptFile": "q2_s1_validate_coredns_ready.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "dns-check can resolve the service FQDN",
+          "description": "dns-check resolves the service FQDN through the dedicated CoreDNS service",
           "verificationScriptFile": "q2_s2_validate_dns_resolution.sh",
           "expectedOutput": "0",
           "weightage": 3
