@@ -45,6 +45,45 @@ irm https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.ps1 | 
 ### Manual Installation
 For detailed installation instructions, please refer to our [Deployment Guide](scripts/COMPOSE-DEPLOY.md).
 
+For local development from a clone, the quickest path is:
+
+```bash
+./compose-deploy.sh
+```
+
+On Podman, exam clusters are created when an exam starts, not during the initial stack deploy.
+If you redeploy manually with Podman after local code changes, use:
+
+```bash
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build --force-recreate
+```
+
+For the full local CKA 2026 regression sweep, use:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh
+```
+
+If you only want to verify the runner wiring without restarting the Podman stack:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh --list
+```
+
+To raise or lower the per-suite timeout in the aggregated runner:
+
+```bash
+SUITE_TIMEOUT_SECONDS=3000 ./scripts/verify/run-cka-2026-regressions.sh
+```
+
+To capture a local diagnostics bundle with facilitator logs and current exam metadata:
+
+```bash
+./scripts/verify/collect-cka-2026-diagnostics.sh
+```
+
+The real automated CKA 2026 regression job lives in `.github/workflows/cka-2026-regressions.yml` and is intended for a Linux self-hosted GitHub Actions runner with Podman available.
+
 ## Community & Support
 
 - Join our [Discord Community](https://discord.gg/6FPQMXNgG9) for discussions and support

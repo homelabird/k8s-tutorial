@@ -73,12 +73,36 @@ else
         [ "$(id -u)" -eq 0 ]
     }
 
-    compose_display_cmd() {
-        if is_podman_runtime && is_root_user && [ -n "${SUDO_USER:-}" ]; then
-            printf 'sudo %s' "${COMPOSE_PROVIDER}"
-        else
-            printf '%s' "${COMPOSE_PROVIDER}"
+    service_is_healthy() {
+        local service="$1"
+        local output
+
+        if is_podman_runtime; then
+            output=$(podman ps --filter "label=io.podman.compose.service=${service}" --format '{{.Status}}')
+            printf '%s\n' "${output}" | grep -q "(healthy)"
+            return
         fi
+
+        output=$(run_compose ps "$service" 2>/dev/null || true)
+        printf '%s\n' "${output}" | grep -q "healthy"
+    }
+
+    compose_display_cmd() {
+        local parts=()
+        local rendered
+
+        if is_podman_runtime && is_root_user && [ -n "${SUDO_USER:-}" ]; then
+            parts+=(sudo)
+        fi
+
+        parts+=("${COMPOSE_CMD[@]}")
+
+        if [ "${#COMPOSE_FILE_ARGS[@]}" -gt 0 ]; then
+            parts+=("${COMPOSE_FILE_ARGS[@]}")
+        fi
+
+        printf -v rendered '%q ' "${parts[@]}"
+        printf '%s' "${rendered% }"
     }
 fi
 
@@ -204,7 +228,7 @@ wait_for_service() {
     # No output headers here anymore
     
     while [ $attempt -le $max_attempts ]; do
-        if run_compose ps "$service" | grep -q "healthy"; then
+        if service_is_healthy "$service"; then
             return 0
         fi
         # No progress dots
@@ -313,7 +337,11 @@ main() {
     
     # Start services
     echo -e "${YELLOW}Starting CK-X services...${NC}"
-    run_compose up -d
+    if is_podman_runtime; then
+        run_compose up -d --force-recreate
+    else
+        run_compose up -d
+    fi
     echo -e "${GREEN}✓ Services started${NC}"
     
     # Combined waiting message instead of individual service wait messages
@@ -337,14 +365,15 @@ main() {
     echo -e "${YELLOW}CK-X Simulator has been installed in:${NC} ${GREEN}$(pwd)${NC}, run all below commands from this directory"
     local compose_display
     compose_display=$(compose_display_cmd)
-    echo -e "${YELLOW}To stop CK-X  ${GREEN}${compose_display} down --volumes --remove-orphans --rmi all${NC}"
+    echo -e "${YELLOW}To stop CK-X:${NC} ${GREEN}${compose_display} down --volumes --remove-orphans${NC}"
     echo -e "${YELLOW}To Restart CK-X:${NC} ${GREEN}${compose_display} restart${NC}"
+    echo -e "${YELLOW}To view logs:${NC} ${GREEN}${compose_display} logs -f${NC}"
     if [ "${CONTAINER_RUNTIME}" = "docker" ]; then
         echo -e "${YELLOW}To clean up all containers and images:${NC} ${GREEN}docker system prune -a${NC}"
     else
         echo -e "${YELLOW}To clean up all containers and images:${NC} ${GREEN}podman system prune -a${NC}"
     fi
-    echo -e "${YELLOW}To remove only CK-X images:${NC} ${GREEN}${compose_display} down --rmi all${NC}"
+    echo -e "${YELLOW}To remove only CK-X images:${NC} ${GREEN}${compose_display} down --rmi all --remove-orphans${NC}"
     echo -e "${YELLOW}To access CK-X Simulator:${NC} ${GREEN}http://localhost:30080/${NC}"
     echo
     echo -e "${CYAN}Thank you for installing CK-X Simulator!${NC}"

@@ -6,10 +6,10 @@ A Node.js service that provides SSH jumphost functionality and exam management c
 
 - Execute commands on a remote SSH jumphost
 - Support for both password and passwordless SSH authentication
-- Exam management API endpoints (some implemented, others are placeholders)
+- Manage a single active exam lifecycle from creation through evaluation and cleanup
 - Secure and modular architecture
 - Comprehensive logging
-- Containerization with Docker
+- Containerization with Docker or Podman
 - Integration with Docker Compose or Podman Compose for multi-service deployment
 
 ## Prerequisites
@@ -54,6 +54,12 @@ LOG_LEVEL=info
 npm run dev
 ```
 
+6. Run the unit tests:
+
+```bash
+npm test
+```
+
 ### Docker Deployment
 
 #### Standalone
@@ -76,12 +82,16 @@ The facilitator service is integrated into the main compose configuration at the
 
 ```bash
 cd ..
+./compose-deploy.sh
+# or
 docker compose up -d
 # or, for Podman on Linux
-sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build --force-recreate
 ```
 
 This will start the facilitator service along with all other services, including the jumphost that the facilitator connects to for SSH command execution. In the compose stack, the service is configured to use passwordless SSH authentication with the jumphost.
+
+On Podman, the inner `k3d` exam cluster is created when an exam is prepared, not when the stack first starts.
 
 The service is accessible at:
 - URL: http://localhost:3001
@@ -98,29 +108,101 @@ The service is accessible at:
 
 ### Exam Management
 
-- **GET /api/v1/exams/**
-  - Get a list of all exams
-  - Returns an array of exam objects containing id, name, category, description, etc.
-
 - **POST /api/v1/exams/**
-  - Create a new exam
-  - Returns exam ID and type (placeholder)
+  - Create a new exam from `examId` or an explicit `assetPath`
+  - Example body: `{ "examId": "ckad-003" }`
+  - Returns `201` with `{ "id": "...", "status": "CREATED", "message": "Exam created successfully and environment preparation started" }`
+  - Only one exam can be active at a time; creating another exam while one is active returns `409`
+
+- **GET /api/v1/exams/current**
+  - Get the active exam with resolved metadata and environment plan
+  - Returns `404` when no exam is active
+
+- **GET /api/v1/exams/:examId/status**
+  - Get the exam lifecycle status
+  - Typical states include `CREATED`, `PREPARING`, `READY`, `EVALUATING`, `EVALUATED`, and `COMPLETED`
 
 - **GET /api/v1/exams/:examId/assets**
-  - Get assets for a specific exam
-  - Returns empty object (placeholder)
+  - Download the exam asset bundle as `assets.tar.gz`
 
-- **GET /api/v1/exams/:examId/questions/**
-  - Get questions for a specific exam
-  - Returns empty object (placeholder)
+- **GET /api/v1/exams/:examId/questions**
+  - Get the exam questions enriched with the resolved `machineHostname` and `environmentId`
 
-- **POST /api/v1/exams/:examId/evaluate/**
+- **GET /api/v1/exams/:examId/answers**
+  - Download the answers file configured for the exam
+
+- **POST /api/v1/exams/:examId/evaluate**
   - Evaluate an exam
-  - Returns empty object (placeholder)
+  - Starts asynchronous evaluation on the jumphost
+  - Returns `{ "examId": "...", "status": "EVALUATING", "message": "Exam evaluation started" }`
 
-- **POST /api/v1/exams/:examId/end**
-  - End an exam
-  - Returns empty object (placeholder)
+- **GET /api/v1/exams/:examId/result**
+  - Get the persisted evaluation result
+  - Returns `{ "success": true, "data": { "examId": "...", "status": "EVALUATED", "totalScore": ..., "totalPossibleScore": ..., "percentageScore": ..., "rank": "...", "evaluationResults": [...] } }`
+
+- **POST /api/v1/exams/:examId/terminate**
+  - End the active exam and trigger jumphost cleanup
+  - Returns `{ "examId": "...", "status": "COMPLETED", "message": "Exam completed successfully" }`
+
+- **POST /api/v1/exams/:examId/events**
+  - Merge client-side lifecycle or UX events into the stored exam metadata
+  - Request body: `{ "events": { ... } }`
+
+- **POST /api/v1/exams/metrics/:examId**
+  - Submit feedback metrics for an exam session
+
+## Example Flow
+
+```bash
+# Create an exam
+curl -sS -X POST http://localhost:3001/api/v1/exams/ \
+  -H 'Content-Type: application/json' \
+  -d '{"examId":"ckad-003"}'
+
+# Poll until READY
+curl -sS http://localhost:3001/api/v1/exams/<exam-id>/status
+
+# Evaluate and fetch the result
+curl -sS -X POST http://localhost:3001/api/v1/exams/<exam-id>/evaluate -H 'Content-Type: application/json' -d '{}'
+curl -sS http://localhost:3001/api/v1/exams/<exam-id>/result
+
+# Clean up the active exam
+curl -sS -X POST http://localhost:3001/api/v1/exams/<exam-id>/terminate
+```
+
+## Verification
+
+Run the facilitator unit tests locally:
+
+```bash
+cd facilitator
+npm install
+npm test
+```
+
+The current unit suite covers:
+
+- app-level API wiring such as `409` active-exam conflicts, generic `500` creation failures, JSON parsing, and result passthrough
+- service-level lifecycle edges such as async preparation lock release, async evaluation failure fallback to `EVALUATION_FAILED`, and cleanup failure preservation of active exam metadata
+- Redis TTL defaults and request validation guards for exam event payloads
+
+From the project root, you can also run the Podman-backed smoke test that creates, evaluates, and cleans up a `ckad-003` exam:
+
+```bash
+./scripts/verify/ckad-003-podman-smoke.sh
+```
+
+For the CKA 2026 regression suites, use the project-root verify runner:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh
+```
+
+To check the runner wiring without starting the Podman stack:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh --list
+```
 
 ## License
 

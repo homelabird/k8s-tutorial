@@ -60,4 +60,10 @@ coverage/
 .terraform/
 terraform.tfstate
 terraform.tfstate.backup
-.terragrunt-cache/ 
+.terragrunt-cache/
+
+# Local regression artifacts and tool state
+.artifacts/
+.codex
+.playwright-mcp/
+test-results/

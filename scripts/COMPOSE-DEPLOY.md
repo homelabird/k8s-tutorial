@@ -50,11 +50,16 @@ irm https://raw.githubusercontent.com/nishanb/CK-X/master/scripts/install.ps1 | 
    cd CK-X
    ```
 
-2. Build and start the services using your compose provider:
+2. Build and start the services using the helper script or your compose provider:
+   ```bash
+   ./compose-deploy.sh
+   ```
+
+   Or directly:
    ```bash
    docker compose up -d
    # or
-   sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build
+   sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build --force-recreate
    ```
 
 ### Via Script 
@@ -83,13 +88,17 @@ After successful installation, you can access CK-X Simulator at:
 http://localhost:30080
 ```
 
+The `k3d` exam cluster is provisioned on demand when an exam is prepared. Immediately after deployment, only the runtime containers are expected to be running.
+
 ## Managing CK-X Simulator
 
 ### Start Services
 ```bash
+./compose-deploy.sh
+# or
 docker compose up -d
 # or
-sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build --force-recreate
 ```
 
 ### Stop Services
@@ -112,7 +121,7 @@ docker compose pull
 docker compose up -d
 # or
 sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml build
-sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --force-recreate
 ```
 
 ## Troubleshooting
@@ -144,6 +153,40 @@ If you encounter issues:
 1. Check the logs: `docker compose logs -f` or `sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml logs -f`
 2. Visit our [GitHub Issues](https://github.com/nishanb/CK-X/issues)
 3. Contact support with logs and system information
+
+### Podman Smoke Test
+
+For a quick regression check of the single-question CKAD flow on Podman:
+
+```bash
+./scripts/verify/ckad-003-podman-smoke.sh
+```
+
+For the CKA 2026 Podman-backed regression suites, use the aggregated runner:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh
+```
+
+For a CI-safe entrypoint smoke that does not restart the stack, list the available suites:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh --list
+```
+
+If your workstation or runner is slower, raise the aggregated per-suite timeout:
+
+```bash
+SUITE_TIMEOUT_SECONDS=3000 ./scripts/verify/run-cka-2026-regressions.sh
+```
+
+If you need a local failure bundle with Podman state, facilitator logs, and exam metadata:
+
+```bash
+./scripts/verify/collect-cka-2026-diagnostics.sh
+```
+
+For scheduled or manual remote execution, use the GitHub Actions workflow at `.github/workflows/cka-2026-regressions.yml`. It expects a Linux self-hosted runner with Podman available.
 
 ## Uninstallation
 

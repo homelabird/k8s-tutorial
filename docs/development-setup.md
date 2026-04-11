@@ -40,13 +40,17 @@ Review the `docker-compose.yaml` file to understand the service configuration. K
 ### 3. Start the Services
 
 ```bash
-# Build and start all services
-docker compose up --build
+# Preferred: auto-detect Docker vs Podman and open the app URL for you
+./compose-deploy.sh
+
+# Or run the compose command directly
+docker compose up -d --build
 # or, for Podman on Linux
-sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up --build
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build --force-recreate
 ```
 
 This command will build and start all the services defined in the compose file.
+With Podman, `./compose-deploy.sh` automatically adds `docker-compose.podman.yaml`.
 
 ## Accessing the Application
 
@@ -57,6 +61,8 @@ Once all services are running, access the web interface via Nginx:
 ```
 http://localhost:30080
 ```
+
+The long-lived runtime containers come up during deployment, but the inner `k3d` exam cluster is created only when an exam is started.
 
 ### 2. VNC Remote Desktop
 
@@ -180,9 +186,9 @@ To modify a service, edit its corresponding directory and then rebuild:
 ```bash
 # Edit files in the respective service directory
 # Then rebuild and restart the service
-docker compose up --build <service-name>
+docker compose up -d --build <service-name>
 # or, for Podman on Linux
-sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up --build <service-name>
+sudo podman compose -f docker-compose.yaml -f docker-compose.podman.yaml up -d --build --force-recreate <service-name>
 ```
 
 ### 2. Inspecting Logs
@@ -210,6 +216,49 @@ docker compose exec facilitator bash
 docker compose exec k8s-api-server bash
 ```
 
+### 4. Running Verification Checks
+
+Use the facilitator unit tests for fast API and validation regression coverage:
+
+```bash
+cd facilitator
+npm install
+npm test
+```
+
+When you are running the full Podman stack locally, use the smoke script to verify create, evaluate, terminate, and cleanup for `ckad-003`:
+
+```bash
+cd ..
+./scripts/verify/ckad-003-podman-smoke.sh
+```
+
+For the full CKA 2026 local regression sweep, use the verify runner:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh
+```
+
+If you only want to confirm the runner wiring without restarting Podman, list the available suites:
+
+```bash
+./scripts/verify/run-cka-2026-regressions.sh --list
+```
+
+If the host is slower than usual, raise the aggregated per-suite timeout:
+
+```bash
+SUITE_TIMEOUT_SECONDS=3000 ./scripts/verify/run-cka-2026-regressions.sh
+```
+
+If a local regression fails and you need the same evidence bundle as CI:
+
+```bash
+./scripts/verify/collect-cka-2026-diagnostics.sh
+```
+
+The corresponding GitHub Actions workflow is `.github/workflows/cka-2026-regressions.yml`. It targets a Linux self-hosted runner because the full suites need Podman plus privileged nested-container support.
+
 ## Troubleshooting
 
 ### 1. Container Startup Issues
@@ -233,12 +282,17 @@ docker compose restart remote-desktop
 ### 3. Kubernetes Cluster Issues
 
 ```bash
-# Check cluster status
-docker compose exec k8s-api-server kubectl cluster-info
+# List on-demand exam clusters inside the runtime container
+docker compose exec k8s-api-server k3d cluster list
 
-# Restart the cluster
+# Podman equivalent
+sudo podman exec kind-cluster k3d cluster list
+
+# Restart the runtime container
 docker compose restart k8s-api-server
 ```
+
+If no exam is active yet, `k3d cluster list` returning only the header is expected.
 
 ### 4. Resource Constraints
 
@@ -278,6 +332,7 @@ volumes:
 ## Reference Links
 
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [Podman Compose Documentation](https://docs.podman.io/en/latest/markdown/podman-compose.1.html)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [K3D Documentation](https://k3d.io/stable/)
 - [VNC Documentation](https://www.realvnc.com/en/connect/docs/) 
