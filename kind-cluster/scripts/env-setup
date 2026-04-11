@@ -1,5 +1,4 @@
 #!/bin/sh
-exec >> /proc/1/fd/1 2>&1
 # ===============================================================================
 #   K3D Cluster Creation
 #   this script access the parametter i.e num of nodes i.e NUM_WORKERS
@@ -20,7 +19,7 @@ KUBE_API_ENDPOINT=${KUBE_API_ENDPOINT:-k8s-api-server}
 K3D_PODMAN_NETWORK=${K3D_PODMAN_NETWORK:-k3d}
 USE_SERVERLB=true
 
-if [ "$CLUSTER_RUNTIME" = "podman" ]; then
+if [ "$CLUSTER_RUNTIME" = "podman" ] || [ "$KUBE_API_PORT" != "6443" ] || [ "$KUBE_API_ENDPOINT" != "k8s-api-server" ]; then
     USE_SERVERLB=false
 fi
 
@@ -79,6 +78,36 @@ ensure_cluster_runtime_nodes_started() {
 
         sleep 1
     done
+}
+
+terminate_background_pid() {
+    pid="$1"
+    label="$2"
+    grace_period="${3:-10}"
+    waited=0
+
+    if [ -z "$pid" ]; then
+        return 0
+    fi
+
+    if ! kill -0 "$pid" >/dev/null 2>&1; then
+        wait "$pid" 2>/dev/null || true
+        return 0
+    fi
+
+    kill "$pid" >/dev/null 2>&1 || true
+
+    while kill -0 "$pid" >/dev/null 2>&1 && [ "$waited" -lt "$grace_period" ]; do
+        sleep 1
+        waited=$((waited + 1))
+    done
+
+    if kill -0 "$pid" >/dev/null 2>&1; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') | [WARN] Force killing lingering background process '$label' (pid $pid)"
+        kill -9 "$pid" >/dev/null 2>&1 || true
+    fi
+
+    wait "$pid" 2>/dev/null || true
 }
 
 # Check if k3d is installed, if not install it
@@ -177,28 +206,31 @@ if cluster_exists; then
     done
 fi
 
-if [ "$CLUSTER_RUNTIME" = "podman" ]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Ensuring Podman network '$K3D_PODMAN_NETWORK' exists"
+set -- --config /tmp/k3d-config.yaml
 
-    if ! docker network inspect "$K3D_PODMAN_NETWORK" >/dev/null 2>&1; then
-        docker network create "$K3D_PODMAN_NETWORK" >/dev/null
+if [ "$USE_SERVERLB" = "false" ]; then
+    if [ "$CLUSTER_RUNTIME" = "podman" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') | [INFO] Ensuring Podman network '$K3D_PODMAN_NETWORK' exists"
+
+        if ! docker network inspect "$K3D_PODMAN_NETWORK" >/dev/null 2>&1; then
+            docker network create "$K3D_PODMAN_NETWORK" >/dev/null
+        fi
+
+        set -- "$@" --network "$K3D_PODMAN_NETWORK"
     fi
+
+    set -- "$@" --no-lb --api-port "$KUBE_API_PORT"
 
     ensure_cluster_runtime_nodes_started &
     NODE_HELPER_PID=$!
-    k3d cluster create \
-        --config /tmp/k3d-config.yaml \
-        --network "$K3D_PODMAN_NETWORK" \
-        --no-lb \
-        -p "${KUBE_API_PORT}:6443@server:0" &
+    k3d cluster create "$@" &
     K3D_CREATE_PID=$!
 
     while ! cluster_exists; do
         if ! kill -0 "$K3D_CREATE_PID" >/dev/null 2>&1; then
             wait "$K3D_CREATE_PID"
             CREATE_EXIT_CODE=$?
-            kill "$NODE_HELPER_PID" >/dev/null 2>&1 || true
-            wait "$NODE_HELPER_PID" 2>/dev/null || true
+            terminate_background_pid "$NODE_HELPER_PID" "cluster-node-helper" 5
 
             if [ "$CREATE_EXIT_CODE" -ne 0 ]; then
                 exit "$CREATE_EXIT_CODE"
@@ -212,12 +244,9 @@ if [ "$CLUSTER_RUNTIME" = "podman" ]; then
         sleep 2
     done
 
-    kill "$K3D_CREATE_PID" >/dev/null 2>&1 || true
-    wait "$K3D_CREATE_PID" 2>/dev/null || true
-    kill "$NODE_HELPER_PID" >/dev/null 2>&1 || true
-    wait "$NODE_HELPER_PID" 2>/dev/null || true
+    terminate_background_pid "$K3D_CREATE_PID" "k3d-create" 15
+    terminate_background_pid "$NODE_HELPER_PID" "cluster-node-helper" 5
 else
-    # Create k3d cluster
     k3d cluster create --config /tmp/k3d-config.yaml
 fi
 
