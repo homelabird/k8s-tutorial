@@ -87,9 +87,6 @@ grep -Eq '^OUTSIDE-LANDING-SUMMARY \| groups=[0-9]+ \| total=[0-9]+ \| matched-f
 grep -Eq '^OUTSIDE-LANDING-SUMMARY \| groups=[0-9]+ \| total=[0-9]+ \| matched-files=[0-9]+ \| unmatched-files=[0-9]+$' "$OUTPUT_DIR/outside-batch-plan-expanded.txt"
 grep -Eq '^LANDING-PLAN \| batches=[0-9]+$' "$OUTPUT_DIR/outside-landing-batches.txt"
 grep -Eq '^LANDING-PLAN \| batches=[0-9]+$' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
-grep -Eq '^outside-[a-z0-9-]+ \| LANDING-STEP \| order=[0-9]+ \| landing-state=[a-z-]+ \| readiness=needs-landing \| handoff=[a-z-]+ \| artifact-state=[a-z-]+ \| commit-scope=outside-[a-z0-9-]+ \| focus=.+ \| files=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=0$' "$OUTPUT_DIR/outside-landing-batches.txt"
-grep -Eq '^outside-[a-z0-9-]+ \| LANDING-HANDOFF \| next=.+$' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
-grep -Eq '^outside-[a-z0-9-]+ \| LANDING-ARTIFACT \| type=latest-memo \| path=\.artifacts/review-memos/outside-batches-outside-batch-memo\.txt$' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
 grep -Eq '^batch-2 \| LANDING-STEP \| order=2 \| landing-state=[a-z-]+ \| readiness=[a-z-]+ \| handoff=[a-z-]+ \| artifact-state=[a-z-]+ \| commit-scope=cka-regressions-and-diagnostics \| files=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+$' "$OUTPUT_DIR/landing-plan.txt"
 grep -Eq '^batch-2 \| LANDING-FILE \| tracked-modified \| .+$' "$OUTPUT_DIR/landing-plan-expanded.txt"
 grep -Eq '^## Review Landing Summary$' "$OUTPUT_DIR/landing-summary.md"
@@ -105,18 +102,12 @@ else
 fi
 grep -Eq '^2\. \*\*batch-2\*\* `cka-regressions-and-diagnostics`$' "$OUTPUT_DIR/landing-summary.md"
 grep -Eq '^   Latest artifacts: note `.+`; memo `.+`$' "$OUTPUT_DIR/landing-summary.md"
-grep -Eq '^### Outside Landing Order$' "$OUTPUT_DIR/landing-summary.md"
-grep -Eq '^Grouped memo: `\.artifacts/review-memos/outside-batches-outside-batch-memo\.txt`$' "$OUTPUT_DIR/landing-summary.md"
-grep -Eq '^[0-9]+\. \*\*outside-[a-z0-9-]+\*\* focus `.+`$' "$OUTPUT_DIR/landing-summary.md"
 grep -Eq '^## Review Landing Drafts$' "$OUTPUT_DIR/landing-drafts.md"
 grep -Eq '^### batch-2$' "$OUTPUT_DIR/landing-drafts.md"
 grep -Eq '^- Commit title: `chore\(review\): land cka-regressions-and-diagnostics batch`$' "$OUTPUT_DIR/landing-drafts.md"
 grep -Eq '^- PR title: `Land batch-2 \(cka-regressions-and-diagnostics\) handoff bundle`$' "$OUTPUT_DIR/landing-drafts.md"
 grep -Eq '^Suggested shell commands:$' "$OUTPUT_DIR/landing-drafts.md"
 grep -Eq '^(git add -- .+|git commit -m .+|\./scripts/verify/run-review-batch-checks\.sh .+|echo no-files-to-stage)$' "$OUTPUT_DIR/landing-drafts.md"
-grep -Eq '^## Outside Landing Drafts$' "$OUTPUT_DIR/landing-drafts.md"
-grep -Eq '^### outside-[a-z0-9-]+$' "$OUTPUT_DIR/landing-drafts.md"
-grep -Eq '^- Grouped memo: `\.artifacts/review-memos/outside-batches-outside-batch-memo\.txt`$' "$OUTPUT_DIR/landing-drafts.md"
 grep -Eq '^batch-2 \| HANDOFF-ARTIFACTS \| artifact-state=' "$OUTPUT_DIR/handoff-index.txt"
 if grep -Eq '\| outside-batches=1$' "$OUTPUT_DIR/handoff-index.txt"; then
   grep -Eq '^outside-batches \| HANDOFF-ARTIFACTS \| artifact-state=' "$OUTPUT_DIR/handoff-index.txt"
@@ -126,6 +117,30 @@ grep -Eq '^MEMO-MANIFEST \| path=.+' "$OUTPUT_DIR/memo-manifest-report.txt"
 grep -Eq '^2026-04-11T18:00:20\+09:00 \| batches=outside-batches \| filter=outside-landing-draft \| name=outside-frontend-runtime \| output=.+' "$OUTPUT_DIR/review-draft-manifest.txt"
 grep -Eq '^echo no-pending-review-actions$|^\./scripts/verify/run-review-batch-checks\.sh .+$' "$OUTPUT_DIR/next.txt"
 grep -Eq '^NEXT \|' "$OUTPUT_DIR/next-verbose.txt"
+
+OUTSIDE_LANDING_BATCHES="$(awk -F'batches=' '/^LANDING-PLAN \| batches=/{print $2; exit}' "$OUTPUT_DIR/outside-landing-batches.txt" | tr -d '[:space:]')"
+if [ -z "$OUTSIDE_LANDING_BATCHES" ]; then
+  echo "Failed to parse outside landing batch count" >&2
+  exit 1
+fi
+
+if [ "$OUTSIDE_LANDING_BATCHES" -gt 0 ]; then
+  grep -Eq '^outside-[a-z0-9-]+ \| LANDING-STEP \| order=[0-9]+ \| landing-state=[a-z-]+ \| readiness=needs-landing \| handoff=[a-z-]+ \| artifact-state=[a-z-]+ \| commit-scope=outside-[a-z0-9-]+ \| focus=.+ \| files=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=0$' "$OUTPUT_DIR/outside-landing-batches.txt"
+  grep -Eq '^outside-[a-z0-9-]+ \| LANDING-HANDOFF \| next=.+$' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
+  grep -Eq '^outside-[a-z0-9-]+ \| LANDING-ARTIFACT \| type=latest-memo \| path=\.artifacts/review-memos/outside-batches-outside-batch-memo\.txt$' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
+  grep -Eq '^### Outside Landing Order$' "$OUTPUT_DIR/landing-summary.md"
+  grep -Eq '^Grouped memo: `\.artifacts/review-memos/outside-batches-outside-batch-memo\.txt`$' "$OUTPUT_DIR/landing-summary.md"
+  grep -Eq '^[0-9]+\. \*\*outside-[a-z0-9-]+\*\* focus `.+`$' "$OUTPUT_DIR/landing-summary.md"
+  grep -Eq '^## Outside Landing Drafts$' "$OUTPUT_DIR/landing-drafts.md"
+  grep -Eq '^### outside-[a-z0-9-]+$' "$OUTPUT_DIR/landing-drafts.md"
+  grep -Eq '^- Grouped memo: `\.artifacts/review-memos/outside-batches-outside-batch-memo\.txt`$' "$OUTPUT_DIR/landing-drafts.md"
+else
+  ! grep -Eq '^outside-[a-z0-9-]+ \| LANDING-STEP \| ' "$OUTPUT_DIR/outside-landing-batches.txt"
+  ! grep -Eq '^outside-[a-z0-9-]+ \| LANDING-HANDOFF \| ' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
+  ! grep -Eq '^outside-[a-z0-9-]+ \| LANDING-ARTIFACT \| ' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
+  ! grep -Eq '^### Outside Landing Order$' "$OUTPUT_DIR/landing-summary.md"
+  ! grep -Eq '^## Outside Landing Drafts$' "$OUTPUT_DIR/landing-drafts.md"
+fi
 
 tar -tzf "$ARCHIVE_PATH" | grep -Fx 'review-handoff/handoff-index.txt' >/dev/null
 tar -tzf "$ARCHIVE_PATH" | grep -Fx 'review-handoff/landing-plan.txt' >/dev/null
