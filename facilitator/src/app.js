@@ -31,7 +31,10 @@ app.use(morgan('combined', {
 // API routes
 app.use('/api/v1', sshRoutes);
 app.use('/api/v1/exams', examRoutes);
+// Keep the legacy misspelled path for backward compatibility while
+// serving the canonical route for new clients.
 app.use('/api/v1/assements', assessmentRoutes);
+app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/remote-desktop', remoteDesktopRoutes);
 
 // Root route
@@ -53,6 +56,14 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.warn('Invalid JSON request body', { error: err.message });
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Request body must be valid JSON'
+    });
+  }
+
   logger.error('Unhandled error', { error: err.message, stack: err.stack });
   res.status(500).json({
     error: 'Internal Server Error',
@@ -60,20 +71,33 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize Redis connection
-(async () => {
+async function initializeRedis() {
   try {
     await redisClient.connect();
     logger.info('Redis connected successfully');
   } catch (error) {
     logger.error(`Redis connection failed: ${error.message}`);
+    throw error;
   }
-})();
+}
 
-// Start the server
 const PORT = config.port;
-app.listen(PORT, () => {
-  logger.info(`Server running in ${config.env} mode on port ${PORT}`);
-});
 
-module.exports = app; // Export for testing 
+async function startServer(port = PORT) {
+  await initializeRedis();
+
+  return app.listen(port, () => {
+    logger.info(`Server running in ${config.env} mode on port ${port}`);
+  });
+}
+
+if (require.main === module) {
+  startServer().catch((error) => {
+    logger.error('Failed to start facilitator service', { error: error.message });
+    process.exit(1);
+  });
+}
+
+module.exports = app;
+module.exports.initializeRedis = initializeRedis;
+module.exports.startServer = startServer;

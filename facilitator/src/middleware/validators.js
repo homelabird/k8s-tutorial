@@ -23,12 +23,12 @@ const validateExecuteCommand = (req, res, next) => {
  * Validate the create exam request
  */
 const validateCreateExam = (req, res, next) => {
-  // This is a placeholder validation - will be implemented fully later
   const schema = Joi.object({
-    // Add exam schema validation later
+    examId: Joi.string().trim().min(1),
+    assetPath: Joi.string().trim().min(1)
   }).unknown(true);
-  
-  const { error } = schema.validate(req.body);
+
+  const { error } = schema.or('examId', 'assetPath').validate(req.body);
   
   if (error) {
     logger.warn('Invalid create exam request', { error: error.message });
@@ -42,7 +42,14 @@ const validateCreateExam = (req, res, next) => {
  * Validate the evaluate exam request
  */
 const validateEvaluateExam = (req, res, next) => {
-  // TODO: Implement this
+  const schema = Joi.object({}).unknown(true);
+  const { error } = schema.validate(req.body);
+
+  if (error) {
+    logger.warn('Invalid evaluate exam request', { error: error.message });
+    return res.status(400).json({ error: error.message });
+  }
+
   next();
 };
 
@@ -55,7 +62,7 @@ const validateEvaluateExam = (req, res, next) => {
 const validateExamEvents = (req, res, next) => {
   const { events } = req.body;
 
-  if (!events || typeof events !== 'object') {
+  if (!events || typeof events !== 'object' || Array.isArray(events)) {
     return res.status(400).json({
       error: 'Bad Request',
       message: 'Request body must include events field as an object'
@@ -70,4 +77,4 @@ module.exports = {
   validateCreateExam,
   validateEvaluateExam,
   validateExamEvents
-}; 
+};

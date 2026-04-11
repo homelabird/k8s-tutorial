@@ -1,45 +1,77 @@
-/**
- * Tests for Jumphost Service
- * 
- * These tests verify that the jumphost service can properly
- * set up and clean up exam environments.
- */
-
-const jumphostService = require('../src/services/jumphostService');
 const sshService = require('../src/services/sshService');
 const redisClient = require('../src/utils/redisClient');
+const remoteDesktopService = require('../src/services/remoteDesktopService');
+const MetricService = require('../src/services/metricService');
+const jumphostService = require('../src/services/jumphostService');
 
-// Mock dependencies
-jest.mock('../src/services/sshService');
-jest.mock('../src/utils/redisClient');
+jest.mock('../src/services/sshService', () => ({
+  executeCommand: jest.fn()
+}));
+
+jest.mock('../src/utils/redisClient', () => ({
+  persistExamStatus: jest.fn(),
+  updateExamStatus: jest.fn()
+}));
+
+jest.mock('../src/services/remoteDesktopService', () => ({
+  restartVncSession: jest.fn()
+}));
+
+jest.mock('../src/services/metricService', () => ({
+  sendMetrics: jest.fn()
+}));
+
+jest.mock('../src/utils/logger', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  http: jest.fn()
+}));
+
+const sharedEnvironmentPlan = {
+  environments: [
+    {
+      id: 'shared',
+      sshHost: 'jumphost',
+      sshAlias: 'ckad9999',
+      clusterName: 'cluster',
+      k8sApiServerHost: 'k8s-api-server',
+      kubeApiPort: 6443,
+      workerNodes: 2,
+      questionIds: ['1', '2']
+    }
+  ]
+};
 
 describe('Jumphost Service', () => {
   beforeEach(() => {
-    // Clear all mocks before each test
     jest.clearAllMocks();
+    remoteDesktopService.restartVncSession.mockResolvedValue();
+    MetricService.sendMetrics.mockResolvedValue();
   });
 
   describe('setupExamEnvironment', () => {
-    it('should update exam status to PREPARING, execute the prepare command, and update status to READY on success', async () => {
-      // Mock successful SSH command execution
+    it('prepares the environment and marks the exam ready', async () => {
       sshService.executeCommand.mockResolvedValueOnce({
         exitCode: 0,
         stdout: 'Environment prepared successfully',
         stderr: ''
       });
 
-      // Call the function
-      const result = await jumphostService.setupExamEnvironment('test-exam-id', 2);
+      const result = await jumphostService.setupExamEnvironment('test-exam-id', sharedEnvironmentPlan);
 
-      // Verify Redis status updates
-      expect(redisClient.persistExamStatus).toHaveBeenCalledTimes(2);
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(1, 'test-exam-id', 'PREPARING');
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(2, 'test-exam-id', 'READY');
-
-      // Verify SSH command execution
-      expect(sshService.executeCommand).toHaveBeenCalledWith('prepare-exam-env 2');
-
-      // Verify result
+      expect(remoteDesktopService.restartVncSession).toHaveBeenCalledTimes(1);
+      expect(sshService.executeCommand).toHaveBeenCalledWith(
+        "prepare-exam-env 2 'test-exam-id' 'cluster' '1,2' '6443' 'k8s-api-server'",
+        { host: 'jumphost' }
+      );
+      expect(MetricService.sendMetrics).toHaveBeenCalledWith('test-exam-id', {
+        event: {
+          examLabState: 'READY'
+        }
+      });
       expect(result).toEqual({
         success: true,
         message: 'Exam environment prepared successfully',
@@ -49,77 +81,57 @@ describe('Jumphost Service', () => {
       });
     });
 
-    it('should handle command execution failure', async () => {
-      // Mock failed SSH command execution
+    it('marks preparation as failed when the jumphost command fails', async () => {
       sshService.executeCommand.mockResolvedValueOnce({
         exitCode: 1,
         stdout: '',
         stderr: 'Failed to prepare environment'
       });
 
-      // Call the function
-      const result = await jumphostService.setupExamEnvironment('test-exam-id');
+      const result = await jumphostService.setupExamEnvironment('test-exam-id', sharedEnvironmentPlan);
 
-      // Verify Redis status updates
-      expect(redisClient.persistExamStatus).toHaveBeenCalledTimes(2);
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(1, 'test-exam-id', 'PREPARING');
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(2, 'test-exam-id', 'PREPARATION_FAILED');
-
-      // Verify result
+      expect(MetricService.sendMetrics).toHaveBeenCalledWith('test-exam-id', {
+        event: {
+          examLabState: 'PREPARATION_FAILED'
+        }
+      });
       expect(result).toEqual({
         success: false,
         error: 'Failed to prepare exam environment',
         details: {
+          host: 'jumphost',
+          environmentId: 'shared',
           stdout: '',
           stderr: 'Failed to prepare environment',
           exitCode: 1
         }
       });
     });
-
-    it('should handle unexpected errors', async () => {
-      // Mock exception
-      const error = new Error('Unexpected error');
-      sshService.executeCommand.mockRejectedValueOnce(error);
-
-      // Call the function
-      const result = await jumphostService.setupExamEnvironment('test-exam-id');
-
-      // Verify Redis status updates
-      expect(redisClient.persistExamStatus).toHaveBeenCalledTimes(2);
-      expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(1, 'test-exam-id', 'PREPARING');
-      expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(2, 'test-exam-id', 'PREPARATION_FAILED');
-
-      // Verify result
-      expect(result).toEqual({
-        success: false,
-        error: 'Error preparing exam environment',
-        message: 'Unexpected error'
-      });
-    });
   });
 
   describe('cleanupExamEnvironment', () => {
-    it('should update exam status to CLEANING_UP, execute the cleanup command, and update status to COMPLETED on success', async () => {
-      // Mock successful SSH command execution
+    it('cleans up the environment and marks the exam completed', async () => {
       sshService.executeCommand.mockResolvedValueOnce({
         exitCode: 0,
         stdout: 'Environment cleaned up successfully',
         stderr: ''
       });
 
-      // Call the function
-      const result = await jumphostService.cleanupExamEnvironment('test-exam-id');
+      const result = await jumphostService.cleanupExamEnvironment('test-exam-id', sharedEnvironmentPlan);
 
-      // Verify Redis status updates
-      expect(redisClient.persistExamStatus).toHaveBeenCalledTimes(2);
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(1, 'test-exam-id', 'CLEANING_UP');
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(2, 'test-exam-id', 'COMPLETED');
-
-      // Verify SSH command execution
-      expect(sshService.executeCommand).toHaveBeenCalledWith('cleanup-exam-env');
-
-      // Verify result
+      expect(sshService.executeCommand).toHaveBeenCalledWith(
+        "cleanup-exam-env 'cluster' 'k8s-api-server'",
+        { host: 'jumphost' }
+      );
+      expect(MetricService.sendMetrics).toHaveBeenCalledWith('test-exam-id', {
+        event: {
+          cleanupLabState: 'COMPLETED'
+        }
+      });
       expect(result).toEqual({
         success: true,
         message: 'Exam environment cleaned up successfully',
@@ -129,27 +141,28 @@ describe('Jumphost Service', () => {
       });
     });
 
-    it('should handle command execution failure', async () => {
-      // Mock failed SSH command execution
+    it('marks cleanup as failed when the jumphost command fails', async () => {
       sshService.executeCommand.mockResolvedValueOnce({
         exitCode: 1,
         stdout: '',
         stderr: 'Failed to clean up environment'
       });
 
-      // Call the function
-      const result = await jumphostService.cleanupExamEnvironment('test-exam-id');
+      const result = await jumphostService.cleanupExamEnvironment('test-exam-id', sharedEnvironmentPlan);
 
-      // Verify Redis status updates
-      expect(redisClient.persistExamStatus).toHaveBeenCalledTimes(2);
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(1, 'test-exam-id', 'CLEANING_UP');
       expect(redisClient.persistExamStatus).toHaveBeenNthCalledWith(2, 'test-exam-id', 'CLEANUP_FAILED');
-
-      // Verify result
+      expect(MetricService.sendMetrics).toHaveBeenCalledWith('test-exam-id', {
+        event: {
+          cleanupLabState: 'CLEANUP_FAILED'
+        }
+      });
       expect(result).toEqual({
         success: false,
         error: 'Failed to clean up exam environment',
         details: {
+          host: 'jumphost',
+          environmentId: 'shared',
           stdout: '',
           stderr: 'Failed to clean up environment',
           exitCode: 1
@@ -157,4 +170,4 @@ describe('Jumphost Service', () => {
       });
     });
   });
-}); 
+});

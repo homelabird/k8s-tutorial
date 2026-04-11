@@ -135,6 +135,19 @@ function applyEnvironmentPlanToQuestions(rawQuestions = [], environmentPlan = {}
   });
 }
 
+async function releaseCurrentExamLock(examId) {
+  try {
+    const currentExamId = await redisClient.getCurrentExamId();
+    if (currentExamId === examId) {
+      await redisClient.deleteCurrentExamId();
+    }
+  } catch (error) {
+    logger.error(`Failed to release current exam lock for exam ${examId}`, {
+      error: error.message
+    });
+  }
+}
+
 /**
  * Create a new exam
  * @param {Object} examData - The exam data
@@ -230,6 +243,7 @@ async function setupExamEnvironmentAsync(examId, environmentPlan) {
         error: result.error,
         details: result.details
       });
+      await releaseCurrentExamLock(examId);
       // The jumphostService already updates the exam status on failure
       return;
     }
@@ -247,6 +261,7 @@ async function setupExamEnvironmentAsync(examId, environmentPlan) {
       if (currentStatus !== 'PREPARATION_FAILED') {
         await redisClient.persistExamStatus(examId, 'PREPARATION_FAILED');
       }
+      await releaseCurrentExamLock(examId);
     } catch (statusError) {
       logger.error(`Failed to update exam status for exam ${examId}`, {
         error: statusError.message
@@ -395,15 +410,6 @@ async function getExamQuestions(examId) {
  */
 async function evaluateExam(examId, evaluationData) {
   try {
-    // Update exam status to EVALUATING
-    await redisClient.updateExamStatus(examId, 'EVALUATING');
-
-    MetricService.sendMetrics(examId, {
-      event: {
-        examEvaluationState: 'EVALUATING'
-      }
-    });
-    
     // Get exam data and question information
     const examInfo = await redisClient.getExamInfo(examId);
     if (!examInfo) {
@@ -420,6 +426,16 @@ async function evaluateExam(examId, evaluationData) {
       examInfo.config || loadExamConfig(examInfo.assetPath),
       questionsResponse.data.questions || []
     );
+
+    // Update exam status to EVALUATING only after confirming the exam exists
+    // and the question payload can be loaded successfully.
+    await redisClient.updateExamStatus(examId, 'EVALUATING');
+
+    MetricService.sendMetrics(examId, {
+      event: {
+        examEvaluationState: 'EVALUATING'
+      }
+    });
     
     // Start evaluation asynchronously using Promise
     // This will happen in the background while the response is sent back to the client
@@ -504,16 +520,31 @@ async function endExam(examId) {
 
     // Clean up the exam environment
     try {
-      await jumphostService.cleanupExamEnvironment(examId, examInfo?.environmentPlan || {});
-      
-      // Clear the current exam info 
+      const cleanupResult = await jumphostService.cleanupExamEnvironment(
+        examId,
+        examInfo?.environmentPlan || {}
+      );
+
+      if (!cleanupResult?.success) {
+        return {
+          success: false,
+          error: 'Failed to end exam',
+          message: cleanupResult?.error || cleanupResult?.message || 'Exam cleanup failed'
+        };
+      }
+
+      // Clear the current exam info only after cleanup succeeds.
       await redisClient.deleteCurrentExamId();
       await redisClient.deleteAllExamData(examId);
     } catch (cleanupError) {
       logger.error(`Error cleaning up exam environment for exam ${examId}`, {
         error: cleanupError.message
       });
-      // Continue with ending the exam even if cleanup fails
+      return {
+        success: false,
+        error: 'Failed to end exam',
+        message: cleanupError.message
+      };
     }
     
     logger.info(`Exam ${examId} completed`);
