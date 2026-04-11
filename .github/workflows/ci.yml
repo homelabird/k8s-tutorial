@@ -350,19 +350,47 @@ jobs:
           status_output="$(bash scripts/verify/run-review-batch-checks.sh --status batch-4)"
           grep -Eq '^batch-4 \| readiness=[a-z-]+ \| reason=[a-z-]+ \| total=5 \| existing=5 \| missing=0 \| clean=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+$' <<<"${status_output}"
           status_all_output="$(bash scripts/verify/run-review-batch-checks.sh --status-all)"
-          grep -Eq '^FIRST-ACTION \| batch=batch-[1-5] \| readiness=[a-z-]+ \| reason=[a-z-]+ \| next=\./scripts/verify/run-review-batch-checks\.sh .+$' <<<"${status_all_output}"
-          grep -Eq '^VERDICT \| readiness=[a-z-]+ \| reason=[a-z-]+ \| ready=[0-9]+ \| needs-landing=[0-9]+ \| blocked=[0-9]+$' <<<"${status_all_output}"
-          grep -Eq '^ALL \| readiness=[a-z-]+ \| reason=[a-z-]+ \| batches=5 \| total=[0-9]+ \| existing=[0-9]+ \| missing=[0-9]+ \| clean=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| batches-with-missing=[0-9]+ \| batches-with-tracked-modified=[0-9]+ \| batches-with-untracked=[0-9]+$' <<<"${status_all_output}"
+          if grep -q '^FIRST-ACTION \|' <<<"${status_all_output}"; then
+            exit 1
+          fi
+          grep -Eq '^OUTSIDE-BATCHES \| readiness=ready \| reason=no-outside-batch-changes \| total=0 \| tracked-modified=0 \| untracked=0$' <<<"${status_all_output}"
+          grep -Eq '^HANDOFF \| complete=5 \| pending-artifact=0 \| direct-review=0 \| pending-run=0 \| blocked=0 \| next=echo no-pending-review-actions$' <<<"${status_all_output}"
+          grep -Eq '^VERDICT \| readiness=ready \| reason=all-files-clean \| ready=5 \| needs-landing=0 \| blocked=0$' <<<"${status_all_output}"
+          grep -Eq '^ALL \| readiness=ready \| reason=all-files-clean \| batches=5 \| total=[0-9]+ \| existing=[0-9]+ \| missing=0 \| clean=[0-9]+ \| tracked-modified=0 \| untracked=0 \| batches-with-missing=0 \| batches-with-tracked-modified=0 \| batches-with-untracked=0$' <<<"${status_all_output}"
           next_output="$(bash scripts/verify/run-review-batch-checks.sh --next)"
-          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh .+$' <<<"${next_output}"
-          if grep -q -- '--note ' <<<"${next_output}"; then
-            grep -Eq -- '--write \.artifacts/review-notes/[a-z0-9-]+-[a-z0-9-]+\.txt$' <<<"${next_output}"
-          fi
+          grep -Eq '^echo no-pending-review-actions$' <<<"${next_output}"
           next_verbose_output="$(bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
-          grep -Eq '^NEXT \| batch=batch-[1-5] \| readiness=[a-z-]+ \| reason=[a-z-]+ \| total=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+ \| focus=.* \| next=\./scripts/verify/run-review-batch-checks\.sh .+$' <<<"${next_verbose_output}"
-          if grep -q -- '--note ' <<<"${next_verbose_output}"; then
-            grep -Eq -- '--write \.artifacts/review-notes/[a-z0-9-]+-[a-z0-9-]+\.txt$' <<<"${next_verbose_output}"
-          fi
+          grep -Eq '^NEXT \| state=complete \| next=echo no-pending-review-actions$' <<<"${next_verbose_output}"
+          outside_file="scripts/verify/.review-batch-ci-outside.tmp"
+          touch "${outside_file}"
+          outside_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-batches)"
+          grep -Eq '^OUTSIDE-BATCHES \| readiness=needs-batching \| reason=outside-batch-changes-present \| total=1 \| tracked-modified=0 \| untracked=1$' <<<"${outside_output}"
+          grep -Eq '^OUTSIDE-BATCH \| untracked \| scripts/verify/\.review-batch-ci-outside\.tmp$' <<<"${outside_output}"
+          outside_group_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-batch-groups)"
+          grep -Eq '^OUTSIDE-BATCH-GROUPS \| total=1 \| matched-groups=0 \| unmatched-files=1$' <<<"${outside_group_output}"
+          outside_plan_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-batch-plan)"
+          grep -Eq '^OUTSIDE-LANDING-SUMMARY \| groups=0 \| total=1 \| matched-files=0 \| unmatched-files=1$' <<<"${outside_plan_output}"
+          outside_plan_show_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-batch-plan --show)"
+          grep -Eq '^OUTSIDE-LANDING-SUMMARY \| groups=0 \| total=1 \| matched-files=0 \| unmatched-files=1$' <<<"${outside_plan_show_output}"
+          outside_landing_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-landing-batches)"
+          grep -Eq '^LANDING-PLAN \| batches=0$' <<<"${outside_landing_output}"
+          grep -Eq '^LANDING-PLAN-SUMMARY \| ready-for-landing=0 \| pending-handoff=0 \| blocked=0$' <<<"${outside_landing_output}"
+          outside_landing_show_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-landing-batches --show)"
+          grep -Eq '^LANDING-PLAN \| batches=0$' <<<"${outside_landing_show_output}"
+          grep -Eq '^LANDING-PLAN-SUMMARY \| ready-for-landing=0 \| pending-handoff=0 \| blocked=0$' <<<"${outside_landing_show_output}"
+          outside_landing_named_output="$(bash scripts/verify/run-review-batch-checks.sh --outside-landing-batches --name outside-frontend-runtime --show)"
+          grep -Eq '^LANDING-PLAN \| batches=0$' <<<"${outside_landing_named_output}"
+          grep -Eq '^LANDING-PLAN-SUMMARY \| ready-for-landing=0 \| pending-handoff=0 \| blocked=0$' <<<"${outside_landing_named_output}"
+          outside_status_all_output="$(bash scripts/verify/run-review-batch-checks.sh --status-all)"
+          grep -Eq '^OUTSIDE-BATCHES \| readiness=needs-batching \| reason=outside-batch-changes-present \| total=1 \| tracked-modified=0 \| untracked=1$' <<<"${outside_status_all_output}"
+          grep -Eq '^FIRST-ACTION \| batch=outside-batches \| readiness=needs-batching \| reason=outside-batch-changes-present \| next=\./scripts/verify/run-review-batch-checks\.sh --outside-landing-batches --show$' <<<"${outside_status_all_output}"
+          grep -Eq '^HANDOFF \| complete=5 \| pending-artifact=0 \| direct-review=0 \| pending-run=0 \| blocked=0 \| next=\./scripts/verify/run-review-batch-checks\.sh --outside-landing-batches --show$' <<<"${outside_status_all_output}"
+          grep -Eq '^VERDICT \| readiness=needs-batching \| reason=outside-batch-changes-present \| ready=5 \| needs-landing=0 \| blocked=0$' <<<"${outside_status_all_output}"
+          outside_next_output="$(bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --outside-landing-batches --show$' <<<"${outside_next_output}"
+          outside_next_verbose_output="$(bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=outside-batches \| readiness=needs-batching \| reason=outside-batch-changes-present \| total=1 \| tracked-modified=0 \| untracked=1 \| missing=0 \| focus=scripts/verify/\.review-batch-ci-outside\.tmp \| next=\./scripts/verify/run-review-batch-checks\.sh --outside-landing-batches --show$' <<<"${outside_next_verbose_output}"
+          rm -f "${outside_file}"
 
   diagnostics-collector-smoke:
     runs-on: ubuntu-latest
