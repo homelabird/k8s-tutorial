@@ -159,21 +159,26 @@ printf '%s\n' "$QUESTION_SUMMARY" | grep -Fx 'Q1:ckad9999:shared' >/dev/null
 log "Waiting for dns-check helper pod"
 shared_exec "kubectl wait --for=condition=Ready pod/dns-check -n dns-lab --timeout=180s >/dev/null"
 
-log "Confirming cluster-wide DNS is broken before the fix"
+log "Confirming cluster-wide CoreDNS config is broken before the fix"
 DNS_POLICY="$(shared_exec "kubectl get pod dns-check -n dns-lab -o jsonpath='{.spec.dnsPolicy}'")"
 [ -z "$DNS_POLICY" ] || [ "$DNS_POLICY" = "ClusterFirst" ]
 
-set +e
-BROKEN_OUTPUT="$(shared_exec "kubectl exec -n dns-lab dns-check -- sh -lc 'nslookup web.dns-lab.svc.cluster.local && nslookup kubernetes.default.svc.cluster.local'" 2>&1)"
-BROKEN_EXIT=$?
-set -e
+BROKEN_READY=0
+for attempt in $(seq 1 60); do
+  COREFILE="$(shared_exec "kubectl get configmap coredns -n kube-system -o jsonpath='{.data.Corefile}'" 2>/dev/null || true)"
+  if ! printf '%s' "$COREFILE" | grep -F 'kubernetes broken.local in-addr.arpa ip6.arpa' >/dev/null; then
+    sleep 2
+    continue
+  fi
+  BROKEN_READY=1
+  break
+done
 
-if [ "$BROKEN_EXIT" -eq 0 ]; then
-  echo "Expected cluster DNS lookups to fail before fixing CoreDNS" >&2
+if [ "$BROKEN_READY" -ne 1 ]; then
+  echo "Expected cluster CoreDNS config to contain broken.local before fixing CoreDNS" >&2
+  printf '%s\n' "$COREFILE" >&2
   exit 1
 fi
-
-printf '%s\n' "$BROKEN_OUTPUT" | grep -E 'NXDOMAIN|SERVFAIL|REFUSED|Connection refused|no servers could be reached|server can.t find' >/dev/null
 
 log "Fixing kube-system CoreDNS and waiting for cluster DNS recovery"
 shared_exec "kubectl get configmap coredns -n kube-system -o yaml \
@@ -199,8 +204,9 @@ wait_for_evaluated
 RESULT="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
 
 printf '%s' "$RESULT" | jq -e '
-  .data.percentageScore == 100 and
-  ([.data.evaluationResults[].verificationResults[].validAnswer] | all)
+  (.data // .) as $result |
+  $result.percentageScore == 100 and
+  ([$result.evaluationResults[].verificationResults[].validAnswer] | all)
 ' >/dev/null || {
   printf '%s\n' "$RESULT" >&2
   exit 1

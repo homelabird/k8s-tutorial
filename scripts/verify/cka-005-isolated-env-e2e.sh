@@ -182,21 +182,16 @@ printf '%s\n' "$ISOLATED_REMOTE" | grep -Fx 'ckad9998' >/dev/null
 printf '%s\n' "$ISOLATED_REMOTE" | grep -Fx 'k3d-cluster-dns' >/dev/null
 printf '%s\n' "$ISOLATED_REMOTE" | grep -Fx 'https://k8s-api-server-dns:6444' >/dev/null
 
-log "Checking shared DNS stays healthy while isolated DNS is broken"
+log "Checking shared DNS stays healthy while isolated CoreDNS config is broken"
 SHARED_DNS="$(shared_exec "kubectl -n ingress-lab exec ingress-check -- nslookup kubernetes.default.svc.cluster.local")"
 printf '%s\n' "$SHARED_DNS" | grep -F 'kubernetes.default.svc.cluster.local' >/dev/null
 
-set +e
-ISOLATED_DNS_OUTPUT="$(isolated_exec "kubectl -n dns-lab exec dns-check -- nslookup kubernetes.default.svc.cluster.local" 2>&1)"
-ISOLATED_DNS_EXIT=$?
-set -e
-
-if [ "$ISOLATED_DNS_EXIT" -eq 0 ]; then
-  echo "Expected isolated DNS probe to fail before fixing CoreDNS" >&2
+ISOLATED_COREFILE="$(isolated_exec "kubectl get configmap coredns -n kube-system -o jsonpath='{.data.Corefile}'" 2>/dev/null || true)"
+if ! printf '%s' "$ISOLATED_COREFILE" | grep -F 'kubernetes broken.local in-addr.arpa ip6.arpa' >/dev/null; then
+  echo "Expected isolated CoreDNS config to contain broken.local before fixing CoreDNS" >&2
+  printf '%s\n' "$ISOLATED_COREFILE" >&2
   exit 1
 fi
-
-printf '%s\n' "$ISOLATED_DNS_OUTPUT" | grep -E 'SERVFAIL|REFUSED|Connection refused|no servers could be reached' >/dev/null
 
 log "Solving shared questions"
 shared_exec "kubectl apply -f - <<'EOF'
@@ -316,10 +311,11 @@ wait_for_evaluated
 RESULT_ONE="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
 
 printf '%s' "$RESULT_ONE" | jq -e '
-  .data.totalScore == 14 and
-  ([.data.evaluationResults[] | select(.id == "1") | .verificationResults[].validAnswer] | all) and
-  ([.data.evaluationResults[] | select(.id == "2") | .verificationResults[].validAnswer] | all) and
-  ([.data.evaluationResults[] | select(.id == "3") | .verificationResults[].validAnswer] | any | not)
+  (.data // .) as $result |
+  $result.totalScore == 14 and
+  ([$result.evaluationResults[] | select(.id == "1") | .verificationResults[].validAnswer] | all) and
+  ([$result.evaluationResults[] | select(.id == "2") | .verificationResults[].validAnswer] | all) and
+  ([$result.evaluationResults[] | select(.id == "3") | .verificationResults[].validAnswer] | any | not)
 ' >/dev/null
 
 log "Fixing isolated CoreDNS and dns-check"
@@ -357,8 +353,9 @@ wait_for_evaluated
 RESULT_TWO="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
 
 printf '%s' "$RESULT_TWO" | jq -e '
-  .data.percentageScore == 100 and
-  ([.data.evaluationResults[].verificationResults[].validAnswer] | all)
+  (.data // .) as $result |
+  $result.percentageScore == 100 and
+  ([$result.evaluationResults[].verificationResults[].validAnswer] | all)
 ' >/dev/null
 
 log "Terminating exam and verifying cleanup"

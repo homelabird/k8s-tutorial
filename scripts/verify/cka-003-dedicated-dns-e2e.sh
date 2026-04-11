@@ -277,8 +277,9 @@ wait_for_evaluated
 RESULT="$(curl -fsS "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result")"
 
 printf '%s' "$RESULT" | jq -e '
-  .data.percentageScore == 100 and
-  ([.data.evaluationResults[].verificationResults[].validAnswer] | all)
+  (.data // .) as $result |
+  $result.percentageScore == 100 and
+  ([$result.evaluationResults[].verificationResults[].validAnswer] | all)
 ' >/dev/null || {
   printf '%s\n' "$RESULT" >&2
   exit 1
