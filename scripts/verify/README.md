@@ -21,7 +21,7 @@ This directory contains local regression scripts for the exam stack.
 - `review-batch-workflow-contract-smoke.sh`
   - Verifies the manual review-batch workflow contract without running CI, checking that `.github/workflows/review-batch-checks.yml` still exposes the expected inputs, matrix planning job, conditional install steps, and `run-review-batch-checks.sh` invocation.
 - `review-batch-handoff-pack-smoke.sh`
-  - Verifies the review handoff export path with synthetic note and memo manifests so `pack-review-batch-handoff.sh` keeps emitting the handoff index, raw and expanded landing plans, markdown landing summary, status snapshots, manifest reports, copied artifacts, and shareable archive contents.
+  - Verifies the review handoff export path with synthetic note and memo manifests so `pack-review-batch-handoff.sh` keeps emitting the handoff index, raw and expanded landing plans, landing commands, markdown landing summary, status snapshots, manifest reports, copied artifacts, and shareable archive contents.
 - `browser-ui-scenario-contract-smoke.sh`
   - Verifies the browser smoke inventory without launching Playwright, checking that `browser-ui-smoke.mjs --list`, `package.json`, and the README scenario list all stay aligned.
 - `browser-ui-smoke.mjs`
@@ -37,11 +37,11 @@ This directory contains local regression scripts for the exam stack.
 - `pack-cka-2026-diagnostics.sh`
   - Collects the diagnostics bundle and compresses it into a `.tar.gz` archive for sharing or attachment.
 - `pack-review-batch-handoff.sh`
-  - Collects the completed review handoff state into one export directory and `.tar.gz`, including the handoff index, raw and expanded landing plans, markdown landing summary, markdown landing drafts, status snapshot, next-command snapshot, manifest reports, raw manifests, and generated note/memo artifacts.
+  - Collects the completed review handoff state into one export directory and `.tar.gz`, including the handoff index, raw and expanded landing plans, landing commands, outside-batch landing candidates, formal outside landing-batch views, markdown landing summary, markdown landing drafts, status snapshot, next-command snapshot, manifest reports, raw manifests, and generated note/memo artifacts.
 - `render-review-landing-summary.sh`
-  - Converts `landing-plan --show` output into a markdown handoff summary so the commit/PR landing order is readable without scanning the raw `LANDING-*` rows.
+  - Converts `landing-plan --show` output into a markdown handoff summary so the commit/PR landing order is readable without scanning the raw `LANDING-*` rows, and when `landing-commands.txt` is supplied, surfaces the first actionable stage/commit pair directly in the summary or falls back to the next pending handoff command.
 - `render-review-landing-drafts.sh`
-  - Converts `landing-plan --show` output into per-batch commit and PR draft sections so the export bundle can be used directly as a landing memo.
+  - Converts `landing-plan --show` output into per-batch commit and PR draft sections and, when `landing-commands.txt` is supplied, appends shell-ready stage/commit blocks so the export bundle can be used directly as a landing memo.
 - `render-cka-2026-summary-markdown.sh`
   - Converts `summary.txt` into a GitHub-friendly markdown summary with a verdict banner, a compact `Snapshot`, collapsed passing sections, verdict-aware `Read Next`, and a nested `Additional context` block that hides the default local base URL, compresses extra log references into a short archive hint, only shows the latest facilitator event on failed runs, and follows the discovered host list from the bundle.
 
@@ -226,12 +226,21 @@ Print the landing plan in commit order:
 ./scripts/verify/run-review-batch-checks.sh --landing-plan batch-2 --show
 ```
 
+Print copy-pasteable landing commands from that plan:
+
+```bash
+./scripts/verify/run-review-batch-checks.sh --landing-commands
+./scripts/verify/run-review-batch-checks.sh --landing-commands batch-2 outside-frontend-runtime
+```
+
 Render a markdown landing summary from the expanded landing plan:
 
 ```bash
 ./scripts/verify/run-review-batch-checks.sh --landing-plan --show > .artifacts/review-handoff/landing-plan-expanded.txt
-./scripts/verify/render-review-landing-summary.sh .artifacts/review-handoff/landing-plan-expanded.txt > .artifacts/review-handoff/landing-summary.md
-./scripts/verify/render-review-landing-drafts.sh .artifacts/review-handoff/landing-plan-expanded.txt > .artifacts/review-handoff/landing-drafts.md
+./scripts/verify/run-review-batch-checks.sh --outside-landing-batches --show > .artifacts/review-handoff/outside-landing-batches-expanded.txt
+./scripts/verify/run-review-batch-checks.sh --landing-commands > .artifacts/review-handoff/landing-commands.txt
+./scripts/verify/render-review-landing-summary.sh .artifacts/review-handoff/landing-plan-expanded.txt .artifacts/review-handoff/outside-landing-batches-expanded.txt .artifacts/review-handoff/landing-commands.txt > .artifacts/review-handoff/landing-summary.md
+./scripts/verify/render-review-landing-drafts.sh .artifacts/review-handoff/landing-plan-expanded.txt .artifacts/review-handoff/outside-landing-batches-expanded.txt .artifacts/review-handoff/landing-commands.txt > .artifacts/review-handoff/landing-drafts.md
 ```
 
 Pack the generated review handoff artifacts:
@@ -257,6 +266,37 @@ Print compact landing readiness for every review batch:
 
 ```bash
 ./scripts/verify/run-review-batch-checks.sh --status-all
+```
+
+Print changed files that are not covered by any current review batch:
+
+```bash
+./scripts/verify/run-review-batch-checks.sh --outside-batches
+```
+
+Print curated landing groups for those outside-batch changes:
+
+```bash
+./scripts/verify/run-review-batch-checks.sh --outside-batch-groups
+./scripts/verify/run-review-batch-checks.sh --outside-batch-groups --name facilitator-runtime
+```
+
+Print the ordered landing plan for those outside-batch changes:
+
+```bash
+./scripts/verify/run-review-batch-checks.sh --outside-batch-plan
+./scripts/verify/run-review-batch-checks.sh --outside-batch-plan --show
+./scripts/verify/run-review-batch-checks.sh --outside-landing-batches
+./scripts/verify/run-review-batch-checks.sh --outside-landing-batches --show
+```
+
+Print or write one outside-batch handoff note and the grouped memo:
+
+```bash
+./scripts/verify/run-review-batch-checks.sh --outside-batch-note --name frontend-runtime
+./scripts/verify/run-review-batch-checks.sh --outside-batch-note --name frontend-runtime --write .artifacts/review-notes/outside-batches-frontend-runtime.txt
+./scripts/verify/run-review-batch-checks.sh --outside-batch-memo
+./scripts/verify/run-review-batch-checks.sh --outside-batch-memo --write .artifacts/review-memos/outside-batches-outside-batch-memo.txt
 ```
 
 Print only the next recommended review command:
@@ -374,17 +414,25 @@ List the browser smoke scenarios without launching Playwright:
 - `run-review-batch-checks.sh --memo-manifest` prints the memo write log from `MEMO_MANIFEST_PATH` as `MEMO-MANIFEST` plus `MEMO-ENTRY` lines, which makes it easy to confirm which handoff files were generated and whether the recorded output paths still exist.
 - `run-review-batch-checks.sh --memo-manifest --latest` narrows that view to the latest recorded handoff artifact and prints it as a `MEMO-LATEST` line for quick follow-up.
 - `run-review-batch-checks.sh --memo-manifest --latest --show` prints the latest recorded memo artifact together with a `MEMO-SHOW` header and `MEMO-CONTENT` lines, which is useful when the handoff note should be re-read without opening the file manually.
-- `run-review-batch-checks.sh --handoff-index` converts the raw note/memo manifests into `batch-N | HANDOFF-ARTIFACTS` lines, showing `artifact-state`, actual-vs-expected note and memo counts, and the latest artifact path per batch.
+- `run-review-batch-checks.sh --handoff-index` converts the raw note/memo manifests into `batch-N | HANDOFF-ARTIFACTS` lines, showing `artifact-state`, actual-vs-expected note and memo counts, and the latest artifact path per batch; when repo drift still sits outside the current review manifests it also emits `outside-batches | HANDOFF-ARTIFACTS ...` so the handoff summary does not imply a false fully-landed state.
 - `run-review-batch-checks.sh --handoff-index --show` expands selected batches into `NOTE-ARTIFACT` and `MEMO-ARTIFACT` rows so the recorded handoff files can be reviewed without manually cross-referencing both manifests.
 - `run-review-batch-checks.sh --landing-plan` collapses the current handoff and git-state view into one commit-order landing plan with `LANDING-STEP` rows per batch and a `LANDING-PLAN-SUMMARY` aggregate. `--landing-plan --show` expands each batch into `LANDING-HANDOFF`, `LANDING-FILE`, and latest `LANDING-ARTIFACT` rows.
-- `render-review-landing-summary.sh` turns `landing-plan --show` output into `landing-summary.md`, which is the human-friendly commit/PR landing checklist for the exported handoff bundle.
-- `render-review-landing-drafts.sh` turns `landing-plan --show` output into `landing-drafts.md`, which provides per-batch commit titles, PR titles, and staged file lists for the exported handoff bundle.
-- `pack-review-batch-handoff.sh` snapshots the current review handoff surface into one export directory and `.tar.gz`, including `handoff-index.txt`, `landing-plan.txt`, `landing-plan-expanded.txt`, `landing-summary.md`, `landing-drafts.md`, `status-all.txt`, `next.txt`, `next-verbose.txt`, manifest reports, raw manifest copies, and the generated note/memo artifacts.
+- `run-review-batch-checks.sh --landing-commands` turns the ready-for-landing batch and outside-batch rows into `LANDING-COMMAND-STEP` plus `LANDING-COMMAND` lines with copy-pasteable `git add -- ...` and `git commit -m ...` drafts; pass explicit targets such as `batch-2` or `outside-frontend-runtime` to narrow that command sheet.
+- `render-review-landing-summary.sh` turns `landing-plan --show` output into `landing-summary.md`; when `outside-landing-batches --show` is passed as a second argument it also appends an `Outside Landing Order` section so the markdown landing checklist reflects formal landing rows for repo drift outside the current review manifests, and when `landing-commands.txt` is passed as a third argument it surfaces either the first actionable stage/commit command block or the next pending handoff command directly in the summary entrypoint.
+- `render-review-landing-drafts.sh` turns `landing-plan --show` output into `landing-drafts.md`; when `outside-landing-batches --show` is passed as a second argument it also appends `Outside Landing Drafts` sections with commit/PR text for each outside landing group, and when `landing-commands.txt` is passed as a third argument it adds shell-ready `git add` / `git commit` blocks under each batch or outside landing group.
+- `pack-review-batch-handoff.sh` snapshots the current review handoff surface into one export directory and `.tar.gz`, including `handoff-index.txt`, `landing-plan.txt`, `landing-plan-expanded.txt`, `landing-commands.txt`, `outside-batch-plan.txt`, `outside-batch-plan-expanded.txt`, `outside-landing-batches.txt`, `outside-landing-batches-expanded.txt`, `landing-summary.md`, `landing-drafts.md`, `status-all.txt`, `next.txt`, `next-verbose.txt`, manifest reports, raw manifest copies, and the generated note/memo artifacts.
 - `run-review-batch-checks.sh --subchanges <batch> --filter tracked-modified --name <subchange> --detail` prints only the diff hunk scopes that intersect that named slice, which is the fastest way to read the current bounded-wait or DNS-hardening change without scanning the whole file.
 - `run-review-batch-checks.sh --status <batch>` prints `readiness`, a short `reason`, `total/existing/missing/clean/tracked-modified/untracked` counts, plus explicit `HANDOFF`, `STATE`, and `MISSING` lines so landing readiness and review-artifact completion can be checked before preparing a commit or PR.
-- `run-review-batch-checks.sh --status-all` prints readiness-sorted batch summaries, puts `tracked-modified-present` batches ahead of `untracked-present` batches inside the same readiness level, and adds aggregate `HANDOFF`, `VERDICT`, and `ALL` lines; when a next command still exists, `FIRST-ACTION` includes the copy-pasteable highest-priority step, and once every handoff artifact is complete the summary omits `FIRST-ACTION` and leaves `HANDOFF` carrying `echo no-pending-review-actions`.
-- `run-review-batch-checks.sh --next` prints only that copy-pasteable next command, using the same priority rules as `--status-all`; it points at a filtered `--split` for `missing` drift, at `--note ... --filter tracked-modified --name <next-pending-subchange> --write .artifacts/review-notes/<batch>-<subchange>.txt` when modified tracked files have a curated landing map, then at `--memo ... --write .artifacts/review-memos/<batch>-tracked-modified-memo.txt`, then at the next pending `--note ... --filter untracked --name <group> --write .artifacts/review-notes/<batch>-untracked-<group>.txt` when the batch still has curated untracked groups to land, then at `--memo ... --filter untracked --write .artifacts/review-memos/<batch>-untracked-memo.txt`, and only falls back to a plain `--split <batch> --filter untracked` when no curated untracked grouping exists for that batch. Once every pending review handoff is exhausted, it prints `echo no-pending-review-actions`.
-- `run-review-batch-checks.sh --next --verbose` prints the same recommendation with the selected batch, reason, counts, and focus file so the operator can see why that command was chosen; for curated tracked and curated untracked batches it now walks forward through pending note artifacts, then the relevant batch-level memo artifact, and only then advances to the next unresolved batch. When no pending handoff remains, it prints `NEXT | state=complete | next=echo no-pending-review-actions`, and `--handoff-index` becomes the follow-up view for the generated handoff files.
+- `run-review-batch-checks.sh --status-all` prints readiness-sorted batch summaries, puts `tracked-modified-present` batches ahead of `untracked-present` batches inside the same readiness level, adds an `OUTSIDE-BATCHES` aggregate for changed files that are not covered by any current review manifest, and emits aggregate `HANDOFF`, `VERDICT`, and `ALL` lines; when a real next handoff command still exists, `FIRST-ACTION` includes the copy-pasteable highest-priority step, and once every handoff artifact is complete the summary omits `FIRST-ACTION` even if landing work still remains.
+- `run-review-batch-checks.sh --outside-batches` prints that outside-batch drift directly as one summary line plus per-file `OUTSIDE-BATCH` rows, which is the right follow-up when landed review batches are clean but the repo still has tracked-modified or untracked work that is not yet assigned to a landing batch.
+- `run-review-batch-checks.sh --outside-batch-groups` collapses that outside-batch drift into curated subsystem groups such as `frontend-runtime`, `facilitator-runtime`, `exam-content`, `infra-runtime`, and `rollout-docs`, which is the fastest grouping view before deciding the actual next landing order.
+- `run-review-batch-checks.sh --outside-batch-plan` turns those groups into ordered `OUTSIDE-LANDING-STEP` rows with `focus`, `file-count`, and tracked/untracked counts; `--outside-batch-plan --show` expands each step into `OUTSIDE-LANDING-FILE` rows. This is now the preferred next action once the current review batches are clean but repo drift still exists outside the manifests.
+- `run-review-batch-checks.sh --outside-landing-batches` turns those same outside groups into formal `LANDING-STEP` rows named `outside-<group>`, `--outside-landing-batches --name outside-frontend-runtime --show` narrows that view to one concrete landing batch, and `--outside-landing-batches --show` expands every matched outside batch into `LANDING-HANDOFF`, `LANDING-FILE`, and `LANDING-ARTIFACT` rows that can be exported or rendered like normal landing batches.
+- `run-review-batch-checks.sh --outside-landing-draft --name outside-frontend-runtime` turns one formal outside landing batch into a commit/PR draft, and `--write .artifacts/review-drafts/outside-frontend-runtime.md` materializes that draft on disk.
+- `run-review-batch-checks.sh --outside-batch-note --name <group>` turns one matched outside-batch group into a reusable handoff note, and `--write <path>` materializes that note as an artifact under `.artifacts/review-notes/...`.
+- `run-review-batch-checks.sh --outside-batch-memo` collapses all matched outside-batch groups into one grouped memo, and `--write <path>` materializes that memo under `.artifacts/review-memos/...`.
+- `run-review-batch-checks.sh --next` prints only that copy-pasteable next command, using the same priority rules as `--status-all`; it points at a filtered `--split` for `missing` drift, at `--note ... --filter tracked-modified --name <next-pending-subchange> --write .artifacts/review-notes/<batch>-<subchange>.txt` when modified tracked files have a curated landing map, then at `--memo ... --write .artifacts/review-memos/<batch>-tracked-modified-memo.txt`, then at the next pending `--note ... --filter untracked --name <group> --write .artifacts/review-notes/<batch>-untracked-<group>.txt` when the batch still has curated untracked groups to land, then at `--memo ... --filter untracked --write .artifacts/review-memos/<batch>-untracked-memo.txt`, and once the review batches are exhausted it now advances through pending `--outside-batch-note ... --write .artifacts/review-notes/outside-batches-<group>.txt` artifacts, then the grouped `--outside-batch-memo --write .artifacts/review-memos/outside-batches-outside-batch-memo.txt`, before escalating to the first concrete `--outside-landing-draft --name outside-<group> --write .artifacts/review-drafts/outside-<group>.md` command when a grouped landing target exists or to `--outside-landing-batches --show` when only unmatched outside drift remains. It only prints `echo no-pending-review-actions` when both the review batches and outside-batch scan are clean.
+- `run-review-batch-checks.sh --next --verbose` prints the same recommendation with the selected batch or outside-batch scan, reason, counts, and focus file so the operator can see why that command was chosen; for curated tracked and curated untracked batches it walks forward through pending note artifacts, then the relevant batch-level memo artifact, and only then advances to outside-batch notes, the outside-batch grouped memo, and finally the outside-batch landing plan. Once no further handoff action remains, it prints `NEXT | state=complete | next=echo no-pending-review-actions`; use `--handoff-index`, `--landing-plan`, or `--outside-landing-batches --show` to follow the remaining landing order.
 - `NOTE_MANIFEST_PATH` can be overridden when note handoff artifacts should be recorded somewhere other than `.artifacts/review-batch-note-manifest.txt`.
 - `BASE_URL` can be overridden if the web stack is exposed on a non-default port.
 - `SUITE_TIMEOUT_SECONDS` controls the per-suite timeout wrapper in the aggregated runner. Set it to `0` to disable the timeout.
@@ -422,6 +470,7 @@ List the browser smoke scenarios without launching Playwright:
 - The same CI workflow also checks `run-review-batch-checks.sh --split batch-4` so the per-state landing-subset view keeps its stable subset/count layout.
 - The same CI workflow also checks `run-review-batch-checks.sh --status batch-4` so the workflow landing manifest stays present and complete, including the `readiness` and `reason` fields.
 - The same CI workflow also checks `run-review-batch-checks.sh --status-all` so the readiness-sorted aggregate summary keeps its `HANDOFF` / `VERDICT` / `ALL` field layout, `reason` field, batch count contract, and command-style `next=` field, while still accepting `FIRST-ACTION` only when pending handoffs remain.
+- The same CI workflow also checks `run-review-batch-checks.sh --outside-batches` with a synthetic untracked file so the runner keeps surfacing manifest drift outside the current landing batches instead of reporting a false clean handoff.
 - The same CI workflow also checks `run-review-batch-checks.sh --handoff-index` so the batch-level handoff artifact inventory keeps its `HANDOFF-INDEX`, `HANDOFF-ARTIFACTS`, and `HANDOFF-INDEX-SUMMARY` layout.
 - The same CI workflow also checks `run-review-batch-checks.sh --next` so the minimal next-command entrypoint stays aligned with `FIRST-ACTION`.
 - The same CI workflow also checks `run-review-batch-checks.sh --next --verbose` so the detailed next-step summary keeps its `NEXT` line shape and focus-file field.
