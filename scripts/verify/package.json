@@ -1,0 +1,11 @@
+{
+  "name": "ckx-verify-scripts",
+  "private": true,
+  "scripts": {
+    "browser-ui-smoke": "node browser-ui-smoke.mjs",
+    "browser-ui-smoke:list": "node browser-ui-smoke.mjs --list"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
+  }
+}
