@@ -1,0 +1,131 @@
+name: CKA 2026 Regressions
+
+on:
+  workflow_dispatch:
+    inputs:
+      suites:
+        description: "Space-separated suites to run. Leave empty for all."
+        required: false
+        default: ""
+        type: string
+      suite_timeout_seconds:
+        description: "Per-suite timeout passed to the aggregated runner."
+        required: false
+        default: "2400"
+        type: string
+      pack_success_diagnostics:
+        description: "Pack diagnostics on success too. Failure runs always pack."
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 18 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cka-2026-regressions
+  cancel-in-progress: false
+
+jobs:
+  run-cka-2026-regressions:
+    name: Run CKA 2026 regression suites
+    runs-on:
+      - self-hosted
+      - linux
+    timeout-minutes: 180
+    env:
+      SUITES_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.suites || '' }}
+      SUITE_TIMEOUT_SECONDS: ${{ github.event_name == 'workflow_dispatch' && inputs.suite_timeout_seconds || '2400' }}
+      PACK_SUCCESS_DIAGNOSTICS: ${{ github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics || false }}
+      ARTIFACT_DIR: .artifacts/cka-2026
+      ARTIFACT_ARCHIVE: .artifacts/cka-2026.tar.gz
+      SUMMARY_PATH: .artifacts/cka-2026/summary.txt
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare artifact directory
+        run: mkdir -p "${ARTIFACT_DIR}"
+
+      - name: Show selected regression suites
+        run: |
+          if [ -n "${SUITES_INPUT}" ]; then
+            echo "Running selected suites: ${SUITES_INPUT}"
+          else
+            echo "Running default suites: cka-003 cka-004 cka-005"
+          fi
+          echo "Per-suite timeout: ${SUITE_TIMEOUT_SECONDS}s"
+          echo "Pack diagnostics on success: ${PACK_SUCCESS_DIAGNOSTICS}"
+
+      - name: Verify Podman availability
+        run: |
+          sudo systemctl start podman.socket
+          sudo podman info >/dev/null
+
+      - name: Run CKA 2026 regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "${SUITE_TIMEOUT_SECONDS}" =~ ^[0-9]+$ ]]; then
+            echo "suite_timeout_seconds must be a non-negative integer: ${SUITE_TIMEOUT_SECONDS}" >&2
+            exit 1
+          fi
+
+          suite_args=()
+          if [ -n "${SUITES_INPUT}" ]; then
+            read -r -a suite_args <<< "${SUITES_INPUT}"
+          fi
+
+          if [ "${#suite_args[@]}" -gt 0 ]; then
+            SUITE_TIMEOUT_SECONDS="${SUITE_TIMEOUT_SECONDS}" \
+              bash scripts/verify/run-cka-2026-regressions.sh "${suite_args[@]}" \
+              2>&1 | tee "${ARTIFACT_DIR}/regression-run.log"
+          else
+            SUITE_TIMEOUT_SECONDS="${SUITE_TIMEOUT_SECONDS}" \
+              bash scripts/verify/run-cka-2026-regressions.sh \
+              2>&1 | tee "${ARTIFACT_DIR}/regression-run.log"
+          fi
+
+      - name: Pack regression diagnostics
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        run: |
+          chmod +x scripts/verify/pack-cka-2026-diagnostics.sh
+          BASE_URL="http://127.0.0.1:30080"             SKIP_COLLECT=0             ./scripts/verify/pack-cka-2026-diagnostics.sh "${ARTIFACT_DIR}" "${ARTIFACT_ARCHIVE}"
+
+      - name: Publish regression summary to workflow UI
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        shell: bash
+        run: |
+          chmod +x scripts/verify/render-cka-2026-summary-markdown.sh
+          if [ -f "${SUMMARY_PATH}" ]; then
+            scripts/verify/render-cka-2026-summary-markdown.sh "${SUMMARY_PATH}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "## CKA 2026 Regression Summary" >> "${GITHUB_STEP_SUMMARY}"
+            echo >> "${GITHUB_STEP_SUMMARY}"
+            echo "Summary file not found: ${SUMMARY_PATH}" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload regression summary
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cka-2026-regressions-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.SUMMARY_PATH }}
+          if-no-files-found: warn
+
+      - name: Upload regression run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cka-2026-regressions-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.ARTIFACT_DIR }}/regression-run.log
+          if-no-files-found: warn
+
+      - name: Upload packed diagnostics archive
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cka-2026-regressions-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.ARTIFACT_ARCHIVE }}
+          if-no-files-found: warn

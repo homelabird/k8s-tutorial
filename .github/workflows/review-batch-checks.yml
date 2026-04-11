@@ -1,0 +1,93 @@
+name: Review Batch Checks
+
+on:
+  workflow_dispatch:
+    inputs:
+      batches:
+        description: "Space-separated review batches to run. Leave empty for all."
+        required: false
+        default: ""
+        type: string
+      batch_timeout_seconds:
+        description: "Per-batch timeout passed to the review batch runner."
+        required: false
+        default: "0"
+        type: string
+      run_full_browser_ui_smoke:
+        description: "Also run the full Playwright browser smoke inside batch-3."
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-batch-checks
+  cancel-in-progress: false
+
+jobs:
+  plan-review-batches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      batches_text: ${{ steps.plan.outputs.batches_text }}
+    steps:
+      - name: Build review batch matrix
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          BATCHES_INPUT="${{ inputs.batches }}" python3 - <<'PY' >> "${GITHUB_OUTPUT}"
+          import json
+          import os
+          
+          requested = os.environ.get("BATCHES_INPUT", "").split()
+          valid = ["batch-1", "batch-2", "batch-3", "batch-4", "batch-5"]
+          selected = requested or valid
+          
+          unknown = [batch for batch in selected if batch not in valid]
+          if unknown:
+              raise SystemExit(f"unknown review batch selection: {' '.join(unknown)}")
+          
+          print(f"matrix={json.dumps({'batch': selected})}")
+          print(f"batches_text={' '.join(selected)}")
+          PY
+
+      - name: Publish review batch selection
+        run: |
+          echo "## Review Batch Checks" >> "${GITHUB_STEP_SUMMARY}"
+          echo >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Selected batches: ${{ steps.plan.outputs.batches_text }}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Batch timeout: ${{ inputs.batch_timeout_seconds }}s" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Full browser smoke: ${{ inputs.run_full_browser_ui_smoke }}" >> "${GITHUB_STEP_SUMMARY}"
+
+  run-review-batches:
+    needs: plan-review-batches
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan-review-batches.outputs.matrix) }}
+    env:
+      BATCH_TIMEOUT_SECONDS: ${{ inputs.batch_timeout_seconds }}
+      RUN_FULL_BROWSER_UI_SMOKE: ${{ inputs.run_full_browser_ui_smoke && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install facilitator dependencies
+        if: ${{ matrix.batch == 'batch-1' }}
+        working-directory: facilitator
+        run: npm install --no-audit --no-fund
+
+      - name: Install browser smoke dependencies
+        if: ${{ matrix.batch == 'batch-3' && inputs.run_full_browser_ui_smoke }}
+        working-directory: scripts/verify
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install chromium
+
+      - name: Run selected review batch
+        run: bash scripts/verify/run-review-batch-checks.sh "${{ matrix.batch }}"

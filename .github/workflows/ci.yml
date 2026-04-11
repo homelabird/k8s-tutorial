@@ -1,0 +1,431 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  facilitator-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: facilitator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install facilitator dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run facilitator unit tests
+        run: npm test
+
+  shell-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell scripts with bash -n
+        run: |
+          mapfile -t shell_files < <(find jumphost scripts -type f \( -name '*.sh' -o -name '*.bash' \) | sort)
+          shell_files+=(compose-deploy.sh)
+          bash -n "${shell_files[@]}"
+
+  verify-runner-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify CKA 2026 regression runner entrypoint
+        run: |
+          mapfile -t suites < <(bash scripts/verify/run-cka-2026-regressions.sh --list)
+          printf '%s\n' "${suites[@]}"
+          [ "${#suites[@]}" -eq 3 ]
+          [ "${suites[0]}" = "cka-003" ]
+          [ "${suites[1]}" = "cka-004" ]
+          [ "${suites[2]}" = "cka-005" ]
+
+  contract-runner-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify contract smoke runner entrypoint
+        run: |
+          mapfile -t smokes < <(bash scripts/verify/run-verify-contract-smokes.sh --list)
+          printf '%s\n' "${smokes[@]}"
+          [ "${#smokes[@]}" -eq 7 ]
+          [ "${smokes[0]}" = "diagnostics-collector" ]
+          [ "${smokes[1]}" = "diagnostics-pack" ]
+          [ "${smokes[2]}" = "summary-renderer" ]
+          [ "${smokes[3]}" = "workflow-contract" ]
+          [ "${smokes[4]}" = "review-batch-workflow" ]
+          [ "${smokes[5]}" = "review-handoff-pack" ]
+          [ "${smokes[6]}" = "browser-scenarios" ]
+          describe_output="$(bash scripts/verify/run-verify-contract-smokes.sh --describe)"
+          grep -Fq 'diagnostics-collector | cka-2026-diagnostics-collector-smoke.sh | raw diagnostics bundle generation, host discovery, summary.txt' <<<"${describe_output}"
+          grep -Fq 'review-batch-workflow | review-batch-workflow-contract-smoke.sh | manual review batch workflow inputs, matrix planning, dependency gates' <<<"${describe_output}"
+          grep -Fq 'review-handoff-pack | review-batch-handoff-pack-smoke.sh | review note/memo manifest export, landing summary, landing drafts, handoff index, and archive contents' <<<"${describe_output}"
+          grep -Fq 'browser-scenarios | browser-ui-scenario-contract-smoke.sh | browser fixture scenario inventory, package wiring, README alignment' <<<"${describe_output}"
+
+  review-batch-runner-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify review batch runner entrypoint
+        run: |
+          mapfile -t batches < <(bash scripts/verify/run-review-batch-checks.sh --list)
+          printf '%s\n' "${batches[@]}"
+          [ "${#batches[@]}" -eq 5 ]
+          [ "${batches[0]}" = "batch-1" ]
+          [ "${batches[1]}" = "batch-2" ]
+          [ "${batches[2]}" = "batch-3" ]
+          [ "${batches[3]}" = "batch-4" ]
+          [ "${batches[4]}" = "batch-5" ]
+          describe_output="$(bash scripts/verify/run-review-batch-checks.sh --describe)"
+          grep -Fq 'batch-1 | facilitator unit tests | app/service/redis/validator lifecycle coverage' <<<"${describe_output}"
+          grep -Fq 'batch-2 | regression/diagnostics checks | CKA runner list plus diagnostics, landing-summary/draft, and review handoff contract smokes' <<<"${describe_output}"
+          grep -Fq 'batch-3 | browser verify wiring | browser scenario contract plus browser-ui-smoke:list, optional full Playwright smoke' <<<"${describe_output}"
+          batch_2_files_output="$(bash scripts/verify/run-review-batch-checks.sh --files batch-2)"
+          grep -Fq 'batch-2 | scripts/verify/render-review-landing-drafts.sh' <<<"${batch_2_files_output}"
+          grep -Fq 'batch-2 | scripts/verify/render-review-landing-summary.sh' <<<"${batch_2_files_output}"
+          grep -Fq 'batch-2 | scripts/verify/review-batch-handoff-pack-smoke.sh' <<<"${batch_2_files_output}"
+          files_output="$(bash scripts/verify/run-review-batch-checks.sh --files batch-4)"
+          grep -Fq 'batch-4 | .github/workflows/review-batch-checks.yml' <<<"${files_output}"
+          grep -Fq 'batch-4 | scripts/verify/review-batch-workflow-contract-smoke.sh' <<<"${files_output}"
+          split_output="$(bash scripts/verify/run-review-batch-checks.sh --split batch-4)"
+          grep -Eq '^batch-4 \| subset=clean \| count=[0-9]+$' <<<"${split_output}"
+          grep -Eq '^batch-4 \| subset=tracked-modified \| count=[0-9]+$' <<<"${split_output}"
+          grep -Eq '^batch-4 \| subset=untracked \| count=[0-9]+$' <<<"${split_output}"
+          grep -Eq '^batch-4 \| subset=missing \| count=[0-9]+$' <<<"${split_output}"
+          split_filtered_output="$(bash scripts/verify/run-review-batch-checks.sh --split batch-4 --filter tracked-modified)"
+          grep -Eq '^batch-4 \| subset=tracked-modified \| count=[0-9]+$' <<<"${split_filtered_output}"
+          diff_output="$(bash scripts/verify/run-review-batch-checks.sh --diff batch-4 --filter tracked-modified)"
+          grep -Eq '^batch-4 \| diff-subset=tracked-modified \| count=[0-9]+$' <<<"${diff_output}"
+          if grep -q '^batch-4 \| DIFFSTAT \|' <<<"${diff_output}"; then
+            grep -Eq '^batch-4 \| DIFFSTAT \| tracked-modified \| additions=[0-9-]+ \| deletions=[0-9-]+ \| .+$' <<<"${diff_output}"
+          fi
+          hunk_output="$(bash scripts/verify/run-review-batch-checks.sh --hunks batch-4 --filter tracked-modified)"
+          grep -Eq '^batch-4 \| hunk-subset=tracked-modified \| file-count=[0-9]+ \| hunk-count=[0-9]+$' <<<"${hunk_output}"
+          if grep -q '^batch-4 \| HUNK \|' <<<"${hunk_output}"; then
+            grep -Eq '^batch-4 \| HUNK \| tracked-modified \| file=.+ \| lines=[0-9]+(-[0-9]+)? \| scope=.*$' <<<"${hunk_output}"
+          fi
+          subchange_output="$(bash scripts/verify/run-review-batch-checks.sh --subchanges batch-4 --filter tracked-modified)"
+          grep -Eq '^batch-4 \| subchange-subset=tracked-modified \| file-count=[0-9]+ \| subchange-count=[0-9]+$' <<<"${subchange_output}"
+          if grep -q '^batch-4 \| SUBCHANGE \|' <<<"${subchange_output}"; then
+            grep -Eq '^batch-4 \| SUBCHANGE \| tracked-modified \| name=[a-z0-9-]+ \| file=.+ \| lines=([0-9]+(-[0-9]+)?|full-file) \| focus=.+$' <<<"${subchange_output}"
+          fi
+          named_subchange_output="$(bash scripts/verify/run-review-batch-checks.sh --subchanges batch-2 --filter tracked-modified --name bounded-wait-guards)"
+          grep -Eq '^batch-2 \| subchange-subset=tracked-modified \| name=bounded-wait-guards \| file-count=[0-9]+ \| subchange-count=[0-9]+$' <<<"${named_subchange_output}"
+          named_subchange_detail_output="$(bash scripts/verify/run-review-batch-checks.sh --subchanges batch-2 --filter tracked-modified --name bounded-wait-guards --detail)"
+          grep -Eq '^batch-2 \| subchange-subset=tracked-modified \| name=bounded-wait-guards \| file-count=[0-9]+ \| subchange-count=[0-9]+$' <<<"${named_subchange_detail_output}"
+          grep -Eq '^batch-2 \| DETAIL \| tracked-modified \| name=bounded-wait-guards \| file=.+ \| lines=[0-9]+(-[0-9]+)? \| scope=.*$' <<<"${named_subchange_detail_output}"
+          note_output="$(bash scripts/verify/run-review-batch-checks.sh --note batch-2 --filter tracked-modified --name bounded-wait-guards)"
+          grep -Eq '^batch-2 \| note-subset=tracked-modified \| name=bounded-wait-guards \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${note_output}"
+          grep -Eq '^batch-2 \| NOTE \| tracked-modified \| name=bounded-wait-guards \| file=.+ \| lines=[0-9]+(-[0-9]+)? \| focus=.+$' <<<"${note_output}"
+          grep -Eq '^batch-2 \| NOTE-POINT \| tracked-modified \| name=bounded-wait-guards \| point=.+$' <<<"${note_output}"
+          note_file="$(mktemp)"
+          note_manifest="$(mktemp)"
+          note_write_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-2 --filter tracked-modified --name bounded-wait-guards --write "${note_file}")"
+          grep -Eq '^batch-2 \| note-subset=tracked-modified \| name=bounded-wait-guards \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${note_write_output}"
+          grep -Eq '^NOTE-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${note_write_output}"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${note_write_output}"
+          grep -Eq '^batch-2 \| note-subset=tracked-modified \| name=bounded-wait-guards \| file-count=[0-9]+ \| note-point-count=[0-9]+$' "${note_file}"
+          grep -Eq '^[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| name=bounded-wait-guards \| output=.+ \| bytes=[0-9]+$' "${note_manifest}"
+          note_manifest_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note-manifest)"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+ \| state=present$' <<<"${note_manifest_output}"
+          grep -Eq '^NOTE-ENTRY \| index=[0-9]+ \| timestamp=[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| name=bounded-wait-guards \| output=.+ \| bytes=[0-9]+ \| output-state=present$' <<<"${note_manifest_output}"
+          note_manifest_latest_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note-manifest --latest)"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+ \| state=present$' <<<"${note_manifest_latest_output}"
+          grep -Eq '^NOTE-LATEST \| index=[0-9]+ \| timestamp=[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| name=bounded-wait-guards \| output=.+ \| bytes=[0-9]+ \| output-state=present$' <<<"${note_manifest_latest_output}"
+          note_manifest_show_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note-manifest --latest --show)"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+ \| state=present$' <<<"${note_manifest_show_output}"
+          grep -Eq '^NOTE-LATEST \| index=[0-9]+ \| timestamp=[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| name=bounded-wait-guards \| output=.+ \| bytes=[0-9]+ \| output-state=present$' <<<"${note_manifest_show_output}"
+          grep -Eq '^NOTE-SHOW \| source=latest \| path=.+ \| state=present \| lines=[0-9]+ \| bytes=[0-9]+$' <<<"${note_manifest_show_output}"
+          grep -Eq '^NOTE-CONTENT \| batch-2 \| note-subset=tracked-modified \| name=bounded-wait-guards \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${note_manifest_show_output}"
+          next_after_first_note="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-2 --filter tracked-modified --name stack-reset-recreate --write \.artifacts/review-notes/batch-2-stack-reset-recreate\.txt$' <<<"${next_after_first_note}"
+          next_verbose_after_first_note="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-2 \| readiness=needs-landing \| reason=tracked-modified-present \| total=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+ \| focus=scripts/verify/cka-005-isolated-env-e2e\.sh \| next=\./scripts/verify/run-review-batch-checks\.sh --note batch-2 --filter tracked-modified --name stack-reset-recreate --write \.artifacts/review-notes/batch-2-stack-reset-recreate\.txt$' <<<"${next_verbose_after_first_note}"
+          memo_output="$(bash scripts/verify/run-review-batch-checks.sh --memo batch-2 --filter tracked-modified)"
+          grep -Eq '^batch-2 \| memo-subset=tracked-modified \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${memo_output}"
+          if grep -q '^batch-2 \| MEMO-SECTION \|' <<<"${memo_output}"; then
+            grep -Eq '^batch-2 \| MEMO-SECTION \| tracked-modified \| name=[a-z0-9-]+ \| file=.+ \| lines=([0-9]+(-[0-9]+)?|full-file) \| focus=.+$' <<<"${memo_output}"
+          fi
+          if grep -q '^batch-2 \| MEMO-POINT \|' <<<"${memo_output}"; then
+            grep -Eq '^batch-2 \| MEMO-POINT \| tracked-modified \| name=[a-z0-9-]+ \| point=.+$' <<<"${memo_output}"
+          fi
+          memo_file="$(mktemp)"
+          memo_manifest="$(mktemp)"
+          memo_write_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-2 --filter tracked-modified --write "${memo_file}")"
+          grep -Eq '^batch-2 \| memo-subset=tracked-modified \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${memo_write_output}"
+          grep -Eq '^MEMO-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${memo_write_output}"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${memo_write_output}"
+          grep -Eq '^batch-2 \| memo-subset=tracked-modified \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' "${memo_file}"
+          grep -Eq '^[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| output=.+ \| bytes=[0-9]+$' "${memo_manifest}"
+          memo_manifest_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo-manifest)"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+ \| state=present$' <<<"${memo_manifest_output}"
+          grep -Eq '^MEMO-ENTRY \| index=[0-9]+ \| timestamp=[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| output=.+ \| bytes=[0-9]+ \| output-state=present$' <<<"${memo_manifest_output}"
+          memo_manifest_latest_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo-manifest --latest)"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+ \| state=present$' <<<"${memo_manifest_latest_output}"
+          grep -Eq '^MEMO-LATEST \| index=[0-9]+ \| timestamp=[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| output=.+ \| bytes=[0-9]+ \| output-state=present$' <<<"${memo_manifest_latest_output}"
+          memo_manifest_show_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo-manifest --latest --show)"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+ \| state=present$' <<<"${memo_manifest_show_output}"
+          grep -Eq '^MEMO-LATEST \| index=[0-9]+ \| timestamp=[0-9TZ:+-]+ \| batches=batch-2 \| filter=tracked-modified \| output=.+ \| bytes=[0-9]+ \| output-state=present$' <<<"${memo_manifest_show_output}"
+          grep -Eq '^MEMO-SHOW \| source=latest \| path=.+ \| state=present \| lines=[0-9]+ \| bytes=[0-9]+$' <<<"${memo_manifest_show_output}"
+          grep -Eq '^MEMO-CONTENT \| batch-2 \| memo-subset=tracked-modified \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${memo_manifest_show_output}"
+          for note_name in stack-reset-recreate isolated-dns-precheck-hardening post-fix-verification-retry; do
+            NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-2 --filter tracked-modified --name "${note_name}" --write "$(mktemp)" >/dev/null
+          done
+          MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-2 --filter tracked-modified --write "$(mktemp)" >/dev/null
+          untracked_group_output="$(bash scripts/verify/run-review-batch-checks.sh --untracked-groups batch-2 --name regression-suites)"
+          grep -Eq '^batch-2 \| untracked-group-subset=untracked \| name=regression-suites \| group-count=[0-9]+ \| file-count=[0-9]+$' <<<"${untracked_group_output}"
+          if grep -q '^batch-2 \| UNTRACKED-GROUP \|' <<<"${untracked_group_output}"; then
+            grep -Eq '^batch-2 \| UNTRACKED-GROUP \| name=regression-suites \| file-count=[0-9]+ \| focus=cka regression suites and aggregate runner$' <<<"${untracked_group_output}"
+            grep -Eq '^batch-2 \| UNTRACKED-FILE \| group=regression-suites \| scripts/verify/cka-003-dedicated-dns-e2e\.sh$' <<<"${untracked_group_output}"
+            grep -Eq '^batch-2 \| UNTRACKED-FILE \| group=regression-suites \| scripts/verify/run-cka-2026-regressions\.sh$' <<<"${untracked_group_output}"
+          fi
+          next_after_full_review="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-2 --filter untracked --name regression-suites --write \.artifacts/review-notes/batch-2-untracked-regression-suites\.txt$' <<<"${next_after_full_review}"
+          next_verbose_after_full_review="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-2 \| readiness=needs-landing \| reason=tracked-modified-present \| total=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+ \| focus=.* \| next=\./scripts/verify/run-review-batch-checks\.sh --note batch-2 --filter untracked --name regression-suites --write \.artifacts/review-notes/batch-2-untracked-regression-suites\.txt$' <<<"${next_verbose_after_full_review}"
+          untracked_note_file="$(mktemp)"
+          untracked_note_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-2 --filter untracked --name regression-suites --write "${untracked_note_file}")"
+          grep -Eq '^batch-2 \| note-subset=untracked \| name=regression-suites \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${untracked_note_output}"
+          grep -Eq '^batch-2 \| NOTE \| untracked \| name=regression-suites \| file=scripts/verify/cka-003-dedicated-dns-e2e\.sh \| lines=full-file \| focus=cka regression suites and aggregate runner$' <<<"${untracked_note_output}"
+          grep -Eq '^NOTE-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${untracked_note_output}"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${untracked_note_output}"
+          grep -Eq '^batch-2 \| note-subset=untracked \| name=regression-suites \| file-count=[0-9]+ \| note-point-count=[0-9]+$' "${untracked_note_file}"
+          next_after_first_untracked_note="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-2 --filter untracked --name diagnostics-runtime --write \.artifacts/review-notes/batch-2-untracked-diagnostics-runtime\.txt$' <<<"${next_after_first_untracked_note}"
+          for untracked_group in diagnostics-runtime diagnostics-contracts review-runner; do
+            NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-2 --filter untracked --name "${untracked_group}" --write "$(mktemp)" >/dev/null
+          done
+          next_after_untracked_notes="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --memo batch-2 --filter untracked --write \.artifacts/review-memos/batch-2-untracked-memo\.txt$' <<<"${next_after_untracked_notes}"
+          next_verbose_after_untracked_notes="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-2 \| readiness=needs-landing \| reason=tracked-modified-present \| total=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+ \| focus=.* \| next=\./scripts/verify/run-review-batch-checks\.sh --memo batch-2 --filter untracked --write \.artifacts/review-memos/batch-2-untracked-memo\.txt$' <<<"${next_verbose_after_untracked_notes}"
+          untracked_memo_file="$(mktemp)"
+          untracked_memo_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-2 --filter untracked --write "${untracked_memo_file}")"
+          grep -Eq '^batch-2 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${untracked_memo_output}"
+          grep -Eq '^MEMO-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${untracked_memo_output}"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${untracked_memo_output}"
+          grep -Eq '^batch-2 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' "${untracked_memo_file}"
+          next_after_completed_batch_2="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-1 --filter untracked --name lifecycle-api-tests --write \.artifacts/review-notes/batch-1-untracked-lifecycle-api-tests\.txt$' <<<"${next_after_completed_batch_2}"
+          next_verbose_after_completed_batch_2="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-1 \| readiness=needs-landing \| reason=untracked-present \| total=[0-9]+ \| tracked-modified=0 \| untracked=[0-9]+ \| missing=0 \| focus=facilitator/tests/app\.test\.js \| next=\./scripts/verify/run-review-batch-checks\.sh --note batch-1 --filter untracked --name lifecycle-api-tests --write \.artifacts/review-notes/batch-1-untracked-lifecycle-api-tests\.txt$' <<<"${next_verbose_after_completed_batch_2}"
+          batch_1_group_output="$(bash scripts/verify/run-review-batch-checks.sh --untracked-groups batch-1 --name lifecycle-api-tests)"
+          grep -Eq '^batch-1 \| untracked-group-subset=untracked \| name=lifecycle-api-tests \| group-count=[0-9]+ \| file-count=[0-9]+$' <<<"${batch_1_group_output}"
+          if grep -q '^batch-1 \| UNTRACKED-GROUP \|' <<<"${batch_1_group_output}"; then
+            grep -Eq '^batch-1 \| UNTRACKED-GROUP \| name=lifecycle-api-tests \| file-count=[0-9]+ \| focus=facilitator API and lifecycle negative-path coverage$' <<<"${batch_1_group_output}"
+            grep -Eq '^batch-1 \| UNTRACKED-FILE \| group=lifecycle-api-tests \| facilitator/tests/app\.test\.js$' <<<"${batch_1_group_output}"
+            grep -Eq '^batch-1 \| UNTRACKED-FILE \| group=lifecycle-api-tests \| facilitator/tests/examService\.test\.js$' <<<"${batch_1_group_output}"
+          fi
+          batch_1_note_file="$(mktemp)"
+          batch_1_note_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-1 --filter untracked --name lifecycle-api-tests --write "${batch_1_note_file}")"
+          grep -Eq '^batch-1 \| note-subset=untracked \| name=lifecycle-api-tests \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${batch_1_note_output}"
+          grep -Eq '^batch-1 \| NOTE \| untracked \| name=lifecycle-api-tests \| file=facilitator/tests/app\.test\.js \| lines=full-file \| focus=facilitator API and lifecycle negative-path coverage$' <<<"${batch_1_note_output}"
+          grep -Eq '^NOTE-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_1_note_output}"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_1_note_output}"
+          grep -Eq '^batch-1 \| note-subset=untracked \| name=lifecycle-api-tests \| file-count=[0-9]+ \| note-point-count=[0-9]+$' "${batch_1_note_file}"
+          next_after_first_batch_1_note="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-1 --filter untracked --name state-validation-tests --write \.artifacts/review-notes/batch-1-untracked-state-validation-tests\.txt$' <<<"${next_after_first_batch_1_note}"
+          NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-1 --filter untracked --name state-validation-tests --write "$(mktemp)" >/dev/null
+          next_after_batch_1_notes="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --memo batch-1 --filter untracked --write \.artifacts/review-memos/batch-1-untracked-memo\.txt$' <<<"${next_after_batch_1_notes}"
+          batch_1_memo_file="$(mktemp)"
+          batch_1_memo_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-1 --filter untracked --write "${batch_1_memo_file}")"
+          grep -Eq '^batch-1 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${batch_1_memo_output}"
+          grep -Eq '^MEMO-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_1_memo_output}"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_1_memo_output}"
+          grep -Eq '^batch-1 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' "${batch_1_memo_file}"
+          next_after_completed_batch_1="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-3 --filter untracked --name browser-runtime --write \.artifacts/review-notes/batch-3-untracked-browser-runtime\.txt$' <<<"${next_after_completed_batch_1}"
+          next_verbose_after_completed_batch_1="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-3 \| readiness=needs-landing \| reason=untracked-present \| total=[0-9]+ \| tracked-modified=0 \| untracked=[0-9]+ \| missing=0 \| focus=scripts/verify/browser-ui-smoke\.mjs \| next=\./scripts/verify/run-review-batch-checks\.sh --note batch-3 --filter untracked --name browser-runtime --write \.artifacts/review-notes/batch-3-untracked-browser-runtime\.txt$' <<<"${next_verbose_after_completed_batch_1}"
+          batch_3_group_output="$(bash scripts/verify/run-review-batch-checks.sh --untracked-groups batch-3 --name browser-runtime)"
+          grep -Eq '^batch-3 \| untracked-group-subset=untracked \| name=browser-runtime \| group-count=[0-9]+ \| file-count=[0-9]+$' <<<"${batch_3_group_output}"
+          if grep -q '^batch-3 \| UNTRACKED-GROUP \|' <<<"${batch_3_group_output}"; then
+            grep -Eq '^batch-3 \| UNTRACKED-GROUP \| name=browser-runtime \| file-count=[0-9]+ \| focus=playwright browser smoke runtime and package wiring$' <<<"${batch_3_group_output}"
+            grep -Eq '^batch-3 \| UNTRACKED-FILE \| group=browser-runtime \| scripts/verify/browser-ui-smoke\.mjs$' <<<"${batch_3_group_output}"
+            grep -Eq '^batch-3 \| UNTRACKED-FILE \| group=browser-runtime \| scripts/verify/package\.json$' <<<"${batch_3_group_output}"
+          fi
+          batch_3_note_file="$(mktemp)"
+          batch_3_note_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-3 --filter untracked --name browser-runtime --write "${batch_3_note_file}")"
+          grep -Eq '^batch-3 \| note-subset=untracked \| name=browser-runtime \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${batch_3_note_output}"
+          grep -Eq '^batch-3 \| NOTE \| untracked \| name=browser-runtime \| file=scripts/verify/browser-ui-smoke\.mjs \| lines=full-file \| focus=playwright browser smoke runtime and package wiring$' <<<"${batch_3_note_output}"
+          grep -Eq '^NOTE-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_3_note_output}"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_3_note_output}"
+          grep -Eq '^batch-3 \| note-subset=untracked \| name=browser-runtime \| file-count=[0-9]+ \| note-point-count=[0-9]+$' "${batch_3_note_file}"
+          next_after_first_batch_3_note="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-3 --filter untracked --name browser-contract-docs --write \.artifacts/review-notes/batch-3-untracked-browser-contract-docs\.txt$' <<<"${next_after_first_batch_3_note}"
+          NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-3 --filter untracked --name browser-contract-docs --write "$(mktemp)" >/dev/null
+          next_after_batch_3_notes="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --memo batch-3 --filter untracked --write \.artifacts/review-memos/batch-3-untracked-memo\.txt$' <<<"${next_after_batch_3_notes}"
+          batch_3_memo_file="$(mktemp)"
+          batch_3_memo_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-3 --filter untracked --write "${batch_3_memo_file}")"
+          grep -Eq '^batch-3 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${batch_3_memo_output}"
+          grep -Eq '^MEMO-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_3_memo_output}"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_3_memo_output}"
+          grep -Eq '^batch-3 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' "${batch_3_memo_file}"
+          next_after_completed_batch_3="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-4 --filter untracked --name default-ci --write \.artifacts/review-notes/batch-4-untracked-default-ci\.txt$' <<<"${next_after_completed_batch_3}"
+          next_verbose_after_completed_batch_3="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-4 \| readiness=needs-landing \| reason=untracked-present \| total=[0-9]+ \| tracked-modified=0 \| untracked=[0-9]+ \| missing=0 \| focus=\.github/workflows/ci\.yml \| next=\./scripts/verify/run-review-batch-checks\.sh --note batch-4 --filter untracked --name default-ci --write \.artifacts/review-notes/batch-4-untracked-default-ci\.txt$' <<<"${next_verbose_after_completed_batch_3}"
+          batch_4_group_output="$(bash scripts/verify/run-review-batch-checks.sh --untracked-groups batch-4 --name default-ci)"
+          grep -Eq '^batch-4 \| untracked-group-subset=untracked \| name=default-ci \| group-count=[0-9]+ \| file-count=[0-9]+$' <<<"${batch_4_group_output}"
+          if grep -q '^batch-4 \| UNTRACKED-GROUP \|' <<<"${batch_4_group_output}"; then
+            grep -Eq '^batch-4 \| UNTRACKED-GROUP \| name=default-ci \| file-count=[0-9]+ \| focus=default GitHub Actions CI workflow wiring$' <<<"${batch_4_group_output}"
+            grep -Eq '^batch-4 \| UNTRACKED-FILE \| group=default-ci \| \.github/workflows/ci\.yml$' <<<"${batch_4_group_output}"
+          fi
+          batch_4_note_file="$(mktemp)"
+          batch_4_note_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-4 --filter untracked --name default-ci --write "${batch_4_note_file}")"
+          grep -Eq '^batch-4 \| note-subset=untracked \| name=default-ci \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${batch_4_note_output}"
+          grep -Eq '^batch-4 \| NOTE \| untracked \| name=default-ci \| file=\.github/workflows/ci\.yml \| lines=full-file \| focus=default GitHub Actions CI workflow wiring$' <<<"${batch_4_note_output}"
+          grep -Eq '^NOTE-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_4_note_output}"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_4_note_output}"
+          grep -Eq '^batch-4 \| note-subset=untracked \| name=default-ci \| file-count=[0-9]+ \| note-point-count=[0-9]+$' "${batch_4_note_file}"
+          next_after_first_batch_4_note="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-4 --filter untracked --name cka-regression-workflow --write \.artifacts/review-notes/batch-4-untracked-cka-regression-workflow\.txt$' <<<"${next_after_first_batch_4_note}"
+          NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-4 --filter untracked --name cka-regression-workflow --write "$(mktemp)" >/dev/null
+          next_after_second_batch_4_note="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-4 --filter untracked --name review-batch-workflow --write \.artifacts/review-notes/batch-4-untracked-review-batch-workflow\.txt$' <<<"${next_after_second_batch_4_note}"
+          NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-4 --filter untracked --name review-batch-workflow --write "$(mktemp)" >/dev/null
+          next_after_batch_4_notes="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --memo batch-4 --filter untracked --write \.artifacts/review-memos/batch-4-untracked-memo\.txt$' <<<"${next_after_batch_4_notes}"
+          batch_4_memo_file="$(mktemp)"
+          batch_4_memo_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-4 --filter untracked --write "${batch_4_memo_file}")"
+          grep -Eq '^batch-4 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${batch_4_memo_output}"
+          grep -Eq '^MEMO-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_4_memo_output}"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_4_memo_output}"
+          grep -Eq '^batch-4 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' "${batch_4_memo_file}"
+          next_after_completed_batch_4="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --note batch-5 --filter untracked --name review-docs --write \.artifacts/review-notes/batch-5-untracked-review-docs\.txt$' <<<"${next_after_completed_batch_4}"
+          batch_5_group_output="$(bash scripts/verify/run-review-batch-checks.sh --untracked-groups batch-5 --name review-docs)"
+          grep -Eq '^batch-5 \| untracked-group-subset=untracked \| name=review-docs \| group-count=[0-9]+ \| file-count=[0-9]+$' <<<"${batch_5_group_output}"
+          if grep -q '^batch-5 \| UNTRACKED-GROUP \|' <<<"${batch_5_group_output}"; then
+            grep -Eq '^batch-5 \| UNTRACKED-GROUP \| name=review-docs \| file-count=[0-9]+ \| focus=audit report and review inventory docs$' <<<"${batch_5_group_output}"
+            grep -Eq '^batch-5 \| UNTRACKED-FILE \| group=review-docs \| docs/reports/codebase-audit-2026-04-10\.md$' <<<"${batch_5_group_output}"
+            grep -Eq '^batch-5 \| UNTRACKED-FILE \| group=review-docs \| docs/reports/review-inventory-2026-04-10\.md$' <<<"${batch_5_group_output}"
+          fi
+          batch_5_note_file="$(mktemp)"
+          batch_5_note_output="$(NOTE_MANIFEST_PATH="${note_manifest}" bash scripts/verify/run-review-batch-checks.sh --note batch-5 --filter untracked --name review-docs --write "${batch_5_note_file}")"
+          grep -Eq '^batch-5 \| note-subset=untracked \| name=review-docs \| file-count=[0-9]+ \| note-point-count=[0-9]+$' <<<"${batch_5_note_output}"
+          grep -Eq '^batch-5 \| NOTE \| untracked \| name=review-docs \| file=docs/reports/codebase-audit-2026-04-10\.md \| lines=full-file \| focus=audit report and review inventory docs$' <<<"${batch_5_note_output}"
+          grep -Eq '^NOTE-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_5_note_output}"
+          grep -Eq '^NOTE-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_5_note_output}"
+          grep -Eq '^batch-5 \| note-subset=untracked \| name=review-docs \| file-count=[0-9]+ \| note-point-count=[0-9]+$' "${batch_5_note_file}"
+          next_after_batch_5_note="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh --memo batch-5 --filter untracked --write \.artifacts/review-memos/batch-5-untracked-memo\.txt$' <<<"${next_after_batch_5_note}"
+          batch_5_memo_file="$(mktemp)"
+          batch_5_memo_output="$(MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --memo batch-5 --filter untracked --write "${batch_5_memo_file}")"
+          grep -Eq '^batch-5 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' <<<"${batch_5_memo_output}"
+          grep -Eq '^MEMO-WRITE \| path=.+ \| bytes=[0-9]+$' <<<"${batch_5_memo_output}"
+          grep -Eq '^MEMO-MANIFEST \| path=.+ \| entries=[0-9]+$' <<<"${batch_5_memo_output}"
+          grep -Eq '^batch-5 \| memo-subset=untracked \| file-count=[0-9]+ \| section-count=[0-9]+ \| point-count=[0-9]+$' "${batch_5_memo_file}"
+          handoff_index_output="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --handoff-index)"
+          grep -Eq '^HANDOFF-INDEX \| note-manifest=.+ \| memo-manifest=.+ \| batches=5$' <<<"${handoff_index_output}"
+          grep -Eq '^batch-2 \| HANDOFF-ARTIFACTS \| artifact-state=complete \| notes=8/8 \| tracked-notes=4/4 \| untracked-notes=4/4 \| present-notes=8 \| memos=2/2 \| tracked-memos=1 \| untracked-memos=1 \| present-memos=2 \| latest-note=.+ \| latest-memo=.+$' <<<"${handoff_index_output}"
+          grep -Eq '^batch-5 \| HANDOFF-ARTIFACTS \| artifact-state=complete \| notes=1/1 \| tracked-notes=0/0 \| untracked-notes=1/1 \| present-notes=1 \| memos=1/1 \| tracked-memos=0 \| untracked-memos=1 \| present-memos=1 \| latest-note=.+ \| latest-memo=.+$' <<<"${handoff_index_output}"
+          grep -Eq '^HANDOFF-INDEX-SUMMARY \| notes=16/16 \| present-notes=16 \| memos=6/6 \| present-memos=6 \| complete=5 \| partial=0 \| none=0$' <<<"${handoff_index_output}"
+          handoff_index_show_output="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --handoff-index batch-2 --show)"
+          grep -Eq '^HANDOFF-INDEX \| note-manifest=.+ \| memo-manifest=.+ \| batches=1$' <<<"${handoff_index_show_output}"
+          grep -Eq '^batch-2 \| NOTE-ARTIFACT \| filter=tracked-modified \| name=bounded-wait-guards \| output=.+ \| bytes=[0-9]+ \| output-state=present \| timestamp=[0-9TZ:+-]+$' <<<"${handoff_index_show_output}"
+          grep -Eq '^batch-2 \| MEMO-ARTIFACT \| filter=untracked \| output=.+ \| bytes=[0-9]+ \| output-state=present \| timestamp=[0-9TZ:+-]+$' <<<"${handoff_index_show_output}"
+          landing_plan_output="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --landing-plan)"
+          grep -Eq '^LANDING-PLAN \| batches=5$' <<<"${landing_plan_output}"
+          grep -Eq '^batch-2 \| LANDING-STEP \| order=2 \| landing-state=ready-for-landing \| readiness=needs-landing \| handoff=complete \| artifact-state=complete \| commit-scope=cka-regressions-and-diagnostics \| files=16 \| tracked-modified=1 \| untracked=15 \| missing=0$' <<<"${landing_plan_output}"
+          grep -Eq '^LANDING-PLAN-SUMMARY \| ready-for-landing=5 \| pending-handoff=0 \| blocked=0$' <<<"${landing_plan_output}"
+          landing_plan_show_output="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --landing-plan batch-2 --show)"
+          grep -Eq '^LANDING-PLAN \| batches=1$' <<<"${landing_plan_show_output}"
+          grep -Eq '^batch-2 \| LANDING-HANDOFF \| next=echo no-pending-review-actions$' <<<"${landing_plan_show_output}"
+          grep -Eq '^batch-2 \| LANDING-FILE \| tracked-modified \| scripts/verify/cka-005-isolated-env-e2e\.sh$' <<<"${landing_plan_show_output}"
+          grep -Eq '^batch-2 \| LANDING-ARTIFACT \| type=latest-note \| path=.+$' <<<"${landing_plan_show_output}"
+          grep -Eq '^batch-2 \| LANDING-ARTIFACT \| type=latest-memo \| path=.+$' <<<"${landing_plan_show_output}"
+          next_after_completed_batch_5="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^echo no-pending-review-actions$' <<<"${next_after_completed_batch_5}"
+          next_verbose_after_completed_batch_5="$(NOTE_MANIFEST_PATH="${note_manifest}" MEMO_MANIFEST_PATH="${memo_manifest}" bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| state=complete \| next=echo no-pending-review-actions$' <<<"${next_verbose_after_completed_batch_5}"
+          status_output="$(bash scripts/verify/run-review-batch-checks.sh --status batch-4)"
+          grep -Eq '^batch-4 \| readiness=[a-z-]+ \| reason=[a-z-]+ \| total=5 \| existing=5 \| missing=0 \| clean=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+$' <<<"${status_output}"
+          status_all_output="$(bash scripts/verify/run-review-batch-checks.sh --status-all)"
+          grep -Eq '^FIRST-ACTION \| batch=batch-[1-5] \| readiness=[a-z-]+ \| reason=[a-z-]+ \| next=\./scripts/verify/run-review-batch-checks\.sh .+$' <<<"${status_all_output}"
+          grep -Eq '^VERDICT \| readiness=[a-z-]+ \| reason=[a-z-]+ \| ready=[0-9]+ \| needs-landing=[0-9]+ \| blocked=[0-9]+$' <<<"${status_all_output}"
+          grep -Eq '^ALL \| readiness=[a-z-]+ \| reason=[a-z-]+ \| batches=5 \| total=[0-9]+ \| existing=[0-9]+ \| missing=[0-9]+ \| clean=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| batches-with-missing=[0-9]+ \| batches-with-tracked-modified=[0-9]+ \| batches-with-untracked=[0-9]+$' <<<"${status_all_output}"
+          next_output="$(bash scripts/verify/run-review-batch-checks.sh --next)"
+          grep -Eq '^\./scripts/verify/run-review-batch-checks\.sh .+$' <<<"${next_output}"
+          if grep -q -- '--note ' <<<"${next_output}"; then
+            grep -Eq -- '--write \.artifacts/review-notes/[a-z0-9-]+-[a-z0-9-]+\.txt$' <<<"${next_output}"
+          fi
+          next_verbose_output="$(bash scripts/verify/run-review-batch-checks.sh --next --verbose)"
+          grep -Eq '^NEXT \| batch=batch-[1-5] \| readiness=[a-z-]+ \| reason=[a-z-]+ \| total=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+ \| focus=.* \| next=\./scripts/verify/run-review-batch-checks\.sh .+$' <<<"${next_verbose_output}"
+          if grep -q -- '--note ' <<<"${next_verbose_output}"; then
+            grep -Eq -- '--write \.artifacts/review-notes/[a-z0-9-]+-[a-z0-9-]+\.txt$' <<<"${next_verbose_output}"
+          fi
+
+  diagnostics-collector-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify multi-host diagnostics collection
+        run: bash scripts/verify/cka-2026-diagnostics-collector-smoke.sh
+
+  diagnostics-pack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify diagnostics archive packing
+        run: bash scripts/verify/cka-2026-diagnostics-pack-smoke.sh
+
+  review-batch-handoff-pack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify review handoff archive packing
+        run: bash scripts/verify/review-batch-handoff-pack-smoke.sh
+
+  workflow-contract-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify self-hosted workflow contract
+        run: bash scripts/verify/cka-2026-workflow-contract-smoke.sh
+
+  review-batch-workflow-contract-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify review-batch workflow contract
+        run: bash scripts/verify/review-batch-workflow-contract-smoke.sh
+
+  summary-renderer-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify multi-host diagnostics summary rendering
+        run: bash scripts/verify/cka-2026-summary-renderer-smoke.sh
+
+  browser-ui-scenario-contract-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify browser smoke scenario inventory
+        run: bash scripts/verify/browser-ui-scenario-contract-smoke.sh
+
+  browser-ui-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install browser smoke dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Run browser UI smoke
+        run: npm run browser-ui-smoke
