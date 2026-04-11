@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="modal-body">
                             <div class="alert alert-info">
                                 <p>You already have an active exam session:</p>
-                                <p><strong>${examData.info?.name || 'Unknown Exam'}</strong></p>
+                                <p id="activeExamName"><strong>${examData.info?.name || 'Unknown Exam'}</strong></p>
                                 <p class="mb-0">Only one active exam session can be present at a time.</p>
                             </div>
                         </div>
@@ -151,10 +151,31 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get modal element and create Bootstrap modal
         const modalElement = document.getElementById('activeExamWarningModal');
+        const activeExamName = modalElement.querySelector('#activeExamName');
+        if (activeExamName) {
+            activeExamName.innerHTML = `<strong>${examData.info?.name || 'Unknown Exam'}</strong>`;
+        }
         const warningModal = new bootstrap.Modal(modalElement);
+
+        function cleanupWarningModalButtons() {
+            console.log('Modal hidden, cleaning up event listeners');
+
+            if (document.getElementById('terminateAndProceedBtn')) {
+                const existingTerminateBtn = document.getElementById('terminateAndProceedBtn');
+                const resetTerminateBtn = existingTerminateBtn.cloneNode(true);
+                existingTerminateBtn.parentNode.replaceChild(resetTerminateBtn, existingTerminateBtn);
+            }
+
+            if (document.getElementById('continueSessionBtn')) {
+                const existingContinueBtn = document.getElementById('continueSessionBtn');
+                const resetContinueBtn = existingContinueBtn.cloneNode(true);
+                existingContinueBtn.parentNode.replaceChild(resetContinueBtn, existingContinueBtn);
+            }
+        }
         
         // Show the modal
         warningModal.show();
+        modalElement.addEventListener('hidden.bs.modal', cleanupWarningModalButtons, { once: true });
         
         // Remove any existing event listeners by cloning and replacing the buttons
         const oldTerminateBtn = document.getElementById('terminateAndProceedBtn');
@@ -221,24 +242,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 alert('Failed to terminate the active exam. Please try again later.');
             });
-            
-            // Clean up the modal when it's hidden
-            modalElement.addEventListener('hidden.bs.modal', function() {
-                console.log('Modal hidden, cleaning up event listeners');
-                
-                // Remove event listeners by replacing buttons with clones if they exist
-                if (document.getElementById('terminateAndProceedBtn')) {
-                    const oldTerminateBtn = document.getElementById('terminateAndProceedBtn');
-                    const newTerminateBtn = oldTerminateBtn.cloneNode(true);
-                    oldTerminateBtn.parentNode.replaceChild(newTerminateBtn, oldTerminateBtn);
-                }
-                
-                if (document.getElementById('continueSessionBtn')) {
-                    const oldContinueBtn = document.getElementById('continueSessionBtn');
-                    const newContinueBtn = oldContinueBtn.cloneNode(true);
-                    oldContinueBtn.parentNode.replaceChild(newContinueBtn, oldContinueBtn);
-                }
-            });
         });
     }
     
@@ -250,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loaderMessage.textContent = 'Loading labs...';
         }
         
-        fetch('/facilitator/api/v1/assements/')
+        fetch('/facilitator/api/v1/assessments/')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to fetch labs. Status: ' + response.status);
@@ -666,4 +669,4 @@ document.addEventListener('DOMContentLoaded', function() {
         // If there's no current exam at all, inform the user
         alert('No active exam found. Please start an exam first.');
     });
-}); 
+});

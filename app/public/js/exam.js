@@ -595,12 +595,14 @@ document.addEventListener('DOMContentLoaded', function() {
             terminalContainer.style.display = 'flex';
             toggleViewBtn.textContent = 'Switch to Terminal';
             isTerminalActive = false;
+            TerminalService.setTerminalActive(false, sshTerminalContainer);
         } else {
             // Switch to Terminal
             terminalContainer.style.display = 'none';
             sshTerminalContainer.style.display = 'flex';
             toggleViewBtn.textContent = 'Switch to Remote Desktop';
             isTerminalActive = true;
+            TerminalService.setTerminalActive(true, sshTerminalContainer);
             
             // Show toast notification about real exam constraints
             UiUtils.showToast('Note: In the actual certification exam, only remote desktop access is available. Terminal access is provided here for practice convenience.', {

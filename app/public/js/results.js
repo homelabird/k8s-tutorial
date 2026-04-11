@@ -274,6 +274,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fetch exam results from API
     function fetchExamResults(examId = null) {
+        // Event handlers may call this function without wrapping it, so
+        // ignore DOM event objects and fall back to the URL/current exam ID.
+        if (examId && typeof examId === 'object' && typeof examId.type === 'string') {
+            examId = null;
+        }
+
         // If no exam ID provided, get it from the URL
         if (!examId) {
             examId = getExamId();

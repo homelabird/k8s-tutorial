@@ -216,7 +216,7 @@ The `index.html` file serves as the main entry point for the CK-X Simulator, pro
    - Returns exam details
 
 2. **Labs Data**
-   - `/facilitator/api/v1/assements/`
+   - `/facilitator/api/v1/assessments/`
    - Fetches available labs
    - Updates exam options
 
@@ -397,7 +397,7 @@ async function fetchLabs(showLoader = true) {
     try {
         if (showLoader) showLoadingOverlay('Loading available labs...');
         
-        const response = await fetch('/facilitator/api/v1/assements/');
+        const response = await fetch('/facilitator/api/v1/assessments/');
         const data = await response.json();
         
         // Update exam options
@@ -615,4 +615,4 @@ Key aspects of the implementation include:
 - Comprehensive error handling and user feedback
 - Efficient state management using localStorage
 - Responsive design for various screen sizes
-- Clear user flow for exam selection and management 
+- Clear user flow for exam selection and management

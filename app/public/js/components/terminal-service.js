@@ -6,16 +6,35 @@
 let terminal;
 let socket;
 let fitAddon;
+let terminalDataListener;
 let isTerminalInitialized = false;
 let terminalCallbacks = {};
+let resizeContainerElement;
+let isTerminalActive = false;
+let isResizeListenerRegistered = false;
 
 // Set up terminal callbacks
 function setCallbacks(callbacks) {
     terminalCallbacks = callbacks || {};
 }
 
+function setTerminalActive(isActive, containerElement = resizeContainerElement) {
+    isTerminalActive = Boolean(isActive);
+    if (containerElement) {
+        resizeContainerElement = containerElement;
+    }
+}
+
+function handleWindowResize() {
+    if (isTerminalActive && resizeContainerElement) {
+        resizeTerminal(resizeContainerElement);
+    }
+}
+
 // Function to initialize the terminal
 function initTerminal(containerElement, isActive = false) {
+    setTerminalActive(isActive, containerElement);
+
     // If already initialized, just resize
     if (isTerminalInitialized) {
         console.log('Terminal already initialized, just resizing');
@@ -69,11 +88,10 @@ function initTerminal(containerElement, isActive = false) {
     connectToSocketIO();
     
     // Add window resize listener to keep terminal properly sized
-    window.addEventListener('resize', () => {
-        if (isActive) {
-            resizeTerminal(containerElement);
-        }
-    });
+    if (!isResizeListenerRegistered) {
+        window.addEventListener('resize', handleWindowResize);
+        isResizeListenerRegistered = true;
+    }
     
     isTerminalInitialized = true;
     return { terminal, fitAddon };
@@ -82,12 +100,17 @@ function initTerminal(containerElement, isActive = false) {
 // Resize terminal to fit container
 function resizeTerminal(containerElement) {
     if (!terminal || !isTerminalInitialized) return;
+
+    const targetContainer = containerElement || resizeContainerElement;
+    if (!targetContainer) return;
+
+    resizeContainerElement = targetContainer;
     
     setTimeout(() => {
         // Recalculate terminal container size
         const terminalContainer = document.getElementById('terminal');
-        const containerHeight = containerElement.clientHeight;
-        const containerWidth = containerElement.clientWidth;
+        const containerHeight = targetContainer.clientHeight;
+        const containerWidth = targetContainer.clientWidth;
         
         if (terminalContainer && containerHeight && containerWidth) {
             terminalContainer.style.height = `${containerHeight}px`;
@@ -153,8 +176,10 @@ function connectToSocketIO() {
     socket = io('/ssh', {
         forceNew: true,
         reconnectionAttempts: 1000,
-        timeout: 1000,
-        transports: ['polling'] // force polling for now to avoid invalid frame error , TODO: fix this
+        timeout: 3000,
+        path: '/socket.io/',
+        transports: ['websocket', 'polling'],
+        rememberUpgrade: true
     });
     console.log('Creating new socket connection to SSH server');
     
@@ -219,18 +244,14 @@ function connectToSocketIO() {
     
     // Clear any existing listeners to prevent duplication
     if (terminal) {
-        // Get all registered event listeners
-        const existingListeners = terminal._core._events;
-        
-        // If we have existing data listeners, clear them
-        if (existingListeners && existingListeners.data) {
-            // Remove previous data listeners
-            terminal._core.off('data');
-            console.log('Removed existing terminal data listeners');
+        if (terminalDataListener && typeof terminalDataListener.dispose === 'function') {
+            terminalDataListener.dispose();
+            terminalDataListener = null;
+            console.log('Removed existing terminal data listener');
         }
         
         // Add our data handler
-        terminal.onData((data) => {
+        terminalDataListener = terminal.onData((data) => {
             if (socket && socket.connected) {
                 socket.emit('data', data);
             } else {
@@ -266,5 +287,6 @@ export {
     isInitialized,
     getTerminal,
     getSocket,
-    setCallbacks
-}; 
+    setCallbacks,
+    setTerminalActive
+};
