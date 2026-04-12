@@ -319,6 +319,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-027",
+      "assetPath": "assets/exams/cka/027",
+      "name": "CKA 2026 Single Domain Drill - PodDisruptionBudget and drain planning",
+      "category": "CKA",
+      "description": "Standalone disruption-planning drill focused on PodDisruptionBudget inspection, node workload audit, and safe cordon/drain preview guidance without executing a live drain.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

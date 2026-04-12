@@ -13,7 +13,7 @@ These drafts cover the next recommended disruption-aware operations pack from th
 ## Current Template State
 
 - Question `801` (`PodDisruptionBudget and drain planning`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `801` has not yet been promoted into a facilitator pack.
+- Question `801` has now been promoted into facilitator pack `cka-027`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended disruption-aware operations pack from th
 
 ## Recommended Promotion Order
 
-1. Promote question `801` into facilitator pack `cka-027`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

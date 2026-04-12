@@ -28,35 +28,27 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-024` resource quota and LimitRange troubleshooting
 - `cka-025` container runtime and CRI endpoint diagnostics
 - `cka-026` StorageClass and dynamic provisioning diagnostics
+- `cka-027` PodDisruptionBudget and drain planning
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-027+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-028+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-026` are now promoted facilitator packs. `cka-027` is now template-scaffolded, and `cka-028+` remain roadmap-only candidates.
+`cka-011` through `cka-027` are now promoted facilitator packs. `cka-028+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-027` | PodDisruptionBudget and drain planning | Covers disruption-aware node maintenance, PDB inspection, and safe drain sequencing without performing a live drain. | Low | Template scaffolded; promote next |
 | `cka-028` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the disruption-planning drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. Promote `cka-027` into a facilitator pack
-2. Define the next `cka-028` candidate from the remaining uncovered operator workflows
+1. Define the next `cka-028` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
-
-### `cka-027` PodDisruptionBudget and drain planning
-
-- Keep the drill in the `planning + evidence export` lane.
-- Focus on exact `kubectl get pdb -A`, `kubectl describe pdb ...`, node workload audit, and safe `kubectl drain ... --dry-run=client` guidance.
-- Require manifest export plus a plain-text checklist that shows the safe cordon/drain/uncordon sequence.
-- Avoid live drain execution, Pod deletion, and PDB deletion in both the setup contract and the expected answer.
 
 ### Next candidate to be defined
 
@@ -76,7 +68,7 @@ Ship the next expansion wave as `cka-027+` drills that fill the remaining practi
 - `cka-024` is now promoted as facilitator pack `cka-024`, sourced from template question `603` in `docs/templates/cka-2026-next2-ops`.
 - `cka-025` is now promoted as facilitator pack `cka-025`, sourced from template question `604` in `docs/templates/cka-2026-next2-ops`.
 - `cka-026` is now promoted as facilitator pack `cka-026`, sourced from template question `701` in `docs/templates/cka-2026-next1-storage`.
-- `cka-027` is now scaffolded as template question `801` in `docs/templates/cka-2026-next1-disruption`.
+- `cka-027` is now promoted as facilitator pack `cka-027`, sourced from template question `801` in `docs/templates/cka-2026-next1-disruption`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
@@ -99,7 +91,7 @@ Ship the next expansion wave as `cka-027+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-027+` drill should be considered ready only when all of the following are true:
+A `cka-028+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked

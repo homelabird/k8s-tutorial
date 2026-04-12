@@ -222,6 +222,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-024` resource quota and LimitRange troubleshooting
 - `cka-025` container runtime and CRI endpoint diagnostics
 - `cka-026` StorageClass and dynamic provisioning diagnostics
+- `cka-027` PodDisruptionBudget and drain planning
 
 To check the runner wiring without starting the Podman stack:
 

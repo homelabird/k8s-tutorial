@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "disruption-lab",
+      "machineHostname": "ckad9999",
+      "question": "A disruption planning brief is incomplete and contains stale or unsafe node-maintenance guidance.\n\nA ConfigMap named `disruption-planning-brief` already exists in namespace `disruption-lab`. Repair it so that:\n- `targetNode` is `kind-cluster-worker`\n- `pdbInventory` is `kubectl get pdb -A`\n- `pdbDescribe` is `kubectl describe pdb api-pdb -n disruption-lab`\n- `nodeWorkloadCheck` is `kubectl get pods -A -o wide --field-selector spec.nodeName=kind-cluster-worker`\n- `cordonCommand` is `kubectl cordon kind-cluster-worker`\n- `drainPreview` is `kubectl drain kind-cluster-worker --ignore-daemonsets --delete-emptydir-data --dry-run=client`\n- `uncordonCommand` is `kubectl uncordon kind-cluster-worker`\n- `safeRemediationNote` is `review PodDisruptionBudget impact before any non-dry-run drain`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/disruption-planning-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/disruption-planning-checklist.txt` with the sections `PDB Inventory`, `Node Workload Audit`, and `Safe Drain Sequence`\n\nDo not run a live drain, do not delete Pods or PodDisruptionBudgets, and do not cordon or uncordon the node during this drill.",
+      "concepts": [
+        "poddisruptionbudget",
+        "drain",
+        "node-maintenance",
+        "troubleshooting",
+        "operations"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The disruption planning brief ConfigMap uses the intended node target, PDB inspection commands, node workload audit, and safe drain guidance",
+          "verificationScriptFile": "q1_s1_validate_disruption_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact PDB inventory, node workload audit, and safe drain sequence commands",
+          "verificationScriptFile": "q1_s2_validate_disruption_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe disruption guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_disruption_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
