@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-026
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-027
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -40,6 +40,7 @@ Supported suites:
   cka-024  Resource quota and LimitRange troubleshooting drill
   cka-025  Container runtime and CRI endpoint diagnostics drill
   cka-026  StorageClass and dynamic provisioning diagnostics drill
+  cka-027  PodDisruptionBudget and drain planning drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -218,6 +219,7 @@ resolve_suite_namespace() {
     cka-024) printf '%s\n' 'quota-lab' ;;
     cka-025) printf '%s\n' 'runtime-lab' ;;
     cka-026) printf '%s\n' 'storageclass-lab' ;;
+    cka-027) printf '%s\n' 'disruption-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1043,6 +1045,45 @@ kubectl get configmap dynamic-provisioning-brief -n storageclass-lab -o yaml > /
 [ -s /tmp/exam/q1/dynamic-provisioning-checklist.txt ]
 COMMAND
       ;;
+    cka-027)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: disruption-planning-brief
+  namespace: disruption-lab
+data:
+  targetNode: kind-cluster-worker
+  pdbInventory: kubectl get pdb -A
+  pdbDescribe: kubectl describe pdb api-pdb -n disruption-lab
+  nodeWorkloadCheck: kubectl get pods -A -o wide --field-selector spec.nodeName=kind-cluster-worker
+  cordonCommand: kubectl cordon kind-cluster-worker
+  drainPreview: kubectl drain kind-cluster-worker --ignore-daemonsets --delete-emptydir-data --dry-run=client
+  uncordonCommand: kubectl uncordon kind-cluster-worker
+  safeRemediationNote: review PodDisruptionBudget impact before any non-dry-run drain
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/disruption-planning-checklist.txt
+PDB Inventory
+- kubectl get pdb -A
+- kubectl describe pdb api-pdb -n disruption-lab
+
+Node Workload Audit
+- kubectl get pods -A -o wide --field-selector spec.nodeName=kind-cluster-worker
+- kubectl get deploy api -n disruption-lab
+
+Safe Drain Sequence
+- kubectl cordon kind-cluster-worker
+- kubectl drain kind-cluster-worker --ignore-daemonsets --delete-emptydir-data --dry-run=client
+- review PodDisruptionBudget impact before any non-dry-run drain
+- kubectl uncordon kind-cluster-worker
+EOF_CHECKLIST
+kubectl get configmap disruption-planning-brief -n disruption-lab -o yaml > /tmp/exam/q1/disruption-planning-brief.yaml
+[ -s /tmp/exam/q1/disruption-planning-brief.yaml ]
+[ -s /tmp/exam/q1/disruption-planning-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1158,7 +1199,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027
   exit 0
 fi
 
@@ -1169,7 +1210,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027)
 fi
 
 for suite in "${SUITES[@]}"; do
