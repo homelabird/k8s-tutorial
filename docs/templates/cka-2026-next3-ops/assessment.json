@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "501",
+      "namespace": "controlplane-lab",
+      "machineHostname": "ckad9999",
+      "question": "A control plane component recovery brief is incomplete and contains unsafe scheduler/controller-manager troubleshooting guidance.\n\nA ConfigMap named `component-repair-brief` already exists in namespace `controlplane-lab`. Repair it so that:\n- `schedulerManifest` is `/etc/kubernetes/manifests/kube-scheduler.yaml`\n- `controllerManagerManifest` is `/etc/kubernetes/manifests/kube-controller-manager.yaml`\n- `schedulerHealthz` is `https://127.0.0.1:10259/healthz`\n- `controllerManagerHealthz` is `https://127.0.0.1:10257/healthz`\n- `schedulerKubeconfig` is `/etc/kubernetes/scheduler.conf`\n- `controllerManagerKubeconfig` is `/etc/kubernetes/controller-manager.conf`\n- `schedulerLogHint` is `journalctl -u kubelet | grep kube-scheduler`\n- `controllerManagerLogHint` is `journalctl -u kubelet | grep kube-controller-manager`\n- save the repaired ConfigMap manifest to `/tmp/exam/q501/component-repair-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q501/control-plane-checklist.txt` with the sections `Scheduler`, `Controller Manager`, and `Verification`\n\nDo not restart static Pods and do not replace files under `/etc/kubernetes/manifests` during this drill.",
+      "concepts": [
+        "control-plane",
+        "kube-scheduler",
+        "kube-controller-manager",
+        "static-pods",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The repair brief ConfigMap uses the intended manifest paths, kubeconfig references, health endpoints, and log hints",
+          "verificationScriptFile": "q501_s1_validate_component_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported plain-text checklist contains the required sections and exact scheduler/controller-manager troubleshooting commands",
+          "verificationScriptFile": "q501_s2_validate_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe recovery guidance is removed",
+          "verificationScriptFile": "q501_s3_validate_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

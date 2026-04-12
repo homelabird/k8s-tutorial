@@ -27,7 +27,7 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-019+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, and `cka-018` are now promoted facilitator packs. `cka-019+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, and `cka-018` are now promoted facilitator packs. `cka-019` is now template-scaffolded, while `cka-020+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
@@ -45,38 +45,41 @@ Ship the next expansion wave as `cka-019+` drills that fills the remaining pract
 
 ## Suggested Problem Shapes
 
-### `cka-011` ConfigMap and Secret repair
+### `cka-019` scheduler / controller-manager troubleshooting
 
-- Broken deployment mounts the wrong ConfigMap key and references a missing Secret key.
+- A control-plane recovery brief contains the wrong static pod manifest paths, health endpoints, kubeconfig references, and unsafe troubleshooting hints.
 - Candidate verifies:
-  - workload becomes Available
-  - env/volume references are corrected
-  - only the intended keys are exposed
+  - scheduler and controller-manager manifest paths are corrected
+  - health endpoints and kubeconfig references are repaired
+  - a plain-text checklist and repaired manifest are exported
+  - unsafe actions such as deleting manifests or restarting kubelet are removed
 
-### `cka-012` HPA troubleshooting
+### `cka-020` service and pod connectivity diagnostics
 
-- Deployment exists, HPA exists, but target reference or metric threshold is wrong.
+- Pods and Services exist, but the connectivity brief, probe path, or expected reachability matrix is wrong.
 - Candidate verifies:
-  - HPA points at the intended workload
-  - min/max replicas and target are corrected
-  - scale-up condition can be observed or structurally validated
+  - pod-to-pod and pod-to-service paths are repaired
+  - exported evidence captures both the failing and repaired connectivity state
+  - validation stays deterministic without depending on external traffic generators
 
-### `cka-013` Node troubleshooting and maintenance
+### `cka-021` service exposure and endpoint debugging
 
-- One node is intentionally unschedulable or NotReady-like from the drill contract perspective.
+- A Service exists with broken selectors, wrong targetPort wiring, or stale endpoint expectations.
 - Candidate verifies:
-  - node maintenance commands are applied in the right order
-  - workload is rescheduled correctly
-  - cluster returns to intended scheduling state
+  - Service selectors and ports match the intended backend Pods
+  - exposure/debug evidence is exported for later review
+  - no ingress or Gateway API objects are required for the drill
 
 ## Current Authoring State
 
 - `cka-016` is now promoted as facilitator pack `cka-016`, sourced from template question `403` in `docs/templates/cka-2026-next4`.
 - `cka-017` is now promoted as facilitator pack `cka-017`, sourced from template question `404` in `docs/templates/cka-2026-next4`.
 - `cka-018` is now promoted as facilitator pack `cka-018`, sourced from template question `405` in `docs/templates/cka-2026-next4`.
+- `cka-019` is now template-scaffolded as question `501` in `docs/templates/cka-2026-next3-ops`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
+- The current `cka-019` template also stays planning-focused: it repairs exact scheduler/controller-manager manifest paths, health endpoints, kubeconfig references, and evidence export without touching live static Pods.
 
 ## Design Constraints
 
