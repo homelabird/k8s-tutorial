@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-030
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-031
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -44,6 +44,7 @@ Supported suites:
   cka-028  StatefulSet identity and headless service diagnostics drill
   cka-029  DaemonSet rollout and node coverage diagnostics drill
   cka-030  CronJob schedule, suspend, and history diagnostics drill
+  cka-031  Job completions, parallelism, and backoff diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -226,6 +227,7 @@ resolve_suite_namespace() {
     cka-028) printf '%s\n' 'stateful-lab' ;;
     cka-029) printf '%s\n' 'daemonset-lab' ;;
     cka-030) printf '%s\n' 'cronjob-lab' ;;
+    cka-031) printf '%s\n' 'job-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1201,6 +1203,44 @@ kubectl get configmap cronjob-diagnostics-brief -n cronjob-lab -o yaml > /tmp/ex
 [ -s /tmp/exam/q1/cronjob-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-031)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: job-diagnostics-brief
+  namespace: job-lab
+data:
+  targetJob: report-batch
+  jobInventory: kubectl get job report-batch -n job-lab -o wide
+  completionsCheck: kubectl get job report-batch -n job-lab -o jsonpath='{.spec.completions}'
+  parallelismCheck: kubectl get job report-batch -n job-lab -o jsonpath='{.spec.parallelism}'
+  backoffLimitCheck: kubectl get job report-batch -n job-lab -o jsonpath='{.spec.backoffLimit}'
+  podEvidenceCheck: kubectl get pods -n job-lab -l job-name=report-batch -o wide
+  jobDescribeCheck: kubectl describe job report-batch -n job-lab
+  safeManifestNote: "confirm completions, parallelism, backoffLimit, and pod template command before changing the Job manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/job-diagnostics-checklist.txt
+Job Inventory
+- kubectl get job report-batch -n job-lab -o wide
+- kubectl get job report-batch -n job-lab -o jsonpath='{.spec.completions}'
+- kubectl get job report-batch -n job-lab -o jsonpath='{.spec.parallelism}'
+- kubectl get job report-batch -n job-lab -o jsonpath='{.spec.backoffLimit}'
+
+Pod Evidence
+- kubectl get pods -n job-lab -l job-name=report-batch -o wide
+- kubectl describe job report-batch -n job-lab
+
+Safe Manifest Review
+- confirm completions, parallelism, backoffLimit, and pod template command before changing the Job manifest
+EOF_CHECKLIST
+kubectl get configmap job-diagnostics-brief -n job-lab -o yaml > /tmp/exam/q1/job-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/job-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/job-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1316,7 +1356,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031
   exit 0
 fi
 
@@ -1327,7 +1367,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031)
 fi
 
 for suite in "${SUITES[@]}"; do
