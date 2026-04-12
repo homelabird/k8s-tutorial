@@ -20,6 +20,7 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-016` kubeadm lifecycle planning
 - `cka-017` CRD and operator installation checks
 - `cka-018` etcd backup and restore workflow
+- `cka-019` scheduler / controller-manager troubleshooting
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
@@ -27,7 +28,7 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-019+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, and `cka-018` are now promoted facilitator packs. `cka-019` is now template-scaffolded, while `cka-020+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, and `cka-019` are now promoted facilitator packs. `cka-020+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
@@ -39,20 +40,10 @@ Ship the next expansion wave as `cka-019+` drills that fills the remaining pract
 
 ## Proposed Build Order
 
-1. `cka-019` scheduler / controller-manager troubleshooting
-2. `cka-020` service and pod connectivity diagnostics
-3. `cka-021` service exposure and endpoint debugging
+1. `cka-020` service and pod connectivity diagnostics
+2. `cka-021` service exposure and endpoint debugging
 
 ## Suggested Problem Shapes
-
-### `cka-019` scheduler / controller-manager troubleshooting
-
-- A control-plane recovery brief contains the wrong static pod manifest paths, health endpoints, kubeconfig references, and unsafe troubleshooting hints.
-- Candidate verifies:
-  - scheduler and controller-manager manifest paths are corrected
-  - health endpoints and kubeconfig references are repaired
-  - a plain-text checklist and repaired manifest are exported
-  - unsafe actions such as deleting manifests or restarting kubelet are removed
 
 ### `cka-020` service and pod connectivity diagnostics
 
@@ -75,11 +66,11 @@ Ship the next expansion wave as `cka-019+` drills that fills the remaining pract
 - `cka-016` is now promoted as facilitator pack `cka-016`, sourced from template question `403` in `docs/templates/cka-2026-next4`.
 - `cka-017` is now promoted as facilitator pack `cka-017`, sourced from template question `404` in `docs/templates/cka-2026-next4`.
 - `cka-018` is now promoted as facilitator pack `cka-018`, sourced from template question `405` in `docs/templates/cka-2026-next4`.
-- `cka-019` is now template-scaffolded as question `501` in `docs/templates/cka-2026-next3-ops`.
+- `cka-019` is now promoted as facilitator pack `cka-019`, sourced from template question `501` in `docs/templates/cka-2026-next3-ops`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
-- The current `cka-019` template also stays planning-focused: it repairs exact scheduler/controller-manager manifest paths, health endpoints, kubeconfig references, and evidence export without touching live static Pods.
+- The current `cka-019` contract stays planning-focused: it repairs exact scheduler/controller-manager manifest paths, health endpoints, kubeconfig references, and evidence export without touching live static Pods.
 
 ## Design Constraints
 

@@ -142,11 +142,11 @@ describe('app', () => {
     expect(response.status).toBe(200);
 
     const ids = response.body.map((lab) => lab.id);
-    expect(ids).toEqual(expect.arrayContaining(['cka-006', 'cka-007', 'cka-008', 'cka-009', 'cka-010', 'cka-011', 'cka-012', 'cka-013', 'cka-014', 'cka-015', 'cka-016', 'cka-017', 'cka-018']));
+    expect(ids).toEqual(expect.arrayContaining(['cka-006', 'cka-007', 'cka-008', 'cka-009', 'cka-010', 'cka-011', 'cka-012', 'cka-013', 'cka-014', 'cka-015', 'cka-016', 'cka-017', 'cka-018', 'cka-019']));
 
-    expect(response.body.find((lab) => lab.id === 'cka-018')).toMatchObject({
-      id: 'cka-018',
-      assetPath: 'assets/exams/cka/018',
+    expect(response.body.find((lab) => lab.id === 'cka-019')).toMatchObject({
+      id: 'cka-019',
+      assetPath: 'assets/exams/cka/019',
       category: 'CKA',
       examDurationInMinutes: 20
     });

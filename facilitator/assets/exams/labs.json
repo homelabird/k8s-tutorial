@@ -181,6 +181,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-019",
+      "assetPath": "assets/exams/cka/019",
+      "name": "CKA 2026 Single Domain Drill - scheduler and controller-manager troubleshooting",
+      "category": "CKA",
+      "description": "Standalone control-plane recovery planning drill focused on scheduler and controller-manager manifest paths, health endpoints, kubeconfig references, and exported evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",
