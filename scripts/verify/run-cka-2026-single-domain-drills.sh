@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-020
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-021
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -34,6 +34,7 @@ Supported suites:
   cka-018  etcd backup and restore workflow drill
   cka-019  scheduler and controller-manager troubleshooting drill
   cka-020  service and pod connectivity diagnostics drill
+  cka-021  service exposure and endpoint debugging drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -206,6 +207,7 @@ resolve_suite_namespace() {
     cka-018) printf '%s\n' 'etcd-lab' ;;
     cka-019) printf '%s\n' 'controlplane-lab' ;;
     cka-020) printf '%s\n' 'connectivity-lab' ;;
+    cka-021) printf '%s\n' 'service-debug-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -812,6 +814,44 @@ kubectl get configmap connectivity-brief -n connectivity-lab -o yaml > /tmp/exam
 [ -s /tmp/exam/q1/connectivity-matrix.txt ]
 COMMAND
       ;;
+    cka-021)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-exposure-brief
+  namespace: service-debug-lab
+data:
+  serviceName: echo-api
+  serviceType: ClusterIP
+  selectorKey: app
+  selectorValue: echo-api
+  servicePort: "8080"
+  targetPort: "8080"
+  endpointCheck: kubectl get endpoints echo-api -n service-debug-lab -o wide
+  selectorCheck: kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'
+  reachabilityCheck: kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/service-exposure-checklist.txt
+Selector Audit
+- kubectl get svc echo-api -n service-debug-lab -o yaml
+- kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'
+
+Endpoint Audit
+- kubectl get endpoints echo-api -n service-debug-lab -o wide
+- kubectl get endpointslices -n service-debug-lab -l kubernetes.io/service-name=echo-api
+
+Reachability
+- kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+- kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.ports[0].targetPort}'
+EOF_CHECKLIST
+kubectl get configmap service-exposure-brief -n service-debug-lab -o yaml > /tmp/exam/q1/service-exposure-brief.yaml
+[ -s /tmp/exam/q1/service-exposure-brief.yaml ]
+[ -s /tmp/exam/q1/service-exposure-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -927,7 +967,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021
   exit 0
 fi
 
@@ -938,7 +978,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021)
 fi
 
 for suite in "${SUITES[@]}"; do
