@@ -34,30 +34,21 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-028+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-029+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-027` are now promoted facilitator packs. `cka-028` is now template-scaffolded, and `cka-029+` remain roadmap-only candidates.
+`cka-011` through `cka-028` are now promoted facilitator packs, and `cka-029+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-028` | StatefulSet identity and headless service diagnostics | Covers stateful workload inventory, headless Service semantics, ordinal DNS checks, and safe manifest review without mutating live PVCs or converting services. | Low | Template scaffolded; promote next |
 | `cka-029` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the StatefulSet diagnostics drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. Promote `cka-028` into a facilitator pack
-2. Define the next `cka-029` candidate from the remaining uncovered operator workflows
+1. Define the next `cka-029` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
-
-### `cka-028` StatefulSet identity and headless service diagnostics
-
-- Keep the drill in the `planning + evidence export` lane.
-- Focus on exact StatefulSet inventory, headless Service inspection, ordinal DNS checks, and PVC inventory guidance.
-- Require manifest export plus a plain-text checklist that shows safe StatefulSet and headless Service review without deleting PVCs or changing Service type.
-- Avoid StatefulSet deletion, PVC deletion, and NodePort/LoadBalancer conversion in both the setup contract and the expected answer.
 
 ### Next candidate to be defined
 
@@ -78,7 +69,7 @@ Ship the next expansion wave as `cka-028+` drills that fill the remaining practi
 - `cka-025` is now promoted as facilitator pack `cka-025`, sourced from template question `604` in `docs/templates/cka-2026-next2-ops`.
 - `cka-026` is now promoted as facilitator pack `cka-026`, sourced from template question `701` in `docs/templates/cka-2026-next1-storage`.
 - `cka-027` is now promoted as facilitator pack `cka-027`, sourced from template question `801` in `docs/templates/cka-2026-next1-disruption`.
-- `cka-028` is now scaffolded as template question `901` in `docs/templates/cka-2026-next1-stateful`.
+- `cka-028` is now promoted as facilitator pack `cka-028`, sourced from template question `901` in `docs/templates/cka-2026-next1-stateful`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
@@ -102,7 +93,7 @@ Ship the next expansion wave as `cka-028+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-028+` drill should be considered ready only when all of the following are true:
+A `cka-029+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked

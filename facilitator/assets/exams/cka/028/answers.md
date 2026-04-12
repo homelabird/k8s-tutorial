@@ -1,4 +1,4 @@
-## Question 901: StatefulSet identity and headless service diagnostics
+## Question 1: StatefulSet identity and headless service diagnostics
 
 Repair the StatefulSet diagnostics brief and export both the repaired manifest and a plain-text checklist.
 
@@ -20,8 +20,8 @@ data:
   safeManifestNote: "confirm serviceName: web-svc and stable pod ordinals before changing manifests"
 EOF_BRIEF
 
-mkdir -p /tmp/exam/q901
-cat <<'EOF_CHECKLIST' > /tmp/exam/q901/stateful-identity-checklist.txt
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/stateful-identity-checklist.txt
 StatefulSet Inventory
 - kubectl get statefulset web -n stateful-lab -o wide
 - kubectl get pods -n stateful-lab -l app=web -o wide
@@ -35,12 +35,12 @@ Safe Manifest Review
 - confirm serviceName: web-svc and stable pod ordinals before changing manifests
 EOF_CHECKLIST
 
-kubectl get configmap stateful-identity-brief -n stateful-lab -o yaml > /tmp/exam/q901/stateful-identity-brief.yaml
+kubectl get configmap stateful-identity-brief -n stateful-lab -o yaml > /tmp/exam/q1/stateful-identity-brief.yaml
 ```
 
 Expected checks:
 
 - `stateful-identity-brief` contains the intended StatefulSet target, headless Service inspection commands, pod inventory, ordinal DNS guidance, and safe manifest note
-- `/tmp/exam/q901/stateful-identity-checklist.txt` contains the required sections and exact StatefulSet, headless Service, DNS, and PVC troubleshooting commands
-- `/tmp/exam/q901/stateful-identity-brief.yaml` exports the repaired manifest
+- `/tmp/exam/q1/stateful-identity-checklist.txt` contains the required sections and exact StatefulSet, headless Service, DNS, and PVC troubleshooting commands
+- `/tmp/exam/q1/stateful-identity-brief.yaml` exports the repaired manifest
 - stale unsafe actions such as deleting the StatefulSet, deleting PVCs, or converting the Service into a NodePort are removed

@@ -329,6 +329,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-028",
+      "assetPath": "assets/exams/cka/028",
+      "name": "CKA 2026 Single Domain Drill - StatefulSet identity and headless service diagnostics",
+      "category": "CKA",
+      "description": "Standalone StatefulSet diagnostics drill focused on headless Service semantics, ordinal DNS guidance, PVC inventory, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

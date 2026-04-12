@@ -13,7 +13,7 @@ These drafts cover the next recommended stateful workload pack from the `cka-028
 ## Current Template State
 
 - Question `901` (`StatefulSet identity and headless service diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `901` has not yet been promoted into a facilitator pack.
+- Question `901` has now been promoted into facilitator pack `cka-028`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended stateful workload pack from the `cka-028
 
 ## Recommended Promotion Order
 
-1. Promote question `901` into facilitator pack `cka-028`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 
