@@ -6,6 +6,13 @@
 
 A powerful Kubernetes certification practice environment that provides a realistic exam-like experience for kubernetess exam preparation.
 
+## Release & History
+
+- Latest release: [`v1.2.0`](https://github.com/homelabird/k8s-tutorial/releases/tag/v1.2.0)
+- Release history: [GitHub Releases](https://github.com/homelabird/k8s-tutorial/releases)
+- Repo changelog: [CHANGELOG.md](CHANGELOG.md)
+- Next CKA milestone plan: [docs/reports/cka-roadmap-2026-04-12.md](docs/reports/cka-roadmap-2026-04-12.md)
+
 ## Major Features
 
 - **Realistic exam environment** with web-based interface and remote desktop support
