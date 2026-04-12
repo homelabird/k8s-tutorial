@@ -1,0 +1,154 @@
+{
+  "questions": [
+    {
+      "id": "201",
+      "namespace": "rbac-lab",
+      "machineHostname": "ckad9999",
+      "question": "Access to application resources in namespace `rbac-lab` is misconfigured.\n\nA ServiceAccount named `report-reader` already exists, and a Pod `rbac-check` is available for validation.\n\nFix the RBAC configuration so that `report-reader` can:\n- `get` Pods in namespace `rbac-lab`\n- `list` Pods in namespace `rbac-lab`\n\nThe account must not receive broader permissions than required.\n\nDo not grant cluster-admin, do not use a ClusterRoleBinding for this task, and keep the scope limited to namespace `rbac-lab`.",
+      "concepts": ["rbac", "serviceaccounts", "authorization", "security"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "A namespace-scoped Role and RoleBinding exist for report-reader",
+          "verificationScriptFile": "q201_s1_validate_rolebinding_scope.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "report-reader can get and list Pods in rbac-lab",
+          "verificationScriptFile": "q201_s2_validate_can_i_read_pods.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "report-reader is not over-privileged beyond the required read access",
+          "verificationScriptFile": "q201_s3_validate_least_privilege.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    },
+    {
+      "id": "202",
+      "namespace": "rollout-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Deployment named `web-app` already exists in namespace `rollout-lab`.\n\nPerform a controlled rollout and rollback.\n\nRequirements:\n- update the image to `nginx:1.25.5`\n- configure the rolling update strategy with `maxUnavailable=1` and `maxSurge=1`\n- record the change so rollout history is visible\n- save the output of `kubectl rollout history deployment/web-app -n rollout-lab` to `/tmp/exam/q202/rollout-history.txt`\n- roll back the Deployment to the previous revision\n\nThe final running image must be the original pre-update image after the rollback completes.",
+      "concepts": ["deployments", "rollout", "rollback", "workloads"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Deployment strategy is configured for a controlled rolling update",
+          "verificationScriptFile": "q202_s1_validate_strategy.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Rollout history output is saved to the expected file",
+          "verificationScriptFile": "q202_s2_validate_rollout_history_file.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "3",
+          "description": "Deployment was rolled back and is healthy on the original image",
+          "verificationScriptFile": "q202_s3_validate_rollback_state.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        }
+      ]
+    },
+    {
+      "id": "203",
+      "namespace": "netpol-lab",
+      "machineHostname": "ckad9999",
+      "question": "Traffic policy in namespace `netpol-lab` is too permissive.\n\nThe namespace contains Pods named `frontend`, `api`, and `db`.\n\nCreate or fix NetworkPolicies so that:\n- `frontend` can reach `api` on TCP port `8080`\n- `api` can reach `db` on TCP port `5432` using normal cluster DNS/service discovery\n- direct traffic from `frontend` to `db` is denied\n- unrelated ingress to `api` and `db` is denied by default\n\nDo not modify the Pods or Services. Fix the policy layer only.",
+      "concepts": ["networkpolicy", "networking", "security", "troubleshooting"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "NetworkPolicies exist, select the intended Pods, and preserve DNS egress for api lookups",
+          "verificationScriptFile": "q203_s1_validate_policy_presence.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Allowed paths frontend->api and api->db work on the required ports",
+          "verificationScriptFile": "q203_s2_validate_allowed_paths.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Direct frontend->db traffic is denied",
+          "verificationScriptFile": "q203_s3_validate_denied_path.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    },
+    {
+      "id": "204",
+      "namespace": "storage-lab",
+      "machineHostname": "ckad9999",
+      "question": "Persistent storage for an application in namespace `storage-lab` is not binding correctly.\n\nA PersistentVolume `app-data-pv`, a PersistentVolumeClaim `app-data`, and a Deployment `reporting-app` already exist.\n\nDiagnose and fix the storage configuration so that:\n- `app-data` is bound successfully\n- `reporting-app` becomes Available\n- the application Pod mounts the claim at `/data`\n\nDo not recreate the application Deployment unless it is strictly required to apply the corrected storage configuration.",
+      "concepts": ["storage", "persistent-volumes", "persistent-volume-claims", "troubleshooting"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "PersistentVolumeClaim app-data is bound",
+          "verificationScriptFile": "q204_s1_validate_pvc_bound.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "reporting-app is Available and mounts the claim at /data",
+          "verificationScriptFile": "q204_s2_validate_workload_mount.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Storage fix preserves the intended PV/PVC relationship without orphaning resources",
+          "verificationScriptFile": "q204_s3_validate_storage_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    },
+    {
+      "id": "205",
+      "namespace": "scheduling-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Deployment named `metrics-agent` in namespace `scheduling-lab` is not scheduling onto the intended node pool.\n\nUpdate the workload so that:\n- it tolerates the taint `dedicated=ops:NoSchedule`\n- it targets nodes labeled `workload=ops`\n- the Pod becomes Running on a matching node\n\nDo not remove the taint from the node. Fix the workload scheduling configuration instead.",
+      "concepts": ["scheduling", "taints", "tolerations", "affinity", "workloads"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Deployment includes the required toleration and node selection rules",
+          "verificationScriptFile": "q205_s1_validate_scheduling_spec.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "metrics-agent Pod is Running on a node labeled workload=ops",
+          "verificationScriptFile": "q205_s2_validate_scheduled_node.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Scheduling fix keeps the workload constrained to the intended ops node pool",
+          "verificationScriptFile": "q205_s3_validate_constraint_scope.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

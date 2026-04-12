@@ -1,114 +1,164 @@
 {
-    "labs": [
-      {
-        "id": "ckad-001",
-        "assetPath": "assets/exams/ckad/001",
-        "name": "CKAD Comprehensive Lab - 1",
-        "category": "CKAD",
-        "description": "Hands-on exercises covering core Kubernetes concepts, pod configuration, deployments, and services with practical tasks for application deployment in a cluster.",
-        "warmUpTimeInSeconds": 260,
-         "difficulty": "Medium",
-         "examDurationInMinutes": 120
-      },
-      {
-        "id": "ckad-002",
-        "assetPath": "assets/exams/ckad/002",
-        "name": "CKAD Comprehensive Lab - 2",
-        "category": "CKAD",
-        "description": "Series of practical tasks on multi-container pods, pod design patterns, configuration, services, and networking in Kubernetes environments.",
-        "warmUpTimeInSeconds": 260,
-        "difficulty": "Hard",
-        "examDurationInMinutes": 120
-      },
-      {
-        "id": "ckad-003",
-        "assetPath": "assets/exams/ckad/003",
-        "name": "CKAD Quick Drill - Deployment Basics",
-        "category": "CKAD",
-        "description": "Single-question drill focused on namespaces, deployments, labels, and replica management.",
-        "warmUpTimeInSeconds": 60,
-        "difficulty": "Easy",
-        "examDurationInMinutes": 15
-      },
-      {
-        "id": "cks-001",
-        "assetPath": "assets/exams/cks/001",
-        "name": "CKS Practice Lab - Kubernetes Security Essentials",
-        "category": "CKS",
-        "description": "Practice essential Kubernetes security concepts including network policies, RBAC, supply chain security, and runtime protection",
-        "warmUpTimeInSeconds": 260,
-        "difficulty": "Hard",
-        "examDurationInMinutes": 120
-      },
-      {
-        "id": "cka-002",
-        "assetPath": "assets/exams/cka/002",
-        "name": "CKA Practice Lab - Advanced Administration",
-        "category": "CKA",
-        "description": "Comprehensive lab covering advanced Kubernetes administration topics including storage, networking, security, and troubleshooting with focus on real-world scenarios, updated with the latest CKA exam curriculum changes.",
-        "warmUpTimeInSeconds": 360,
-        "difficulty": "Hard",
-        "examDurationInMinutes": 120
-      },
-      {
-        "id": "cka-003",
-        "assetPath": "assets/exams/cka/003",
-        "name": "CKA 2026 Domain Drill - Security, Ingress, Dedicated DNS",
-        "category": "CKA",
-        "description": "Three-question CKA drill aligned to the current curriculum, focused on Pod Security Admission, ingress-nginx installation and repair, and a namespace-scoped dedicated CoreDNS troubleshooting exercise.",
-        "warmUpTimeInSeconds": 180,
-        "difficulty": "Hard",
-        "examDurationInMinutes": 60
-      },
-      {
-        "id": "cka-004",
-        "assetPath": "assets/exams/cka/004",
-        "name": "CKA 2026 Single Domain Drill - Cluster DNS Recovery",
-        "category": "CKA",
-        "description": "Standalone cluster-wide CoreDNS recovery drill focused on diagnosing and restoring Kubernetes service discovery.",
-        "warmUpTimeInSeconds": 90,
-        "difficulty": "Hard",
-        "examDurationInMinutes": 20
-      },
-      {
-        "id": "cka-005",
-        "assetPath": "assets/exams/cka/005",
-        "name": "CKA 2026 Mixed Environment Drill - Security, Ingress, Cluster DNS",
-        "category": "CKA",
-        "description": "Three-question CKA drill that mixes shared and isolated SSH environments so cluster-wide DNS recovery can coexist with regular security and ingress tasks.",
-        "warmUpTimeInSeconds": 180,
-        "difficulty": "Hard",
-        "examDurationInMinutes": 60
-      },
-      {
-        "id": "cka-001",
-        "assetPath": "assets/exams/cka/001",
-        "name": "CKA Practice Lab - Core Concepts",
-        "category": "CKA",
-        "description": "Practice essential Kubernetes administrator tasks covering cluster management, networking, storage, and security",
-        "warmUpTimeInSeconds": 260,
-        "difficulty": "Easy",
-        "examDurationInMinutes": 60
-      },
-      {
-        "id": "docker-001",
-        "assetPath": "assets/exams/other/001",
-        "name": "Docker Speed Run - Core Concepts",
-        "category": "Other",
-        "description": "Fast-paced practice lab covering Docker fundamentals including images, containers, volumes, networking, OCI, logging, and security best practices.",
-        "warmUpTimeInSeconds": 120,
-        "difficulty": "Medium",
-        "examDurationInMinutes": 90
-      },
-      {
-        "id": "helm-001",
-        "assetPath": "assets/exams/other/002",
-        "name": "Helm Fundamentals Lab",
-        "category": "Other",
-        "description": "Comprehensive lab covering Helm basics including chart installation, repositories, customization, packaging, debugging, and advanced Helm operations for Kubernetes applications.",
-        "warmUpTimeInSeconds": 260,
-        "difficulty": "Medium",
-        "examDurationInMinutes": 90
-      }
-    ]
-  } 
+  "labs": [
+    {
+      "id": "ckad-001",
+      "assetPath": "assets/exams/ckad/001",
+      "name": "CKAD Comprehensive Lab - 1",
+      "category": "CKAD",
+      "description": "Hands-on exercises covering core Kubernetes concepts, pod configuration, deployments, and services with practical tasks for application deployment in a cluster.",
+      "warmUpTimeInSeconds": 260,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 120
+    },
+    {
+      "id": "ckad-002",
+      "assetPath": "assets/exams/ckad/002",
+      "name": "CKAD Comprehensive Lab - 2",
+      "category": "CKAD",
+      "description": "Series of practical tasks on multi-container pods, pod design patterns, configuration, services, and networking in Kubernetes environments.",
+      "warmUpTimeInSeconds": 260,
+      "difficulty": "Hard",
+      "examDurationInMinutes": 120
+    },
+    {
+      "id": "ckad-003",
+      "assetPath": "assets/exams/ckad/003",
+      "name": "CKAD Quick Drill - Deployment Basics",
+      "category": "CKAD",
+      "description": "Single-question drill focused on namespaces, deployments, labels, and replica management.",
+      "warmUpTimeInSeconds": 60,
+      "difficulty": "Easy",
+      "examDurationInMinutes": 15
+    },
+    {
+      "id": "cks-001",
+      "assetPath": "assets/exams/cks/001",
+      "name": "CKS Practice Lab - Kubernetes Security Essentials",
+      "category": "CKS",
+      "description": "Practice essential Kubernetes security concepts including network policies, RBAC, supply chain security, and runtime protection",
+      "warmUpTimeInSeconds": 260,
+      "difficulty": "Hard",
+      "examDurationInMinutes": 120
+    },
+    {
+      "id": "cka-002",
+      "assetPath": "assets/exams/cka/002",
+      "name": "CKA Practice Lab - Advanced Administration",
+      "category": "CKA",
+      "description": "Comprehensive lab covering advanced Kubernetes administration topics including storage, networking, security, and troubleshooting with focus on real-world scenarios, updated with the latest CKA exam curriculum changes.",
+      "warmUpTimeInSeconds": 360,
+      "difficulty": "Hard",
+      "examDurationInMinutes": 120
+    },
+    {
+      "id": "cka-003",
+      "assetPath": "assets/exams/cka/003",
+      "name": "CKA 2026 Domain Drill - Security, Ingress, Dedicated DNS",
+      "category": "CKA",
+      "description": "Three-question CKA drill aligned to the current curriculum, focused on Pod Security Admission, ingress-nginx installation and repair, and a namespace-scoped dedicated CoreDNS troubleshooting exercise.",
+      "warmUpTimeInSeconds": 180,
+      "difficulty": "Hard",
+      "examDurationInMinutes": 60
+    },
+    {
+      "id": "cka-004",
+      "assetPath": "assets/exams/cka/004",
+      "name": "CKA 2026 Single Domain Drill - Cluster DNS Recovery",
+      "category": "CKA",
+      "description": "Standalone cluster-wide CoreDNS recovery drill focused on diagnosing and restoring Kubernetes service discovery.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Hard",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-005",
+      "assetPath": "assets/exams/cka/005",
+      "name": "CKA 2026 Mixed Environment Drill - Security, Ingress, Cluster DNS",
+      "category": "CKA",
+      "description": "Three-question CKA drill that mixes shared and isolated SSH environments so cluster-wide DNS recovery can coexist with regular security and ingress tasks.",
+      "warmUpTimeInSeconds": 180,
+      "difficulty": "Hard",
+      "examDurationInMinutes": 60
+    },
+    {
+      "id": "cka-006",
+      "assetPath": "assets/exams/cka/006",
+      "name": "CKA 2026 Single Domain Drill - RBAC Least Privilege",
+      "category": "CKA",
+      "description": "Standalone RBAC repair drill focused on namespace-scoped least-privilege for a ServiceAccount without expanding to cluster-wide access.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-007",
+      "assetPath": "assets/exams/cka/007",
+      "name": "CKA 2026 Single Domain Drill - Deployment Rollout and Rollback",
+      "category": "CKA",
+      "description": "Standalone rollout and rollback drill focused on safe Deployment strategy changes, revision history capture, and restoration to the original image.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-008",
+      "assetPath": "assets/exams/cka/008",
+      "name": "CKA 2026 Single Domain Drill - Scheduling Constraints",
+      "category": "CKA",
+      "description": "Standalone scheduling drill focused on taints, tolerations, and constraining a workload to the intended ops node pool.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-009",
+      "assetPath": "assets/exams/cka/009",
+      "name": "CKA 2026 Single Domain Drill - NetworkPolicy Troubleshooting",
+      "category": "CKA",
+      "description": "Standalone NetworkPolicy troubleshooting drill focused on enforcing the intended frontend->api->db traffic graph.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-010",
+      "assetPath": "assets/exams/cka/010",
+      "name": "CKA 2026 Single Domain Drill - Persistent Storage Troubleshooting",
+      "category": "CKA",
+      "description": "Standalone PVC and PV troubleshooting drill focused on restoring binding, preserving the storage contract, and bringing the workload back to Available.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-001",
+      "assetPath": "assets/exams/cka/001",
+      "name": "CKA Practice Lab - Core Concepts",
+      "category": "CKA",
+      "description": "Practice essential Kubernetes administrator tasks covering cluster management, networking, storage, and security",
+      "warmUpTimeInSeconds": 260,
+      "difficulty": "Easy",
+      "examDurationInMinutes": 60
+    },
+    {
+      "id": "docker-001",
+      "assetPath": "assets/exams/other/001",
+      "name": "Docker Speed Run - Core Concepts",
+      "category": "Other",
+      "description": "Fast-paced practice lab covering Docker fundamentals including images, containers, volumes, networking, OCI, logging, and security best practices.",
+      "warmUpTimeInSeconds": 120,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 90
+    },
+    {
+      "id": "helm-001",
+      "assetPath": "assets/exams/other/002",
+      "name": "Helm Fundamentals Lab",
+      "category": "Other",
+      "description": "Comprehensive lab covering Helm basics including chart installation, repositories, customization, packaging, debugging, and advanced Helm operations for Kubernetes applications.",
+      "warmUpTimeInSeconds": 260,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 90
+    }
+  ]
+}

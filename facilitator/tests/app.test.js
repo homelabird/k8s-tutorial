@@ -136,6 +136,22 @@ describe('app', () => {
     expect(canonicalResponse.body).toEqual(legacyResponse.body);
   });
 
+  it('includes the promoted CKA 2026 single-domain drills in the assessment listing', async () => {
+    const response = await request(app).get('/api/v1/assessments/');
+
+    expect(response.status).toBe(200);
+
+    const ids = response.body.map((lab) => lab.id);
+    expect(ids).toEqual(expect.arrayContaining(['cka-006', 'cka-007', 'cka-008', 'cka-009', 'cka-010']));
+
+    expect(response.body.find((lab) => lab.id === 'cka-010')).toMatchObject({
+      id: 'cka-010',
+      assetPath: 'assets/exams/cka/010',
+      category: 'CKA',
+      examDurationInMinutes: 20
+    });
+  });
+
   it('returns the raw exam result payload from the result endpoint', async () => {
     examService.getExamResult.mockResolvedValue({
       success: true,

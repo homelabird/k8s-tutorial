@@ -198,6 +198,15 @@ For the CKA 2026 regression suites, use the project-root verify runner:
 ./scripts/verify/run-cka-2026-regressions.sh
 ```
 
+The current single-domain CKA 2026 drills exposed by the facilitator are:
+
+- `cka-004` cluster DNS recovery
+- `cka-006` RBAC least privilege
+- `cka-007` Deployment rollout and rollback
+- `cka-008` scheduling constraints
+- `cka-009` NetworkPolicy troubleshooting
+- `cka-010` persistent storage troubleshooting
+
 To check the runner wiring without starting the Podman stack:
 
 ```bash

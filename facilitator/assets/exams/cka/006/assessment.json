@@ -1,0 +1,34 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "rbac-lab",
+      "machineHostname": "ckad9999",
+      "question": "Access to application resources in namespace `rbac-lab` is misconfigured.\n\nA ServiceAccount named `report-reader` already exists, and a Pod `rbac-check` is available for validation.\n\nFix the RBAC configuration so that `report-reader` can:\n- `get` Pods in namespace `rbac-lab`\n- `list` Pods in namespace `rbac-lab`\n\nThe account must not receive broader permissions than required.\n\nDo not grant cluster-admin, do not use a ClusterRoleBinding for this task, and keep the scope limited to namespace `rbac-lab`.",
+      "concepts": ["rbac", "serviceaccounts", "authorization", "security"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "A namespace-scoped Role and RoleBinding exist for report-reader",
+          "verificationScriptFile": "q1_s1_validate_rolebinding_scope.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "report-reader can get and list Pods in rbac-lab",
+          "verificationScriptFile": "q1_s2_validate_can_i_read_pods.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "report-reader is not over-privileged beyond the required read access",
+          "verificationScriptFile": "q1_s3_validate_least_privilege.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

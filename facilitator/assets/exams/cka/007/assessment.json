@@ -1,0 +1,34 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "rollout-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Deployment named `web-app` already exists in namespace `rollout-lab`.\n\nPerform a controlled rollout and rollback.\n\nRequirements:\n- update the image to `nginx:1.25.5`\n- configure the rolling update strategy with `maxUnavailable=1` and `maxSurge=1`\n- record the change so rollout history is visible\n- save the output of `kubectl rollout history deployment/web-app -n rollout-lab` to `/tmp/exam/q1/rollout-history.txt`\n- roll back the Deployment to the previous revision\n\nThe final running image must be the original pre-update image after the rollback completes.",
+      "concepts": ["deployments", "rollout", "rollback", "workloads"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Deployment strategy is configured for a controlled rolling update",
+          "verificationScriptFile": "q1_s1_validate_strategy.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Rollout history output is saved to the expected file",
+          "verificationScriptFile": "q1_s2_validate_rollout_history_file.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "3",
+          "description": "Deployment was rolled back and is healthy on the original image",
+          "verificationScriptFile": "q1_s3_validate_rollback_state.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        }
+      ]
+    }
+  ]
+}

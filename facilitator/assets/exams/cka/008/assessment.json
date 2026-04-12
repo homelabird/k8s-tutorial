@@ -1,0 +1,34 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "scheduling-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Deployment named `metrics-agent` in namespace `scheduling-lab` is not scheduling onto the intended node pool.\n\nUpdate the workload so that:\n- it tolerates the taint `dedicated=ops:NoSchedule`\n- it targets nodes labeled `workload=ops`\n- the Pod becomes Running on a matching node\n\nDo not remove the taint from the node. Fix the workload scheduling configuration instead.",
+      "concepts": ["scheduling", "taints", "tolerations", "affinity", "workloads"],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Deployment includes the required toleration and node selection rules",
+          "verificationScriptFile": "q1_s1_validate_scheduling_spec.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "metrics-agent Pod is Running on a node labeled workload=ops",
+          "verificationScriptFile": "q1_s2_validate_scheduled_node.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Scheduling fix keeps the workload constrained to the intended ops node pool",
+          "verificationScriptFile": "q1_s3_validate_constraint_scope.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "storage-lab",
+      "machineHostname": "ckad9999",
+      "question": "Persistent storage for an application in namespace `storage-lab` is not binding correctly.\n\nA PersistentVolume `app-data-pv`, a PersistentVolumeClaim `app-data`, and a Deployment `reporting-app` already exist.\n\nDiagnose and fix the storage configuration so that:\n- `app-data` is bound successfully\n- `reporting-app` becomes Available\n- the application Pod mounts the claim at `/data`\n\nDo not recreate the application Deployment unless it is strictly required to apply the corrected storage configuration.",
+      "concepts": [
+        "storage",
+        "persistent-volumes",
+        "persistent-volume-claims",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "PersistentVolumeClaim app-data is bound",
+          "verificationScriptFile": "q1_s1_validate_pvc_bound.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "reporting-app is Available and mounts the claim at /data",
+          "verificationScriptFile": "q1_s2_validate_workload_mount.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Storage fix preserves the intended PV/PVC relationship without orphaning resources",
+          "verificationScriptFile": "q1_s3_validate_storage_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
