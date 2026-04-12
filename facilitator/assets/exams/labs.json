@@ -369,6 +369,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-032",
+      "assetPath": "assets/exams/cka/032",
+      "name": "CKA 2026 Single Domain Drill - Readiness, liveness, and startupProbe diagnostics",
+      "category": "CKA",
+      "description": "Standalone probe diagnostics drill focused on readiness, liveness, startupProbe inspection, event evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }
