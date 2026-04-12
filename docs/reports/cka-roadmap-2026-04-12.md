@@ -24,13 +24,13 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-016+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, and `cka-015` are now promoted facilitator packs. `cka-016+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, and `cka-015` are now promoted facilitator packs. `cka-016` is now scaffolded in `docs/templates/cka-2026-next4`, while `cka-017+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-016` | Kubeadm lifecycle / upgrade planning | High-value admin skill, but heavier to simulate correctly. | High | Keep as stretch goal |
+| `cka-016` | Kubeadm lifecycle / upgrade planning | High-value admin skill, but heavier to simulate correctly. | High | Keep as planning/evidence-only drill first |
 | `cka-017` | CRD / operator installation checks | Publicly relevant, but lower practical priority than node and workload operations. | Medium | Keep as optional stretch goal |
 
 ## Proposed Build Order
@@ -63,6 +63,12 @@ Ship the next expansion wave as `cka-016+` drills that fills the remaining pract
   - node maintenance commands are applied in the right order
   - workload is rescheduled correctly
   - cluster returns to intended scheduling state
+
+## Current Authoring State
+
+- `cka-016` is scaffolded as template question `403` in `docs/templates/cka-2026-next4`.
+- The current `cka-016` contract is intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
+- `cka-017` is still roadmap-only.
 
 ## Design Constraints
 

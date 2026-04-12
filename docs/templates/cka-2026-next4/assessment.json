@@ -72,6 +72,44 @@
           "weightage": 2
         }
       ]
+    },
+    {
+      "id": "403",
+      "namespace": "kubeadm-lab",
+      "machineHostname": "ckad9999",
+      "question": "An upgrade planning brief for the control plane is incomplete and contains unsafe kubeadm lifecycle commands.\n\nA ConfigMap named `upgrade-brief` already exists in namespace `kubeadm-lab`. Repair it so that:\n- `targetVersion` is `v1.31.8`\n- `controlPlaneEndpoint` is `k8s-api-server:6443`\n- `planCommand` is `kubeadm upgrade plan v1.31.8`\n- `applyCommand` is `kubeadm upgrade apply v1.31.8 -y`\n- `drainCommand` is `kubectl drain cp-maint-0 --ignore-daemonsets --delete-emptydir-data`\n- `uncordonCommand` is `kubectl uncordon cp-maint-0`\n- `backupPaths` is `/etc/kubernetes/admin.conf,/etc/kubernetes/pki,/var/lib/etcd`\n- save the repaired ConfigMap manifest to `/tmp/exam/q403/upgrade-brief.yaml`\n- save a plain-text execution checklist to `/tmp/exam/q403/upgrade-plan.txt` with the sections `Pre-flight`, `Backups`, `Execution`, and `Post-upgrade`\n\nDo not create a new ConfigMap and do not add live kubeadm upgrade automation beyond the requested plan artifacts.",
+      "concepts": [
+        "kubeadm",
+        "upgrade-plan",
+        "control-plane",
+        "drain",
+        "uncordon",
+        "backups",
+        "etcd"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The upgrade brief ConfigMap uses the intended target version, endpoint, backup scope, and safe kubeadm command sequence",
+          "verificationScriptFile": "q403_s1_validate_upgrade_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The plain-text upgrade checklist is exported with the required sections and commands",
+          "verificationScriptFile": "q403_s2_validate_upgrade_plan_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and no stale unsafe commands remain",
+          "verificationScriptFile": "q403_s3_validate_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
     }
   ]
 }
