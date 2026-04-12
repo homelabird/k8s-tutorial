@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-025
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-026
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -39,6 +39,7 @@ Supported suites:
   cka-023  PKI and certificate expiry troubleshooting drill
   cka-024  Resource quota and LimitRange troubleshooting drill
   cka-025  Container runtime and CRI endpoint diagnostics drill
+  cka-026  StorageClass and dynamic provisioning diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -216,6 +217,7 @@ resolve_suite_namespace() {
     cka-023) printf '%s\n' 'pki-lab' ;;
     cka-024) printf '%s\n' 'quota-lab' ;;
     cka-025) printf '%s\n' 'runtime-lab' ;;
+    cka-026) printf '%s\n' 'storageclass-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1002,6 +1004,45 @@ kubectl get configmap runtime-diagnostics-brief -n runtime-lab -o yaml > /tmp/ex
 [ -s /tmp/exam/q1/runtime-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-026)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dynamic-provisioning-brief
+  namespace: storageclass-lab
+data:
+  targetNamespace: storageclass-lab
+  targetPVC: reports-pvc
+  targetStorageClass: exam-standard
+  storageClassInventory: kubectl get storageclass
+  defaultClassCheck: kubectl get storageclass -o custom-columns=NAME:.metadata.name,DEFAULT:.metadata.annotations.storageclass\.kubernetes\.io/is-default-class
+  pvcDescribe: kubectl describe pvc reports-pvc -n storageclass-lab
+  workloadDescribe: kubectl describe pod reports-api -n storageclass-lab
+  eventCheck: kubectl get events -n storageclass-lab --sort-by=.lastTimestamp
+  recommendedManifestLine: 'storageClassName: exam-standard'
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/dynamic-provisioning-checklist.txt
+StorageClass Inventory
+- kubectl get storageclass
+- kubectl get storageclass -o custom-columns=NAME:.metadata.name,DEFAULT:.metadata.annotations.storageclass\.kubernetes\.io/is-default-class
+
+PVC Analysis
+- kubectl describe pvc reports-pvc -n storageclass-lab
+- kubectl describe pod reports-api -n storageclass-lab
+- kubectl get events -n storageclass-lab --sort-by=.lastTimestamp
+
+Safe Manifest Fix
+- kubectl get pvc reports-pvc -n storageclass-lab -o yaml
+- ensure the manifest contains storageClassName: exam-standard
+EOF_CHECKLIST
+kubectl get configmap dynamic-provisioning-brief -n storageclass-lab -o yaml > /tmp/exam/q1/dynamic-provisioning-brief.yaml
+[ -s /tmp/exam/q1/dynamic-provisioning-brief.yaml ]
+[ -s /tmp/exam/q1/dynamic-provisioning-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1117,7 +1158,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026
   exit 0
 fi
 
@@ -1128,7 +1169,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026)
 fi
 
 for suite in "${SUITES[@]}"; do
