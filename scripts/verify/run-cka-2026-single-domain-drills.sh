@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-013
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-014
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -27,6 +27,7 @@ Supported suites:
   cka-011  ConfigMap and Secret repair drill
   cka-012  HPA troubleshooting drill
   cka-013  Node troubleshooting and maintenance drill
+  cka-014  Gateway API traffic management drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -192,6 +193,7 @@ resolve_suite_namespace() {
     cka-011) printf '%s\n' 'config-lab' ;;
     cka-012) printf '%s\n' 'autoscale-lab' ;;
     cka-013) printf '%s\n' 'node-lab' ;;
+    cka-014) printf '%s\n' 'gateway-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -459,6 +461,58 @@ mkdir -p /tmp/exam/q1
 kubectl get node "$TARGET_NODE" -o wide > /tmp/exam/q1/node-status.txt
 COMMAND
       ;;
+    cka-014)
+      cat <<'COMMAND'
+cat <<'EOF_GATEWAY' | kubectl apply -f -
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: cka-014-gc
+spec:
+  controllerName: example.com/gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: main-gateway
+  namespace: gateway-lab
+spec:
+  gatewayClassName: cka-014-gc
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: app-routes
+  namespace: gateway-lab
+spec:
+  hostnames:
+  - apps.example.local
+  parentRefs:
+  - name: main-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /app1
+    backendRefs:
+    - name: app1-svc
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /app2
+    backendRefs:
+    - name: app2-svc
+      port: 8080
+EOF_GATEWAY
+mkdir -p /tmp/exam/q1
+kubectl get httproute app-routes -n gateway-lab -o yaml > /tmp/exam/q1/app-routes.yaml
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -574,7 +628,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014
   exit 0
 fi
 
@@ -585,7 +639,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014)
 fi
 
 for suite in "${SUITES[@]}"; do
