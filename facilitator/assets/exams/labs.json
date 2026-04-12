@@ -221,6 +221,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-023",
+      "assetPath": "assets/exams/cka/023",
+      "name": "CKA 2026 Single Domain Drill - PKI and certificate expiry troubleshooting",
+      "category": "CKA",
+      "description": "Standalone PKI planning drill focused on repairing certificate inspection, kubeadm expiry, renewal guidance, and exported readiness evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

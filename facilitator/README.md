@@ -218,6 +218,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-020` service and pod connectivity diagnostics
 - `cka-021` service exposure and endpoint debugging
 - `cka-022` kubelet and node NotReady troubleshooting
+- `cka-023` PKI and certificate expiry troubleshooting
 
 To check the runner wiring without starting the Podman stack:
 

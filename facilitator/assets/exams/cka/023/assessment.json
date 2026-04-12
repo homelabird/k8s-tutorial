@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "pki-lab",
+      "machineHostname": "ckad9999",
+      "question": "A certificate renewal brief is incomplete and contains stale or unsafe PKI guidance.\n\nA ConfigMap named `certificate-renewal-brief` already exists in namespace `pki-lab`. Repair it so that:\n- `targetCertificate` is `/etc/kubernetes/pki/apiserver.crt`\n- `expiryCheck` is `sudo kubeadm certs check-expiration`\n- `dateInspection` is `sudo openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -dates`\n- `kubeconfigCheck` is `sudo grep -n client-certificate-data /etc/kubernetes/admin.conf`\n- `renewalCommand` is `sudo kubeadm certs renew apiserver`\n- `readinessCheck` is `kubectl get --raw='/readyz?verbose'`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/certificate-renewal-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/certificate-expiry-checklist.txt` with the sections `Certificate Inspection`, `Renewal Planning`, and `Post-Renewal Verification`\n\nDo not run `kubeadm certs renew`, do not restart kubelet, and do not delete static pod manifests during this drill.",
+      "concepts": [
+        "pki",
+        "certificates",
+        "kubeadm",
+        "control-plane",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The certificate renewal brief ConfigMap uses the intended apiserver certificate target, expiry inspection commands, kubeconfig check, and renewal guidance",
+          "verificationScriptFile": "q1_s1_validate_certificate_renewal_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact certificate inspection, renewal planning, and post-renewal verification commands",
+          "verificationScriptFile": "q1_s2_validate_certificate_expiry_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe PKI actions are removed",
+          "verificationScriptFile": "q1_s3_validate_certificate_renewal_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
