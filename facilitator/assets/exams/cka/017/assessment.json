@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "operator-lab",
+      "machineHostname": "ckad9999",
+      "question": "A custom resource installation bundle in namespace `operator-lab` is incomplete. A CRD named `widgets.training.cka.io`, a Deployment named `widget-operator`, and a custom resource named `sample-widget` already exist, but all three are broken.\n\nRepair the bundle so that:\n- the CRD group is `training.cka.io`\n- version `v1alpha1` is served and storage\n- kind `Widget`, plural `widgets`, and scope `Namespaced` are used\n- the CRD schema requires `spec.image` (string) and `spec.replicas` (integer)\n- Deployment `widget-operator` in namespace `operator-lab` uses image `busybox:1.36.1`\n- the operator Deployment runs exactly one replica and its container command sleeps for `3600` seconds\n- custom resource `sample-widget` in namespace `operator-lab` uses apiVersion `training.cka.io/v1alpha1`\n- `sample-widget` sets `spec.image` to `nginx:1.25.5`\n- `sample-widget` sets `spec.replicas` to `2`\n- save the repaired CRD manifest to `/tmp/exam/q1/widget-crd.yaml`\n\nDo not install OLM and do not add extra cluster-wide controllers or RBAC beyond this bundle.",
+      "concepts": [
+        "crd",
+        "customresourcedefinition",
+        "operator",
+        "deployment",
+        "api-extensions"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The CRD uses the intended API group, kind, scope, and schema contract",
+          "verificationScriptFile": "q1_s1_validate_crd_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The operator Deployment uses the intended image, replica count, and long-running command",
+          "verificationScriptFile": "q1_s2_validate_operator_deployment.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "3",
+          "description": "The custom resource uses the intended spec and the repaired CRD manifest is exported",
+          "verificationScriptFile": "q1_s3_validate_custom_resource_and_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        }
+      ]
+    }
+  ]
+}

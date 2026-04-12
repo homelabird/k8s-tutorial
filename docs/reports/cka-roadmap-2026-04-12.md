@@ -18,24 +18,29 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-014` Gateway API traffic management
 - `cka-015` logs and resource usage triage
 - `cka-016` kubeadm lifecycle planning
+- `cka-017` CRD and operator installation checks
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-017+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-018+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, and `cka-016` are now promoted facilitator packs. `cka-017+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, and `cka-017` are now promoted facilitator packs. `cka-018+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-017` | CRD / operator installation checks | Publicly relevant, but lower practical priority than node and workload operations. | Medium | Keep as optional stretch goal |
+| `cka-018` | etcd backup and restore workflow | Keeps the remaining control-plane recovery gap focused and evidence-driven without requiring a full multi-node failure simulation. | High | Highest priority |
+| `cka-019` | scheduler / controller-manager troubleshooting | Extends cluster component troubleshooting beyond CoreDNS with deterministic manifest and readiness repairs. | Medium | Recommended |
+| `cka-020` | service and pod connectivity diagnostics | Covers the remaining pod-to-pod and service reachability gap with evidence export and deterministic contracts. | Medium | Recommended |
 
 ## Proposed Build Order
 
-1. `cka-017` CRD / operator installation checks
+1. `cka-018` etcd backup and restore workflow
+2. `cka-019` scheduler / controller-manager troubleshooting
+3. `cka-020` service and pod connectivity diagnostics
 
 ## Suggested Problem Shapes
 
@@ -66,8 +71,9 @@ Ship the next expansion wave as `cka-017+` drills that fills the remaining pract
 ## Current Authoring State
 
 - `cka-016` is now promoted as facilitator pack `cka-016`, sourced from template question `403` in `docs/templates/cka-2026-next4`.
+- `cka-017` is now promoted as facilitator pack `cka-017`, sourced from template question `404` in `docs/templates/cka-2026-next4`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
-- `cka-017` is still roadmap-only.
+- The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 
 ## Design Constraints
 
@@ -78,7 +84,7 @@ Ship the next expansion wave as `cka-017+` drills that fills the remaining pract
 
 ## Exit Criteria
 
-A `cka-017+` drill should be considered ready only when all of the following are true:
+A `cka-018+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked

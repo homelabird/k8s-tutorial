@@ -126,7 +126,6 @@ Expected checks:
 - `/tmp/exam/q402/ops-api-top.txt` contains `kubectl top` output for the active pod and both containers
 - the repaired Deployment becomes Available and the active `log-agent` stops restarting
 
-
 ## Question 403: kubeadm lifecycle planning
 
 Repair the upgrade planning brief and export both the repaired manifest and a plain-text execution checklist.
@@ -179,3 +178,92 @@ Expected checks:
 - `/tmp/exam/q403/upgrade-plan.txt` contains the required sections and exact kubeadm / drain / uncordon commands
 - `/tmp/exam/q403/upgrade-brief.yaml` exports the repaired manifest
 - stale commands such as `kubeadm upgrade node` and `kubectl cordon cp-maint-0` are removed
+
+## Question 404: CRD and operator installation checks
+
+Repair the installation bundle so the CRD, operator Deployment, and custom resource all use the intended contract.
+
+```bash
+cat <<'EOF_CRD' | kubectl apply -f -
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.training.cka.io
+spec:
+  group: training.cka.io
+  scope: Namespaced
+  names:
+    plural: widgets
+    singular: widget
+    kind: Widget
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - image
+            - replicas
+            properties:
+              image:
+                type: string
+              replicas:
+                type: integer
+EOF_CRD
+
+kubectl wait --for=condition=established --timeout=120s crd/widgets.training.cka.io
+
+cat <<'EOF_OPERATOR' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: widget-operator
+  namespace: operator-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: widget-operator
+  template:
+    metadata:
+      labels:
+        app: widget-operator
+    spec:
+      containers:
+      - name: manager
+        image: busybox:1.36.1
+        command:
+        - sh
+        - -c
+        - sleep 3600
+EOF_OPERATOR
+
+kubectl rollout status deployment/widget-operator -n operator-lab --timeout=180s
+
+cat <<'EOF_WIDGET' | kubectl apply -f -
+apiVersion: training.cka.io/v1alpha1
+kind: Widget
+metadata:
+  name: sample-widget
+  namespace: operator-lab
+spec:
+  image: nginx:1.25.5
+  replicas: 2
+EOF_WIDGET
+
+mkdir -p /tmp/exam/q404
+kubectl get crd widgets.training.cka.io -o yaml > /tmp/exam/q404/widget-crd.yaml
+```
+
+Expected checks:
+
+- the CRD uses group `training.cka.io`, kind `Widget`, plural `widgets`, scope `Namespaced`, and requires `spec.image` and `spec.replicas`
+- `spec.image` is a string and `spec.replicas` is an integer in the CRD schema
+- `widget-operator` runs one ready replica with image `busybox:1.36.1` and a long-running `sleep 3600` command
+- `sample-widget` uses `training.cka.io/v1alpha1`, `nginx:1.25.5`, and `replicas: 2`
+- the repaired CRD manifest is exported to `/tmp/exam/q404/widget-crd.yaml`

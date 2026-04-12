@@ -161,6 +161,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-017",
+      "assetPath": "assets/exams/cka/017",
+      "name": "CKA 2026 Single Domain Drill - CRD and Operator Installation Checks",
+      "category": "CKA",
+      "description": "Standalone CRD and operator bundle repair drill focused on schema correctness, operator deployment readiness, and custom resource contract validation.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

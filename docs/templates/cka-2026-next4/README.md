@@ -15,26 +15,28 @@ These drafts cover the next four recommended packs from the `cka-014+` roadmap:
 
 ## Current Template State
 
-- Questions `401` (`Gateway API`), `402` (`logs/resource triage`), and `403` (`kubeadm lifecycle planning`) are fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Questions `401` (`Gateway API`), `402` (`logs/resource triage`), `403` (`kubeadm lifecycle planning`), and `404` (`CRD/operator checks`) are fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `401` has now been promoted into facilitator pack `cka-014`.
 - Question `402` has now been promoted into facilitator pack `cka-015`.
 - Question `403` has now been promoted into facilitator pack `cka-016`.
-- Question `404` remains roadmap-only and should be authored after `cka-016` runtime and discovery coverage are stable.
+- Question `404` has now been promoted into facilitator pack `cka-017`.
 
 ## Important Constraints
 
 - Question 401 should validate GatewayClass, Gateway, and HTTPRoute consistency without depending on a heavy external gateway controller.
 - Question 402 should force the candidate to export both previous logs and `kubectl top` evidence, but validators should only assert the exported artifacts and repaired workload contract.
 - Question 403 should stay strictly in the `planning + evidence export` lane. It should validate upgrade sequencing, backup scope, and control-plane command safety without attempting a live kubeadm upgrade inside the local Podman/kind stack.
+- Question 404 should validate a deterministic `CRD + operator Deployment + custom resource` bundle without depending on OLM or a live reconciliation loop.
 - Backend services should already exist so the drills stay focused on repair rather than generic workload creation.
 - Validation should reject stale fallback routes such as `/legacy`.
 
 ## Recommended Promotion Order
 
-1. Question 404 (`CRD/operator checks`) as the final stretch goal in this wave.
+The `cka-014` through `cka-017` wave is now fully promoted.
 
 ## Planned Facilitator Mapping
 
 - `q401` -> `facilitator/assets/exams/cka/014`
 - `q402` -> `facilitator/assets/exams/cka/015`
 - `q403` -> `facilitator/assets/exams/cka/016`
+- `q404` -> `facilitator/assets/exams/cka/017`
