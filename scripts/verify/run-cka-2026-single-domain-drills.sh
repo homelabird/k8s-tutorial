@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-019
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-020
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -33,6 +33,7 @@ Supported suites:
   cka-017  CRD and operator installation checks drill
   cka-018  etcd backup and restore workflow drill
   cka-019  scheduler and controller-manager troubleshooting drill
+  cka-020  service and pod connectivity diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -204,6 +205,7 @@ resolve_suite_namespace() {
     cka-017) printf '%s\n' 'operator-lab' ;;
     cka-018) printf '%s\n' 'etcd-lab' ;;
     cka-019) printf '%s\n' 'controlplane-lab' ;;
+    cka-020) printf '%s\n' 'connectivity-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -774,6 +776,42 @@ kubectl get configmap component-repair-brief -n controlplane-lab -o yaml > /tmp/
 [ -s /tmp/exam/q1/control-plane-checklist.txt ]
 COMMAND
       ;;
+    cka-020)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connectivity-brief
+  namespace: connectivity-lab
+data:
+  debugPod: net-debug
+  serviceName: echo-api
+  servicePort: "8080"
+  headlessServiceName: echo-api-headless
+  podDnsName: echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local
+  serviceProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+  podProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
+  dnsProbe: kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_MATRIX' > /tmp/exam/q1/connectivity-matrix.txt
+Service Path
+- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+
+Pod Path
+- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
+
+DNS Checks
+- kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+- kubectl get svc echo-api -n connectivity-lab
+- kubectl get svc echo-api-headless -n connectivity-lab
+EOF_MATRIX
+kubectl get configmap connectivity-brief -n connectivity-lab -o yaml > /tmp/exam/q1/connectivity-brief.yaml
+[ -s /tmp/exam/q1/connectivity-brief.yaml ]
+[ -s /tmp/exam/q1/connectivity-matrix.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -889,7 +927,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020
   exit 0
 fi
 
@@ -900,7 +938,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020)
 fi
 
 for suite in "${SUITES[@]}"; do
