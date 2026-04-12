@@ -131,6 +131,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-014",
+      "assetPath": "assets/exams/cka/014",
+      "name": "CKA 2026 Single Domain Drill - Gateway API Traffic Management",
+      "category": "CKA",
+      "description": "Standalone Gateway API repair drill focused on restoring GatewayClass, Gateway, and HTTPRoute consistency for deterministic path-based traffic management.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

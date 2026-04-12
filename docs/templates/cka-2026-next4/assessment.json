@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "401",
+      "namespace": "gateway-lab",
+      "machineHostname": "ckad9999",
+      "question": "Gateway API resources in namespace `gateway-lab` are inconsistent.\n\nA broken `Gateway` named `main-gateway`, a broken `HTTPRoute` named `app-routes`, and backend workloads already exist. Repair the Gateway API configuration so that:\n- a `GatewayClass` named `cka-014-gc` exists with controller name `example.com/gateway-controller`\n- `Gateway` `main-gateway` uses GatewayClass `cka-014-gc`\n- the Gateway listens on HTTP port `80`\n- `HTTPRoute` `app-routes` attaches to `main-gateway`\n- host `apps.example.local` routes `/app1` to service `app1-svc` port `8080`\n- host `apps.example.local` routes `/app2` to service `app2-svc` port `8080`\n- any stale `/legacy` route is removed\n- save the repaired HTTPRoute manifest to `/tmp/exam/q401/app-routes.yaml`\n\nDo not recreate the backend Deployments or Services unless it is strictly required.",
+      "concepts": [
+        "gateway-api",
+        "gatewayclass",
+        "gateway",
+        "httproute",
+        "networking"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "GatewayClass and Gateway use the intended listener and class contract",
+          "verificationScriptFile": "q401_s1_validate_gateway_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "HTTPRoute attaches to the Gateway and routes /app1 and /app2 to the intended backends",
+          "verificationScriptFile": "q401_s2_validate_route_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Backend services remain ready and the repaired HTTPRoute manifest is exported",
+          "verificationScriptFile": "q401_s3_validate_backends_and_export.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
