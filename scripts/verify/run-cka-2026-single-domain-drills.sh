@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-023
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-024
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -37,6 +37,7 @@ Supported suites:
   cka-021  service exposure and endpoint debugging drill
   cka-022  kubelet and node NotReady troubleshooting drill
   cka-023  PKI and certificate expiry troubleshooting drill
+  cka-024  Resource quota and LimitRange troubleshooting drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -212,6 +213,7 @@ resolve_suite_namespace() {
     cka-021) printf '%s\n' 'service-debug-lab' ;;
     cka-022) printf '%s\n' 'node-health-lab' ;;
     cka-023) printf '%s\n' 'pki-lab' ;;
+    cka-024) printf '%s\n' 'quota-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -927,6 +929,41 @@ kubectl get configmap certificate-renewal-brief -n pki-lab -o yaml > /tmp/exam/q
 [ -s /tmp/exam/q1/certificate-expiry-checklist.txt ]
 COMMAND
       ;;
+    cka-024)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resource-guardrails-brief
+  namespace: quota-lab
+data:
+  targetNamespace: quota-lab
+  quotaInspection: kubectl get resourcequota -n quota-lab
+  quotaDescribe: kubectl describe resourcequota compute-quota -n quota-lab
+  limitRangeInspection: kubectl describe limitrange default-limits -n quota-lab
+  workloadInspection: kubectl describe deployment api -n quota-lab
+  recommendedPatch: kubectl set resources deployment/api -n quota-lab --requests=cpu=250m,memory=256Mi --limits=cpu=500m,memory=512Mi
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/resource-quota-checklist.txt
+Quota Inspection
+- kubectl get resourcequota -n quota-lab
+- kubectl describe resourcequota compute-quota -n quota-lab
+
+LimitRange Inspection
+- kubectl describe limitrange default-limits -n quota-lab
+- kubectl get limitrange default-limits -n quota-lab -o yaml
+
+Workload Sizing Guidance
+- kubectl describe deployment api -n quota-lab
+- kubectl set resources deployment/api -n quota-lab --requests=cpu=250m,memory=256Mi --limits=cpu=500m,memory=512Mi
+EOF_CHECKLIST
+kubectl get configmap resource-guardrails-brief -n quota-lab -o yaml > /tmp/exam/q1/resource-guardrails-brief.yaml
+[ -s /tmp/exam/q1/resource-guardrails-brief.yaml ]
+[ -s /tmp/exam/q1/resource-quota-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1042,7 +1079,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024
   exit 0
 fi
 
@@ -1053,7 +1090,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024)
 fi
 
 for suite in "${SUITES[@]}"; do
