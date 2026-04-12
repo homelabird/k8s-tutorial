@@ -22,6 +22,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 - Question `603` (`resource quota and LimitRange troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `603` has now been promoted into facilitator pack `cka-024`.
 - Question `604` (`container runtime and CRI endpoint diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `604` has now been promoted into facilitator pack `cka-025`.
 
 ## Important Constraints
 
@@ -40,7 +41,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 
 ## Recommended Promotion Order
 
-1. Promote question `604` into facilitator pack `cka-025`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

@@ -241,6 +241,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-025",
+      "assetPath": "assets/exams/cka/025",
+      "name": "CKA 2026 Single Domain Drill - Container runtime and CRI endpoint diagnostics",
+      "category": "CKA",
+      "description": "Standalone runtime diagnostics drill focused on kubelet CRI endpoint wiring, containerd socket inspection, and safe crictl evidence export without mutating live runtime configuration.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

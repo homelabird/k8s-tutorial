@@ -26,34 +26,32 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-022` kubelet and node NotReady troubleshooting
 - `cka-023` PKI and certificate expiry troubleshooting
 - `cka-024` resource quota and LimitRange troubleshooting
+- `cka-025` container runtime and CRI endpoint diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-025+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-026+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, `cka-020`, `cka-021`, `cka-022`, `cka-023`, and `cka-024` are now promoted facilitator packs. `cka-025` is now template-scaffolded, and `cka-026+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, `cka-020`, `cka-021`, `cka-022`, `cka-023`, `cka-024`, and `cka-025` are now promoted facilitator packs. `cka-026+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-025` | container runtime and CRI endpoint diagnostics | Covers the remaining CRI and runtime-interface troubleshooting gap with deterministic kubelet, crictl, and runtime-endpoint evidence export. | Medium | Template scaffolded |
+| `cka-026` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the container runtime drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. `cka-025` container runtime and CRI endpoint diagnostics
+1. Define the next `cka-026` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
 
-### `cka-025` container runtime and CRI endpoint diagnostics
+### Next candidate to be defined
 
-- A runtime diagnostics brief is incomplete and contains stale or unsafe CRI guidance.
-- Candidate verifies:
-  - kubelet runtime endpoint, `crictl info`, and container runtime inspection guidance are captured
-  - deterministic runtime evidence is exported for later review
-  - the drill stays in the safe planning/evidence-export lane without restarting services or rewriting kubelet configuration
+- The next drill should target one uncovered operator workflow that still fits the deterministic single-domain model.
+- It should follow the same planning/evidence-export contract unless a safe live remediation contract is clearly reproducible in local Podman/kind environments.
 
 ## Current Authoring State
 
@@ -66,7 +64,7 @@ Ship the next expansion wave as `cka-025+` drills that fills the remaining pract
 - `cka-022` is now promoted as facilitator pack `cka-022`, sourced from template question `601` in `docs/templates/cka-2026-next2-ops`.
 - `cka-023` is now promoted as facilitator pack `cka-023`, sourced from template question `602` in `docs/templates/cka-2026-next2-ops`.
 - `cka-024` is now promoted as facilitator pack `cka-024`, sourced from template question `603` in `docs/templates/cka-2026-next2-ops`.
-- `cka-025` is now scaffolded as template question `604` in `docs/templates/cka-2026-next2-ops` and should be promoted next as the container runtime and CRI endpoint diagnostics pack.
+- `cka-025` is now promoted as facilitator pack `cka-025`, sourced from template question `604` in `docs/templates/cka-2026-next2-ops`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
@@ -76,7 +74,7 @@ Ship the next expansion wave as `cka-025+` drills that fills the remaining pract
 - The current `cka-022` contract stays planning-focused: it repairs exact node-condition, kubelet service, runtime, and config guidance while exporting evidence without restarting services or draining nodes.
 - The current `cka-023` contract stays planning-focused: it repairs exact certificate inspection, kubeadm expiry, renewal planning, and readiness verification guidance while exporting evidence without rotating live certificates.
 - The current `cka-024` contract stays planning-focused: it repairs exact resource quota, LimitRange, workload sizing, and safe remediation guidance while exporting evidence without deleting guardrail objects or stripping requests and limits from workloads.
-- The `cka-025` template stays planning-focused: it repairs exact kubelet runtime endpoint, `crictl`, and runtime inspection guidance while exporting evidence without restarting services or rewriting kubelet configuration.
+- The current `cka-025` contract stays planning-focused: it repairs exact kubelet runtime endpoint, `crictl`, and runtime inspection guidance while exporting evidence without restarting services or rewriting kubelet configuration.
 
 ## Design Constraints
 
@@ -87,7 +85,7 @@ Ship the next expansion wave as `cka-025+` drills that fills the remaining pract
 
 ## Exit Criteria
 
-A `cka-025+` drill should be considered ready only when all of the following are true:
+A `cka-026+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
