@@ -88,7 +88,9 @@ grep -Eq '^OUTSIDE-LANDING-SUMMARY \| groups=[0-9]+ \| total=[0-9]+ \| matched-f
 grep -Eq '^LANDING-PLAN \| batches=[0-9]+$' "$OUTPUT_DIR/outside-landing-batches.txt"
 grep -Eq '^LANDING-PLAN \| batches=[0-9]+$' "$OUTPUT_DIR/outside-landing-batches-expanded.txt"
 grep -Eq '^batch-2 \| LANDING-STEP \| order=2 \| landing-state=[a-z-]+ \| readiness=[a-z-]+ \| handoff=[a-z-]+ \| artifact-state=[a-z-]+ \| commit-scope=cka-regressions-and-diagnostics \| files=[0-9]+ \| tracked-modified=[0-9]+ \| untracked=[0-9]+ \| missing=[0-9]+$' "$OUTPUT_DIR/landing-plan.txt"
-grep -Eq '^batch-2 \| LANDING-FILE \| tracked-modified \| .+$' "$OUTPUT_DIR/landing-plan-expanded.txt"
+grep -Eq '^batch-2 \| LANDING-HANDOFF \| next=.+$' "$OUTPUT_DIR/landing-plan-expanded.txt"
+grep -Eq '^batch-2 \| LANDING-ARTIFACT \| type=latest-note \| path=.+$' "$OUTPUT_DIR/landing-plan-expanded.txt"
+grep -Eq '^batch-2 \| LANDING-ARTIFACT \| type=latest-memo \| path=.+$' "$OUTPUT_DIR/landing-plan-expanded.txt"
 grep -Eq '^## Review Landing Summary$' "$OUTPUT_DIR/landing-summary.md"
 grep -Eq '^\*\*Verdict: [A-Z -]+\*\* ' "$OUTPUT_DIR/landing-summary.md"
 grep -Eq '^- Landing command source: `.+landing-commands\.txt`$' "$OUTPUT_DIR/landing-summary.md"
@@ -96,9 +98,10 @@ grep -Eq '^### Next Landing Command$' "$OUTPUT_DIR/landing-summary.md"
 if grep -Eq '^- Target: \*\*(batch-[0-9]+|outside-[a-z0-9-]+)\*\* `.+`$' "$OUTPUT_DIR/landing-summary.md"; then
   grep -Eq '^- Stage: `.+`$' "$OUTPUT_DIR/landing-summary.md"
   grep -Eq '^- Commit: `.+`$' "$OUTPUT_DIR/landing-summary.md"
-else
-  grep -Eq '^- Pending target: \*\*(batch-[0-9]+|outside-[a-z0-9-]+)\*\* `.+`$' "$OUTPUT_DIR/landing-summary.md"
+elif grep -Eq '^- Pending target: \*\*(batch-[0-9]+|outside-[a-z0-9-]+)\*\* `.+`$' "$OUTPUT_DIR/landing-summary.md"; then
   grep -Eq '^- Next handoff: `.+`$' "$OUTPUT_DIR/landing-summary.md"
+else
+  grep -Eq '^- No actionable landing commands exported\.$' "$OUTPUT_DIR/landing-summary.md"
 fi
 grep -Eq '^2\. \*\*batch-2\*\* `cka-regressions-and-diagnostics`$' "$OUTPUT_DIR/landing-summary.md"
 grep -Eq '^   Latest artifacts: note `.+`; memo `.+`$' "$OUTPUT_DIR/landing-summary.md"
