@@ -19,7 +19,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 - Question `602` (`PKI and certificate expiry troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `602` has now been promoted into facilitator pack `cka-023`.
 - Question `603` (`resource quota and LimitRange troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `603` has not yet been promoted and is planned as facilitator pack `cka-024`.
+- Question `603` has now been promoted into facilitator pack `cka-024`.
 
 ## Important Constraints
 
@@ -35,7 +35,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 
 ## Recommended Promotion Order
 
-1. `q603` -> `facilitator/assets/exams/cka/024`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

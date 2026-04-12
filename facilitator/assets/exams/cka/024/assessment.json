@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "quota-lab",
+      "machineHostname": "ckad9999",
+      "question": "A resource guardrails brief is incomplete and contains stale or unsafe quota guidance.\n\nA ConfigMap named `resource-guardrails-brief` already exists in namespace `quota-lab`. Repair it so that:\n- `targetNamespace` is `quota-lab`\n- `quotaInspection` is `kubectl get resourcequota -n quota-lab`\n- `quotaDescribe` is `kubectl describe resourcequota compute-quota -n quota-lab`\n- `limitRangeInspection` is `kubectl describe limitrange default-limits -n quota-lab`\n- `workloadInspection` is `kubectl describe deployment api -n quota-lab`\n- `recommendedPatch` is `kubectl set resources deployment/api -n quota-lab --requests=cpu=250m,memory=256Mi --limits=cpu=500m,memory=512Mi`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/resource-guardrails-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/resource-quota-checklist.txt` with the sections `Quota Inspection`, `LimitRange Inspection`, and `Workload Sizing Guidance`\n\nDo not delete ResourceQuota or LimitRange objects, do not scale workloads to zero, and do not remove resource requests or limits during this drill.",
+      "concepts": [
+        "resource-quota",
+        "limitrange",
+        "workloads",
+        "troubleshooting",
+        "operations"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The resource guardrails brief ConfigMap uses the intended namespace target, quota inspection commands, LimitRange inspection, workload review, and safe resource patch guidance",
+          "verificationScriptFile": "q1_s1_validate_resource_guardrails_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact quota, LimitRange, and workload sizing commands",
+          "verificationScriptFile": "q1_s2_validate_resource_quota_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe quota remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_resource_guardrails_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

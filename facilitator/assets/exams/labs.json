@@ -231,6 +231,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-024",
+      "assetPath": "assets/exams/cka/024",
+      "name": "CKA 2026 Single Domain Drill - Resource quota and LimitRange troubleshooting",
+      "category": "CKA",
+      "description": "Standalone namespace guardrails drill focused on repairing ResourceQuota and LimitRange inspection guidance, safe workload sizing, and exported evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",
