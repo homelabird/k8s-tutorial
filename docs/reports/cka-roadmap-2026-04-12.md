@@ -36,23 +36,31 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-030+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-029` are now promoted facilitator packs, and `cka-030+` remain roadmap-only candidates.
+`cka-011` through `cka-029` are now promoted facilitator packs. `cka-030` is now template-scaffolded, and `cka-031+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-030` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the DaemonSet diagnostics drill lands. | TBD | Backlog definition needed |
+| `cka-030` | CronJob schedule, suspend, and history diagnostics | Covers batch scheduling review, suspend-state inspection, concurrency policy checks, and history retention without forcing live runs. | Low | Template scaffolded; promote next |
+| `cka-031` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the CronJob diagnostics drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. Define the next `cka-030` candidate from the remaining uncovered operator workflows
+1. Promote `cka-030` into a facilitator pack
+2. Define the next `cka-031` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
 
+### `cka-030` CronJob schedule, suspend, and history diagnostics
+
+- Keep the drill in the `planning + evidence export` lane.
+- Focus on exact CronJob inventory, schedule, suspend status, concurrency policy, history limits, and job template restart policy review.
+- Require manifest export plus a plain-text checklist that shows safe scheduling review without deleting the CronJob, creating ad hoc Jobs, or forcing schedule patches.
+
 ### Next candidate to be defined
 
-- The next drill after `cka-029` should target one uncovered operator workflow that still fits the deterministic single-domain model.
+- The next drill after `cka-030` should target one uncovered operator workflow that still fits the deterministic single-domain model.
 - It should follow the same planning/evidence-export contract unless a safe live remediation contract is clearly reproducible in local Podman/kind environments.
 
 ## Current Authoring State
@@ -71,6 +79,7 @@ Ship the next expansion wave as `cka-030+` drills that fill the remaining practi
 - `cka-027` is now promoted as facilitator pack `cka-027`, sourced from template question `801` in `docs/templates/cka-2026-next1-disruption`.
 - `cka-028` is now promoted as facilitator pack `cka-028`, sourced from template question `901` in `docs/templates/cka-2026-next1-stateful`.
 - `cka-029` is now promoted as facilitator pack `cka-029`, sourced from template question `1001` in `docs/templates/cka-2026-next1-daemonset`.
+- `cka-030` is now scaffolded as template question `1101` in `docs/templates/cka-2026-next1-cronjob`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
@@ -95,7 +104,7 @@ Ship the next expansion wave as `cka-030+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-030+` drill should be considered ready only when all of the following are true:
+A `cka-031+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
