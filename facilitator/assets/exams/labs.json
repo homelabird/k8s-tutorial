@@ -251,6 +251,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-026",
+      "assetPath": "assets/exams/cka/026",
+      "name": "CKA 2026 Single Domain Drill - StorageClass and dynamic provisioning diagnostics",
+      "category": "CKA",
+      "description": "Standalone storage diagnostics drill focused on StorageClass inventory, default-class inspection, PVC analysis, and safe manifest guidance without mutating cluster-scoped storage configuration.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

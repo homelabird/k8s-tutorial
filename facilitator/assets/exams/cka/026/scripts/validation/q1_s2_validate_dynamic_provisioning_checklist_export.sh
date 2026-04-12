@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-EXPORT_FILE="/tmp/exam/q701/dynamic-provisioning-checklist.txt"
+EXPORT_FILE="/tmp/exam/q1/dynamic-provisioning-checklist.txt"
 [ -f "$EXPORT_FILE" ] || { echo "Expected checklist export at $EXPORT_FILE"; exit 1; }
 
 grep -Fxq 'StorageClass Inventory' "$EXPORT_FILE" || { echo "Checklist missing StorageClass Inventory section"; exit 1; }

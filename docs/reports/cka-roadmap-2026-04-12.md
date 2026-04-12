@@ -27,33 +27,32 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-023` PKI and certificate expiry troubleshooting
 - `cka-024` resource quota and LimitRange troubleshooting
 - `cka-025` container runtime and CRI endpoint diagnostics
+- `cka-026` StorageClass and dynamic provisioning diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-026+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-027+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, `cka-020`, `cka-021`, `cka-022`, `cka-023`, `cka-024`, and `cka-025` are now promoted facilitator packs. `cka-026` is now template-scaffolded and `cka-027+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, `cka-020`, `cka-021`, `cka-022`, `cka-023`, `cka-024`, `cka-025`, and `cka-026` are now promoted facilitator packs. `cka-027+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-026` | StorageClass and dynamic provisioning diagnostics | The current drill line covers PV/PVC, but it still does not explicitly train default StorageClass inspection and safe dynamic-provisioning evidence export. | Low | Scaffolded template, promote next |
+| `cka-027` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the StorageClass diagnostics drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. Promote `cka-026` as the next storage-focused single-domain drill
-2. Define `cka-027` from the remaining uncovered operator workflows
+1. Define the next `cka-027` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
 
-### StorageClass and dynamic provisioning diagnostics
+### Next candidate to be defined
 
-- The next drill should target default StorageClass inspection, PVC analysis, workload inspection, and safe manifest guidance for a mis-scoped dynamically provisioned claim.
-- It should stay in the planning/evidence-export contract, with exact `kubectl get storageclass`, default-class inspection, PVC describe, workload describe, and event export guidance.
-- It should avoid deleting StorageClass objects or PVCs, and it should not patch cluster-scoped provisioners inside the drill.
+- The next drill should target one uncovered operator workflow that still fits the deterministic single-domain model.
+- It should follow the same planning/evidence-export contract unless a safe live remediation contract is clearly reproducible in local Podman/kind environments.
 
 ## Current Authoring State
 
@@ -67,7 +66,7 @@ Ship the next expansion wave as `cka-026+` drills that fills the remaining pract
 - `cka-023` is now promoted as facilitator pack `cka-023`, sourced from template question `602` in `docs/templates/cka-2026-next2-ops`.
 - `cka-024` is now promoted as facilitator pack `cka-024`, sourced from template question `603` in `docs/templates/cka-2026-next2-ops`.
 - `cka-025` is now promoted as facilitator pack `cka-025`, sourced from template question `604` in `docs/templates/cka-2026-next2-ops`.
-- `cka-026` is now scaffolded as template question `701` in `docs/templates/cka-2026-next1-storage`.
+- `cka-026` is now promoted as facilitator pack `cka-026`, sourced from template question `701` in `docs/templates/cka-2026-next1-storage`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
