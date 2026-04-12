@@ -339,6 +339,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-029",
+      "assetPath": "assets/exams/cka/029",
+      "name": "CKA 2026 Single Domain Drill - DaemonSet rollout and node coverage diagnostics",
+      "category": "CKA",
+      "description": "Standalone DaemonSet diagnostics drill focused on rollout status, node coverage, update strategy guidance, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

@@ -13,7 +13,7 @@ These drafts cover the next recommended DaemonSet-focused operations pack from t
 ## Current Template State
 
 - Question `1001` (`DaemonSet rollout and node coverage diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1001` has not yet been promoted into a facilitator pack.
+- Question `1001` has now been promoted into facilitator pack `cka-029`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended DaemonSet-focused operations pack from t
 
 ## Recommended Promotion Order
 
-1. Promote question `1001` into facilitator pack `cka-029`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

@@ -34,30 +34,21 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-029+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-030+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-028` are now promoted facilitator packs. `cka-029` is now template-scaffolded, and `cka-030+` remain roadmap-only candidates.
+`cka-011` through `cka-029` are now promoted facilitator packs, and `cka-030+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-029` | DaemonSet rollout and node coverage diagnostics | Covers DaemonSet inventory, rollout strategy, per-node coverage, and safe manifest review without deleting the DaemonSet or cordoning nodes. | Low | Template scaffolded; promote next |
 | `cka-030` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the DaemonSet diagnostics drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. Promote `cka-029` into a facilitator pack
-2. Define the next `cka-030` candidate from the remaining uncovered operator workflows
+1. Define the next `cka-030` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
-
-### `cka-029` DaemonSet rollout and node coverage diagnostics
-
-- Keep the drill in the `planning + evidence export` lane.
-- Focus on exact DaemonSet inventory, rollout status, node inventory, per-node coverage, and update strategy guidance.
-- Require manifest export plus a plain-text checklist that shows safe rollout review without deleting the DaemonSet or cordoning nodes.
-- Avoid DaemonSet deletion, forced scale-to-zero actions, and node cordon guidance in both the setup contract and the expected answer.
 
 ### Next candidate to be defined
 
@@ -79,7 +70,7 @@ Ship the next expansion wave as `cka-029+` drills that fill the remaining practi
 - `cka-026` is now promoted as facilitator pack `cka-026`, sourced from template question `701` in `docs/templates/cka-2026-next1-storage`.
 - `cka-027` is now promoted as facilitator pack `cka-027`, sourced from template question `801` in `docs/templates/cka-2026-next1-disruption`.
 - `cka-028` is now promoted as facilitator pack `cka-028`, sourced from template question `901` in `docs/templates/cka-2026-next1-stateful`.
-- `cka-029` is now scaffolded as template question `1001` in `docs/templates/cka-2026-next1-daemonset`.
+- `cka-029` is now promoted as facilitator pack `cka-029`, sourced from template question `1001` in `docs/templates/cka-2026-next1-daemonset`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
@@ -104,7 +95,7 @@ Ship the next expansion wave as `cka-029+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-029+` drill should be considered ready only when all of the following are true:
+A `cka-030+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
