@@ -49,3 +49,49 @@ Expected checks:
 - `/tmp/exam/q501/control-plane-checklist.txt` contains the required sections and exact troubleshooting commands
 - `/tmp/exam/q501/component-repair-brief.yaml` exports the repaired manifest
 - stale unsafe actions such as deleting static pod manifests or restarting the kubelet are removed
+
+## Question 502: service and pod connectivity diagnostics
+
+Repair the connectivity diagnostics brief and export both the repaired manifest and a plain-text connectivity matrix.
+
+```bash
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connectivity-brief
+  namespace: connectivity-lab
+data:
+  debugPod: net-debug
+  serviceName: echo-api
+  servicePort: "8080"
+  headlessServiceName: echo-api-headless
+  podDnsName: echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local
+  serviceProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+  podProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
+  dnsProbe: kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+EOF_BRIEF
+
+mkdir -p /tmp/exam/q502
+cat <<'EOF_MATRIX' > /tmp/exam/q502/connectivity-matrix.txt
+Service Path
+- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+
+Pod Path
+- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
+
+DNS Checks
+- kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+- kubectl get svc echo-api -n connectivity-lab
+- kubectl get svc echo-api-headless -n connectivity-lab
+EOF_MATRIX
+
+kubectl get configmap connectivity-brief -n connectivity-lab -o yaml > /tmp/exam/q502/connectivity-brief.yaml
+```
+
+Expected checks:
+
+- `connectivity-brief` contains the intended debug Pod, Service names, headless DNS name, and exact probe commands
+- `/tmp/exam/q502/connectivity-matrix.txt` contains the required sections and exact service, pod, and DNS checks
+- `/tmp/exam/q502/connectivity-brief.yaml` exports the repaired manifest
+- stale unsafe actions such as deleting Services or restarting workloads are removed

@@ -16,8 +16,9 @@ These drafts cover the next three recommended packs from the `cka-019+` roadmap:
 
 - Question `501` (`scheduler / controller-manager troubleshooting`) is fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `501` has now been promoted into facilitator pack `cka-019`.
-- Questions `502` (`service and pod connectivity diagnostics`) and `503` (`service exposure and endpoint debugging`) remain roadmap-only.
-- The remaining work is no longer authoring for `q501`. It is runtime/discovery coverage and deciding whether these single-domain drills should be bundled into a later multi-question pack.
+- Question `502` (`service and pod connectivity diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `503` (`service exposure and endpoint debugging`) remains roadmap-only.
+- The remaining work is promotion/runtime coverage for `q502` and authoring for `q503`.
 
 ## Important Constraints
 
@@ -27,7 +28,7 @@ These drafts cover the next three recommended packs from the `cka-019+` roadmap:
 
 ## Recommended Promotion Order
 
-1. Question `502` because pod/service reachability remains a core uncovered networking gap.
+1. Question `502` because pod/service reachability remains a core uncovered networking gap and is now ready for facilitator promotion.
 2. Question `503` because service exposure debugging is valuable but narrower than the first two drills.
 
 ## Planned Facilitator Mapping

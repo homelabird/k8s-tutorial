@@ -35,6 +35,42 @@
           "weightage": 2
         }
       ]
+    },
+    {
+      "id": "502",
+      "namespace": "connectivity-lab",
+      "machineHostname": "ckad9999",
+      "question": "A service and pod connectivity diagnostics brief is incomplete and contains stale reachability guidance.\n\nA ConfigMap named `connectivity-brief` already exists in namespace `connectivity-lab`. Repair it so that:\n- `debugPod` is `net-debug`\n- `serviceName` is `echo-api`\n- `servicePort` is `8080`\n- `headlessServiceName` is `echo-api-headless`\n- `podDnsName` is `echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local`\n- `serviceProbe` is `kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz`\n- `podProbe` is `kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz`\n- `dnsProbe` is `kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local`\n- save the repaired ConfigMap manifest to `/tmp/exam/q502/connectivity-brief.yaml`\n- save a plain-text connectivity matrix to `/tmp/exam/q502/connectivity-matrix.txt` with the sections `Service Path`, `Pod Path`, and `DNS Checks`\n\nDo not change Service selectors, do not patch workloads, and do not create new Pods during this drill.",
+      "concepts": [
+        "services",
+        "networking",
+        "dns",
+        "troubleshooting",
+        "connectivity"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The connectivity brief ConfigMap uses the intended debug Pod, Service names, headless DNS name, and exact probe commands",
+          "verificationScriptFile": "q502_s1_validate_connectivity_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported connectivity matrix contains the required sections and exact service, pod, and DNS checks",
+          "verificationScriptFile": "q502_s2_validate_connectivity_matrix_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe connectivity guidance is removed",
+          "verificationScriptFile": "q502_s3_validate_connectivity_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
     }
   ]
 }
