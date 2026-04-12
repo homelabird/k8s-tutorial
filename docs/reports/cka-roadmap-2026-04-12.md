@@ -19,13 +19,15 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship a second expansion wave as `cka-011+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
+`cka-011`, `cka-012`, and `cka-013` are now scaffolded as draft templates under `docs/templates/cka-2026-next3/`. They are not promoted facilitator packs yet. `cka-014+` remain roadmap-only candidates.
+
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-011` | ConfigMap and Secret repair | Basic workload configuration is still uncovered in the promoted drill set. | Low | Build next |
-| `cka-012` | HorizontalPodAutoscaler troubleshooting | Autoscaling is a common exam workflow and currently missing. | Medium | Build next |
-| `cka-013` | Node troubleshooting and maintenance | Adds `cordon`, `drain`, `uncordon`, and node readiness recovery. | Medium | Build next |
+| `cka-011` | ConfigMap and Secret repair | Basic workload configuration is still uncovered in the promoted drill set. | Low | Draft scaffolded; promote next |
+| `cka-012` | HorizontalPodAutoscaler troubleshooting | Autoscaling is a common exam workflow and currently missing. | Medium | Draft scaffolded; promote next |
+| `cka-013` | Node troubleshooting and maintenance | Adds `cordon`, `drain`, `uncordon`, and node readiness recovery. | Medium | Draft scaffolded; promote next |
 | `cka-014` | Gateway API traffic management | Covers the newer public curriculum direction beyond classic Ingress. | Medium | Build after `cka-011..013` |
 | `cka-015` | Logs and resource usage triage | Covers `kubectl logs`, `previous`, `top`, and fast operator diagnosis workflows. | Low | Build after `cka-014` |
 | `cka-016` | Kubeadm lifecycle / upgrade planning | High-value admin skill, but heavier to simulate correctly. | High | Keep as stretch goal |
