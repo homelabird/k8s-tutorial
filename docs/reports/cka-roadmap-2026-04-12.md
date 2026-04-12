@@ -16,28 +16,27 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-012` HPA troubleshooting
 - `cka-013` node troubleshooting and maintenance
 - `cka-014` Gateway API traffic management
+- `cka-015` logs and resource usage triage
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-015+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-016+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, and `cka-014` are now promoted facilitator packs. `cka-015+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, and `cka-015` are now promoted facilitator packs. `cka-016+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-015` | Logs and resource usage triage | Covers `kubectl logs`, `previous`, `top`, and fast operator diagnosis workflows. | Low | Build after `cka-014` |
 | `cka-016` | Kubeadm lifecycle / upgrade planning | High-value admin skill, but heavier to simulate correctly. | High | Keep as stretch goal |
 | `cka-017` | CRD / operator installation checks | Publicly relevant, but lower practical priority than node and workload operations. | Medium | Keep as optional stretch goal |
 
 ## Proposed Build Order
 
-1. `cka-015` logs and resource usage triage
-2. `cka-016` kubeadm lifecycle planning
-3. `cka-017` CRD / operator installation checks
+1. `cka-016` kubeadm lifecycle planning
+2. `cka-017` CRD / operator installation checks
 
 ## Suggested Problem Shapes
 
@@ -65,14 +64,6 @@ Ship the next expansion wave as `cka-015+` drills that fills the remaining pract
   - workload is rescheduled correctly
   - cluster returns to intended scheduling state
 
-### `cka-015` Logs and resource usage triage
-
-- Multi-container workload has one failing sidecar and resource pressure symptoms.
-- Candidate verifies:
-  - the correct failing container is identified
-  - operator extracts the intended log evidence file
-  - resource requests/limits or probe config are corrected
-
 ## Design Constraints
 
 - Keep each new drill single-domain and independently evaluable.
@@ -82,7 +73,7 @@ Ship the next expansion wave as `cka-015+` drills that fills the remaining pract
 
 ## Exit Criteria
 
-A `cka-015+` drill should be considered ready only when all of the following are true:
+A `cka-016+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked

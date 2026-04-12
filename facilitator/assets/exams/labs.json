@@ -141,6 +141,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-015",
+      "assetPath": "assets/exams/cka/015",
+      "name": "CKA 2026 Single Domain Drill - Logs and Resource Usage Triage",
+      "category": "CKA",
+      "description": "Standalone troubleshooting drill focused on exporting previous log evidence, capturing pod resource usage, and repairing a broken multi-container workload.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

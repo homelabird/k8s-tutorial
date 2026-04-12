@@ -1,0 +1,41 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "triage-lab",
+      "machineHostname": "ckad9999",
+      "question": "A multi-container Deployment named `ops-api` in namespace `triage-lab` is unhealthy. The `api` container should serve nginx on port `80`, and the `log-agent` sidecar should tail `/var/log/ops/app.log`, but both containers are misconfigured.\n\nUse workload logs and pod resource output to triage the issue, then repair the Deployment so that:\n- the `api` container uses `containerPort` `80`\n- the `api` container memory limit is `256Mi`\n- the `api` container liveness probe checks port `80`\n- the `log-agent` container uses env `LOG_TARGET=/var/log/ops/app.log`\n- save the previous logs from container `log-agent` to `/tmp/exam/q1/log-agent-previous.log`\n- save `kubectl top pod <active-pod> --containers` output to `/tmp/exam/q1/ops-api-top.txt`\n\nDo not recreate the Deployment unless it is strictly required.",
+      "concepts": [
+        "logs",
+        "previous-logs",
+        "kubectl-top",
+        "resources",
+        "multi-container",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The Deployment uses the intended port, memory limit, liveness probe, and sidecar log target",
+          "verificationScriptFile": "q1_s1_validate_workload_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Previous log evidence and pod resource usage output are exported to the expected files",
+          "verificationScriptFile": "q1_s2_validate_evidence_exports.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired multi-container workload becomes Available without ongoing sidecar restarts",
+          "verificationScriptFile": "q1_s3_validate_rollout_ready.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

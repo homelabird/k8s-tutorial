@@ -210,6 +210,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-012` HPA troubleshooting
 - `cka-013` node troubleshooting and maintenance
 - `cka-014` Gateway API traffic management
+- `cka-015` logs and resource usage triage
 
 To check the runner wiring without starting the Podman stack:
 
