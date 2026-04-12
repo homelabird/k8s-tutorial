@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "service-debug-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Service exposure debugging brief is incomplete and contains stale selector and endpoint guidance.\n\nA ConfigMap named `service-exposure-brief` already exists in namespace `service-debug-lab`. Repair it so that:\n- `serviceName` is `echo-api`\n- `serviceType` is `ClusterIP`\n- `selectorKey` is `app`\n- `selectorValue` is `echo-api`\n- `servicePort` is `8080`\n- `targetPort` is `8080`\n- `endpointCheck` is `kubectl get endpoints echo-api -n service-debug-lab -o wide`\n- `selectorCheck` is `kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'`\n- `reachabilityCheck` is `kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/service-exposure-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/service-exposure-checklist.txt` with the sections `Selector Audit`, `Endpoint Audit`, and `Reachability`\n\nDo not patch Deployments, do not create Ingress or Gateway API resources, and do not delete Services during this drill.",
+      "concepts": [
+        "services",
+        "networking",
+        "endpoints",
+        "troubleshooting",
+        "exposure"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The service exposure brief ConfigMap uses the intended Service name, selector contract, ports, and exact endpoint and reachability checks",
+          "verificationScriptFile": "q1_s1_validate_service_exposure_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact selector, endpoint, and reachability commands",
+          "verificationScriptFile": "q1_s2_validate_service_exposure_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe service debugging guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_service_exposure_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

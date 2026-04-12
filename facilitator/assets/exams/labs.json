@@ -201,6 +201,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-021",
+      "assetPath": "assets/exams/cka/021",
+      "name": "CKA 2026 Single Domain Drill - Service Exposure and Endpoint Debugging",
+      "category": "CKA",
+      "description": "Standalone Service debugging drill focused on repairing selector, targetPort, endpoint, and reachability guidance with exported evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

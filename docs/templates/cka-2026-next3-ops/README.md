@@ -19,7 +19,8 @@ These drafts cover the next recommended ops-oriented packs from the `cka-020+` r
 - Question `502` (`service and pod connectivity diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `502` has now been promoted into facilitator pack `cka-020`.
 - Question `503` (`service exposure and endpoint debugging`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- The remaining work is no longer authoring for `q503`. It is promoting `q503` into a real facilitator pack with discovery and runtime coverage.
+- Question `503` has now been promoted into facilitator pack `cka-021`.
+- The remaining work is no longer authoring for `q503`. This wave is fully promoted and the next work belongs in a new template set.
 
 ## Important Constraints
 
@@ -30,7 +31,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-020+` r
 
 ## Recommended Promotion Order
 
-1. Question `503` because service exposure debugging is now fully scaffolded and is the next remaining single-domain networking gap in this wave.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

@@ -216,6 +216,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-018` etcd backup and restore workflow
 - `cka-019` scheduler and controller-manager troubleshooting
 - `cka-020` service and pod connectivity diagnostics
+- `cka-021` service exposure and endpoint debugging
 
 To check the runner wiring without starting the Podman stack:
 
