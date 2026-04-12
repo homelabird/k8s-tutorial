@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-031
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-032
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -45,6 +45,7 @@ Supported suites:
   cka-029  DaemonSet rollout and node coverage diagnostics drill
   cka-030  CronJob schedule, suspend, and history diagnostics drill
   cka-031  Job completions, parallelism, and backoff diagnostics drill
+  cka-032  Readiness, liveness, and startupProbe diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -228,6 +229,7 @@ resolve_suite_namespace() {
     cka-029) printf '%s\n' 'daemonset-lab' ;;
     cka-030) printf '%s\n' 'cronjob-lab' ;;
     cka-031) printf '%s\n' 'job-lab' ;;
+    cka-032) printf '%s\n' 'probe-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1241,6 +1243,44 @@ kubectl get configmap job-diagnostics-brief -n job-lab -o yaml > /tmp/exam/q1/jo
 [ -s /tmp/exam/q1/job-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-032)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: probe-diagnostics-brief
+  namespace: probe-lab
+data:
+  targetDeployment: health-api
+  deploymentInventory: kubectl get deployment health-api -n probe-lab -o wide
+  startupProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'
+  livenessProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'
+  readinessProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'
+  portCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'
+  eventCheck: kubectl get events -n probe-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/probe-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment health-api -n probe-lab -o wide
+- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'
+
+Probe Checks
+- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'
+- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'
+- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'
+- kubectl get events -n probe-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap probe-diagnostics-brief -n probe-lab -o yaml > /tmp/exam/q1/probe-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/probe-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/probe-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1356,7 +1396,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032
   exit 0
 fi
 
@@ -1367,7 +1407,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032)
 fi
 
 for suite in "${SUITES[@]}"; do
