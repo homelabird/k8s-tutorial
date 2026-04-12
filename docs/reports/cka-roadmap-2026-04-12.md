@@ -30,17 +30,18 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-022+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, `cka-020`, and `cka-021` are now promoted facilitator packs. `cka-022+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, `cka-020`, and `cka-021` are now promoted facilitator packs. `cka-022` is template-scaffolded and `cka-023+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-022` | kubelet and node NotReady troubleshooting | Adds a focused drill for node condition analysis, kubelet service checks, and safe maintenance evidence without overlapping the existing node maintenance pack. | Medium | Highest priority |
+| `cka-022` | kubelet and node NotReady troubleshooting | Adds a focused drill for node condition analysis, kubelet service checks, and safe maintenance evidence without overlapping the existing node maintenance pack. | Medium | Template scaffold complete |
 
 ## Proposed Build Order
 
 1. `cka-022` kubelet and node NotReady troubleshooting
+2. `cka-023` PKI and certificate expiry troubleshooting
 
 ## Suggested Problem Shapes
 
@@ -60,12 +61,14 @@ Ship the next expansion wave as `cka-022+` drills that fills the remaining pract
 - `cka-019` is now promoted as facilitator pack `cka-019`, sourced from template question `501` in `docs/templates/cka-2026-next3-ops`.
 - `cka-020` is now promoted as facilitator pack `cka-020`, sourced from template question `502` in `docs/templates/cka-2026-next3-ops`.
 - `cka-021` is now promoted as facilitator pack `cka-021`, sourced from template question `503` in `docs/templates/cka-2026-next3-ops`.
+- `cka-022` is now template-scaffolded from question `601` in `docs/templates/cka-2026-next2-ops` and is ready for facilitator promotion.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
 - The current `cka-019` contract stays planning-focused: it repairs exact scheduler/controller-manager manifest paths, health endpoints, kubeconfig references, and evidence export without touching live static Pods.
 - The current `cka-020` contract stays evidence-export focused: it repairs exact service, headless service, pod DNS, and probe commands without mutating live selectors or workloads.
 - The current `cka-021` contract stays evidence-export focused: it repairs exact Service selector, port, endpoint, and reachability guidance without patching Deployments or introducing ingress resources.
+- The current `cka-022` contract should stay planning-focused: it should repair exact node-condition, kubelet service, runtime, and config guidance while exporting evidence without restarting services or draining nodes.
 
 ## Design Constraints
 
@@ -76,7 +79,7 @@ Ship the next expansion wave as `cka-022+` drills that fills the remaining pract
 
 ## Exit Criteria
 
-A `cka-022+` drill should be considered ready only when all of the following are true:
+A `cka-023+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
