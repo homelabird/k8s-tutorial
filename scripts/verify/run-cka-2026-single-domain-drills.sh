@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-018
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-019
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -32,6 +32,7 @@ Supported suites:
   cka-016  Kubeadm lifecycle planning drill
   cka-017  CRD and operator installation checks drill
   cka-018  etcd backup and restore workflow drill
+  cka-019  scheduler and controller-manager troubleshooting drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -202,6 +203,7 @@ resolve_suite_namespace() {
     cka-016) printf '%s\n' 'kubeadm-lab' ;;
     cka-017) printf '%s\n' 'operator-lab' ;;
     cka-018) printf '%s\n' 'etcd-lab' ;;
+    cka-019) printf '%s\n' 'controlplane-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -730,6 +732,48 @@ kubectl get configmap etcd-recovery-plan -n etcd-lab -o yaml > /tmp/exam/q1/etcd
 [ -s /tmp/exam/q1/etcd-recovery-checklist.txt ]
 COMMAND
       ;;
+    cka-019)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: component-repair-brief
+  namespace: controlplane-lab
+data:
+  schedulerManifest: /etc/kubernetes/manifests/kube-scheduler.yaml
+  controllerManagerManifest: /etc/kubernetes/manifests/kube-controller-manager.yaml
+  schedulerHealthz: https://127.0.0.1:10259/healthz
+  controllerManagerHealthz: https://127.0.0.1:10257/healthz
+  schedulerKubeconfig: /etc/kubernetes/scheduler.conf
+  controllerManagerKubeconfig: /etc/kubernetes/controller-manager.conf
+  schedulerLogHint: journalctl -u kubelet | grep kube-scheduler
+  controllerManagerLogHint: journalctl -u kubelet | grep kube-controller-manager
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/control-plane-checklist.txt
+Scheduler
+- inspect /etc/kubernetes/manifests/kube-scheduler.yaml
+- confirm /etc/kubernetes/scheduler.conf
+- curl -k https://127.0.0.1:10259/healthz
+- journalctl -u kubelet | grep kube-scheduler
+
+Controller Manager
+- inspect /etc/kubernetes/manifests/kube-controller-manager.yaml
+- confirm /etc/kubernetes/controller-manager.conf
+- curl -k https://127.0.0.1:10257/healthz
+- journalctl -u kubelet | grep kube-controller-manager
+
+Verification
+- kubectl get pods -n kube-system -l component=kube-scheduler
+- kubectl get pods -n kube-system -l component=kube-controller-manager
+- kubectl get --raw='/readyz?verbose'
+EOF_CHECKLIST
+kubectl get configmap component-repair-brief -n controlplane-lab -o yaml > /tmp/exam/q1/component-repair-brief.yaml
+[ -s /tmp/exam/q1/component-repair-brief.yaml ]
+[ -s /tmp/exam/q1/control-plane-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -845,7 +889,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019
   exit 0
 fi
 
@@ -856,7 +900,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019)
 fi
 
 for suite in "${SUITES[@]}"; do

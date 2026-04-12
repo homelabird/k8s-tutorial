@@ -8,8 +8,9 @@ FACILITATOR_README="$ROOT_DIR/facilitator/README.md"
 TEMPLATE_README_NEXT5="$ROOT_DIR/docs/templates/cka-2026-next5/README.md"
 TEMPLATE_README_NEXT3="$ROOT_DIR/docs/templates/cka-2026-next3/README.md"
 TEMPLATE_README_NEXT4="$ROOT_DIR/docs/templates/cka-2026-next4/README.md"
+TEMPLATE_README_NEXT3_OPS="$ROOT_DIR/docs/templates/cka-2026-next3-ops/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -56,6 +57,7 @@ grep -Fq 'Question `402` has now been promoted into facilitator pack `cka-015`.'
 grep -Fq 'Question `403` has now been promoted into facilitator pack `cka-016`.' "$TEMPLATE_README_NEXT4"
 grep -Fq 'Question `404` has now been promoted into facilitator pack `cka-017`.' "$TEMPLATE_README_NEXT4"
 grep -Fq 'Question `405` has now been promoted into facilitator pack `cka-018`.' "$TEMPLATE_README_NEXT4"
+grep -Fq 'Question `501` has now been promoted into facilitator pack `cka-019`.' "$TEMPLATE_README_NEXT3_OPS"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'
