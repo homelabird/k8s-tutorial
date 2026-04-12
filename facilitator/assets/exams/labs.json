@@ -359,6 +359,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-031",
+      "assetPath": "assets/exams/cka/031",
+      "name": "CKA 2026 Single Domain Drill - Job completions, parallelism, and backoff diagnostics",
+      "category": "CKA",
+      "description": "Standalone Job diagnostics drill focused on completions, parallelism, backoffLimit, pod evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

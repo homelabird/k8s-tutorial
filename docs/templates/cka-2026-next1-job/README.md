@@ -13,7 +13,7 @@ These drafts cover the next recommended batch workload controller pack from the 
 ## Current Template State
 
 - Question `1201` (`Job completions, parallelism, and backoff diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1201` has not yet been promoted into a facilitator pack.
+- Question `1201` has now been promoted into facilitator pack `cka-031`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended batch workload controller pack from the 
 
 ## Recommended Promotion Order
 
-1. Promote `q1201` into facilitator pack `cka-031`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

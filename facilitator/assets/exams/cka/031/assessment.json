@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "job-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Job diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `job-diagnostics-brief` already exists in namespace `job-lab`. Repair it so that:\n- `targetJob` is `report-batch`\n- `jobInventory` is `kubectl get job report-batch -n job-lab -o wide`\n- `completionsCheck` is `kubectl get job report-batch -n job-lab -o jsonpath='{.spec.completions}'`\n- `parallelismCheck` is `kubectl get job report-batch -n job-lab -o jsonpath='{.spec.parallelism}'`\n- `backoffLimitCheck` is `kubectl get job report-batch -n job-lab -o jsonpath='{.spec.backoffLimit}'`\n- `podEvidenceCheck` is `kubectl get pods -n job-lab -l job-name=report-batch -o wide`\n- `jobDescribeCheck` is `kubectl describe job report-batch -n job-lab`\n- `safeManifestNote` is `confirm completions, parallelism, backoffLimit, and pod template command before changing the Job manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/job-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/job-diagnostics-checklist.txt` with the sections `Job Inventory`, `Pod Evidence`, and `Safe Manifest Review`\n\nDo not delete the Job, do not create a replacement Job, and do not patch Job status fields during this drill.",
+      "concepts": [
+        "job",
+        "parallelism",
+        "backoffLimit",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The Job diagnostics brief ConfigMap uses the intended workload target, inventory commands, parallelism checks, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_job_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact Job inventory, pod evidence, and safe manifest review commands",
+          "verificationScriptFile": "q1_s2_validate_job_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe Job remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_job_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
