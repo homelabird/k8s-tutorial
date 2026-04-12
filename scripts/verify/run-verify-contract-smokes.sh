@@ -8,7 +8,7 @@ usage() {
   cat <<'EOF'
 Usage:
   ./scripts/verify/run-verify-contract-smokes.sh
-  ./scripts/verify/run-verify-contract-smokes.sh diagnostics-collector diagnostics-pack
+  ./scripts/verify/run-verify-contract-smokes.sh diagnostics-collector diagnostics-pack single-domain-contract
   ./scripts/verify/run-verify-contract-smokes.sh browser-scenarios workflow-contract review-batch-workflow review-handoff-pack
   ./scripts/verify/run-verify-contract-smokes.sh --list
   ./scripts/verify/run-verify-contract-smokes.sh --describe
@@ -16,6 +16,7 @@ Usage:
 Supported contract smokes:
   diagnostics-collector  Synthetic raw diagnostics bundle generation
   diagnostics-pack       Synthetic diagnostics archive + summary round-trip
+  single-domain-contract Promoted single-domain drill registry contract
   summary-renderer       Synthetic markdown summary rendering
   workflow-contract      Self-hosted workflow wiring contract
   review-batch-workflow  Review-batch workflow wiring contract
@@ -37,6 +38,7 @@ resolve_smoke_script() {
   case "$1" in
     diagnostics-collector) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-diagnostics-collector-smoke.sh" ;;
     diagnostics-pack) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-diagnostics-pack-smoke.sh" ;;
+    single-domain-contract) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-single-domain-contract-smoke.sh" ;;
     summary-renderer) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-summary-renderer-smoke.sh" ;;
     workflow-contract) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-workflow-contract-smoke.sh" ;;
     review-batch-workflow) printf '%s\n' "$ROOT_DIR/scripts/verify/review-batch-workflow-contract-smoke.sh" ;;
@@ -57,6 +59,9 @@ describe_smoke() {
       ;;
     diagnostics-pack)
       printf '%s\n' 'diagnostics-pack | cka-2026-diagnostics-pack-smoke.sh | tarball packaging and extracted summary round-trip'
+      ;;
+    single-domain-contract)
+      printf '%s\n' 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-010 registry, runner inventory, facilitator listing, template promotion'
       ;;
     summary-renderer)
       printf '%s\n' 'summary-renderer | cka-2026-summary-renderer-smoke.sh | markdown rendering, host ordering, verdict-aware summary sections'
@@ -126,6 +131,7 @@ if [ "${1:-}" = "--list" ]; then
   printf '%s\n' \
     diagnostics-collector \
     diagnostics-pack \
+    single-domain-contract \
     summary-renderer \
     workflow-contract \
     review-batch-workflow \
@@ -138,6 +144,7 @@ if [ "${1:-}" = "--describe" ]; then
   for smoke in \
     diagnostics-collector \
     diagnostics-pack \
+    single-domain-contract \
     summary-renderer \
     workflow-contract \
     review-batch-workflow \
@@ -153,6 +160,7 @@ if [ "${#SMOKES[@]}" -eq 0 ]; then
   SMOKES=(
     diagnostics-collector
     diagnostics-pack
+    single-domain-contract
     summary-renderer
     workflow-contract
     review-batch-workflow

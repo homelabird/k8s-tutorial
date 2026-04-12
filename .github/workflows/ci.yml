@@ -54,16 +54,18 @@ jobs:
         run: |
           mapfile -t smokes < <(bash scripts/verify/run-verify-contract-smokes.sh --list)
           printf '%s\n' "${smokes[@]}"
-          [ "${#smokes[@]}" -eq 7 ]
+          [ "${#smokes[@]}" -eq 8 ]
           [ "${smokes[0]}" = "diagnostics-collector" ]
           [ "${smokes[1]}" = "diagnostics-pack" ]
-          [ "${smokes[2]}" = "summary-renderer" ]
-          [ "${smokes[3]}" = "workflow-contract" ]
-          [ "${smokes[4]}" = "review-batch-workflow" ]
-          [ "${smokes[5]}" = "review-handoff-pack" ]
-          [ "${smokes[6]}" = "browser-scenarios" ]
+          [ "${smokes[2]}" = "single-domain-contract" ]
+          [ "${smokes[3]}" = "summary-renderer" ]
+          [ "${smokes[4]}" = "workflow-contract" ]
+          [ "${smokes[5]}" = "review-batch-workflow" ]
+          [ "${smokes[6]}" = "review-handoff-pack" ]
+          [ "${smokes[7]}" = "browser-scenarios" ]
           describe_output="$(bash scripts/verify/run-verify-contract-smokes.sh --describe)"
           grep -Fq 'diagnostics-collector | cka-2026-diagnostics-collector-smoke.sh | raw diagnostics bundle generation, host discovery, summary.txt' <<<"${describe_output}"
+          grep -Fq 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-010 registry, runner inventory, facilitator listing, template promotion' <<<"${describe_output}"
           grep -Fq 'review-batch-workflow | review-batch-workflow-contract-smoke.sh | manual review batch workflow inputs, matrix planning, dependency gates' <<<"${describe_output}"
           grep -Fq 'review-handoff-pack | review-batch-handoff-pack-smoke.sh | review note/memo manifest export, landing summary, landing drafts, handoff index, and archive contents' <<<"${describe_output}"
           grep -Fq 'browser-scenarios | browser-ui-scenario-contract-smoke.sh | browser fixture scenario inventory, package wiring, README alignment' <<<"${describe_output}"
@@ -426,6 +428,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify review-batch workflow contract
         run: bash scripts/verify/review-batch-workflow-contract-smoke.sh
+
+  single-domain-contract-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify promoted single-domain drill contract
+        run: bash scripts/verify/cka-2026-single-domain-contract-smoke.sh
 
   summary-renderer-smoke:
     runs-on: ubuntu-latest
