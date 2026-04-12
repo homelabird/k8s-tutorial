@@ -225,6 +225,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-027` PodDisruptionBudget and drain planning
 - `cka-028` StatefulSet identity and headless service diagnostics
 - `cka-029` DaemonSet rollout and node coverage diagnostics
+- `cka-030` CronJob schedule, suspend, and history diagnostics
 
 To check the runner wiring without starting the Podman stack:
 

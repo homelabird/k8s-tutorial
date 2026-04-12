@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "cronjob-lab",
+      "machineHostname": "ckad9999",
+      "question": "A CronJob diagnostics brief is incomplete and contains stale or unsafe scheduling guidance.\n\nA ConfigMap named `cronjob-diagnostics-brief` already exists in namespace `cronjob-lab`. Repair it so that:\n- `targetCronJob` is `log-pruner`\n- `cronJobInventory` is `kubectl get cronjob log-pruner -n cronjob-lab -o wide`\n- `scheduleCheck` is `kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.schedule}'`\n- `suspendCheck` is `kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.suspend}'`\n- `concurrencyPolicyCheck` is `kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.concurrencyPolicy}'`\n- `historyLimitsCheck` is `kubectl get cronjob log-pruner -n cronjob-lab -o custom-columns=SUCCESS:.spec.successfulJobsHistoryLimit,FAILED:.spec.failedJobsHistoryLimit`\n- `jobTemplateCheck` is `kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.jobTemplate.spec.template.spec.restartPolicy}'`\n- `safeManifestNote` is `confirm schedule, suspend=false, and history limits before changing the CronJob manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/cronjob-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/cronjob-diagnostics-checklist.txt` with the sections `CronJob Inventory`, `Scheduling Checks`, and `Safe Manifest Review`\n\nDo not delete the CronJob, do not create manual Jobs from it, and do not patch the schedule just to force an immediate run during this drill.",
+      "concepts": [
+        "cronjob",
+        "batch",
+        "scheduling",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The CronJob diagnostics brief ConfigMap uses the intended workload target, schedule, suspend, concurrency, history, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_cronjob_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact CronJob inventory, scheduling checks, and safe manifest review steps",
+          "verificationScriptFile": "q1_s2_validate_cronjob_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe CronJob remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_cronjob_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

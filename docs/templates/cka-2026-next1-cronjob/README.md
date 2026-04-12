@@ -13,7 +13,7 @@ These drafts cover the next recommended batch scheduling pack from the `cka-030+
 ## Current Template State
 
 - Question `1101` (`CronJob schedule, suspend, and history diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1101` has not yet been promoted into a facilitator pack.
+- Question `1101` has now been promoted into facilitator pack `cka-030`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended batch scheduling pack from the `cka-030+
 
 ## Recommended Promotion Order
 
-1. Promote question `1101` into facilitator pack `cka-030`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

@@ -349,6 +349,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-030",
+      "assetPath": "assets/exams/cka/030",
+      "name": "CKA 2026 Single Domain Drill - CronJob schedule, suspend, and history diagnostics",
+      "category": "CKA",
+      "description": "Standalone CronJob diagnostics drill focused on schedule, suspend state, concurrency policy, history retention, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }
