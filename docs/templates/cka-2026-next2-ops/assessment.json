@@ -107,6 +107,42 @@
           "weightage": 2
         }
       ]
+    },
+    {
+      "id": "604",
+      "namespace": "runtime-lab",
+      "machineHostname": "ckad9999",
+      "question": "A runtime diagnostics brief is incomplete and contains stale or unsafe CRI guidance.\n\nA ConfigMap named `runtime-diagnostics-brief` already exists in namespace `runtime-lab`. Repair it so that:\n- `targetNode` is `kind-cluster-control-plane`\n- `kubeletConfigCheck` is `sudo grep -n containerRuntimeEndpoint /var/lib/kubelet/config.yaml`\n- `runtimeSocketCheck` is `sudo test -S /run/containerd/containerd.sock`\n- `crictlInfoCheck` is `sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock info`\n- `crictlPodsCheck` is `sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock pods`\n- `runtimeServiceCheck` is `sudo systemctl status containerd`\n- save the repaired ConfigMap manifest to `/tmp/exam/q604/runtime-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q604/runtime-diagnostics-checklist.txt` with the sections `Kubelet Wiring`, `CRI Connectivity`, and `Runtime Service`\n\nDo not edit `/var/lib/kubelet/config.yaml`, do not restart kubelet, and do not stop or restart containerd during this drill.",
+      "concepts": [
+        "container-runtime",
+        "cri",
+        "kubelet",
+        "troubleshooting",
+        "operations"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The runtime diagnostics brief ConfigMap uses the intended node target, kubelet runtime-endpoint check, CRI socket inspection, crictl commands, and safe runtime service guidance",
+          "verificationScriptFile": "q604_s1_validate_runtime_diagnostics_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact kubelet wiring, CRI connectivity, and runtime service commands",
+          "verificationScriptFile": "q604_s2_validate_runtime_diagnostics_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe runtime remediation guidance is removed",
+          "verificationScriptFile": "q604_s3_validate_runtime_diagnostics_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
     }
   ]
 }
