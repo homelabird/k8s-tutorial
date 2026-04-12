@@ -3,6 +3,7 @@
 These drafts cover the next recommended ops-oriented packs from the `cka-022+` roadmap:
 
 1. kubelet and node NotReady troubleshooting
+2. PKI and certificate expiry troubleshooting
 
 ## Intended Use
 
@@ -14,18 +15,23 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 
 - Question `601` (`kubelet and node NotReady troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `601` has now been promoted into facilitator pack `cka-022`.
-- No further promotion work remains in this template set.
+- Question `602` (`PKI and certificate expiry troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- The remaining work is promoting `q602` into a real facilitator pack with discovery and runtime coverage.
 
 ## Important Constraints
 
 - Question `601` should stay in the `planning + evidence export` lane. It should validate exact node-condition checks, kubelet service checks, kubelet log hints, and safe maintenance notes without stopping or restarting kubelet.
 - Question `601` should export exact evidence files instead of attempting live node repair inside the drill.
 - Question `601` should avoid `reboot`, `systemctl restart kubelet`, and `kubectl drain` as corrective actions in the expected answer.
+- Question `602` should stay in the `planning + evidence export` lane. It should validate certificate inspection, kubeadm expiry checks, renewal planning, and readiness verification without running live certificate renewal.
+- Question `602` should export exact evidence files instead of rotating certificates or rewriting static pod manifests inside the drill.
+- Question `602` should avoid `kubeadm reset`, `systemctl restart kubelet`, and deleting manifests as corrective actions in the expected answer.
 
 ## Recommended Promotion Order
 
-1. No further promotion work remains in this template set.
+1. Question `602` because PKI and certificate expiry troubleshooting is now the highest-priority remaining operator workflow gap in the roadmap.
 
 ## Planned Facilitator Mapping
 
 - `q601` -> `facilitator/assets/exams/cka/022`
+- `q602` -> `facilitator/assets/exams/cka/023`
