@@ -29,31 +29,35 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-025` container runtime and CRI endpoint diagnostics
 - `cka-026` StorageClass and dynamic provisioning diagnostics
 - `cka-027` PodDisruptionBudget and drain planning
+- `cka-028` StatefulSet identity and headless service diagnostics
+- `cka-029` DaemonSet rollout and node coverage diagnostics
+- `cka-030` CronJob schedule, suspend, and history diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-030+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-031+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-030` are now promoted facilitator packs, and `cka-031+` remain roadmap-only candidates.
+`cka-011` through `cka-030` are now promoted facilitator packs, `cka-031` is now template-scaffolded, and `cka-032+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-031` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the CronJob diagnostics drill lands. | TBD | Backlog definition needed |
+| `cka-031` | Job completions, parallelism, and backoff diagnostics | Fills the remaining core batch-controller workflow gap after the CronJob drill while staying deterministic and single-domain. | Low | Template scaffolded, promote next |
 
 ## Proposed Build Order
 
-1. Define the next `cka-031` candidate from the remaining uncovered operator workflows
+1. Promote `cka-031` into a facilitator pack after validating the template contract
 
 ## Suggested Problem Shapes
 
-### Next candidate to be defined
+### `cka-031`: Job completions, parallelism, and backoff diagnostics
 
-- The next drill after `cka-030` should target one uncovered operator workflow that still fits the deterministic single-domain model.
-- It should follow the same planning/evidence-export contract unless a safe live remediation contract is clearly reproducible in local Podman/kind environments.
+- The next drill after `cka-030` should target the standalone `Job` controller gap that remains after the CronJob drill.
+- It should stay in the same planning/evidence-export lane: exact Job inventory, completions, parallelism, backoffLimit, pod evidence, and safe manifest review.
+- It should avoid deleting the Job, replacing it with a new Job, force-replacing manifests, or mutating status fields during the expected solution.
 
 ## Current Authoring State
 
@@ -72,6 +76,7 @@ Ship the next expansion wave as `cka-030+` drills that fill the remaining practi
 - `cka-028` is now promoted as facilitator pack `cka-028`, sourced from template question `901` in `docs/templates/cka-2026-next1-stateful`.
 - `cka-029` is now promoted as facilitator pack `cka-029`, sourced from template question `1001` in `docs/templates/cka-2026-next1-daemonset`.
 - `cka-030` is now promoted as facilitator pack `cka-030`, sourced from template question `1101` in `docs/templates/cka-2026-next1-cronjob`.
+- `cka-031` is now template-scaffolded as question `1201` in `docs/templates/cka-2026-next1-job` and is the next promotion candidate.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -87,6 +92,7 @@ Ship the next expansion wave as `cka-030+` drills that fill the remaining practi
 - The current `cka-027` contract stays planning-focused: it repairs exact PodDisruptionBudget inventory, node workload audit, safe cordon/drain preview guidance, and evidence export without executing a live drain or deleting disruption budgets.
 - The current `cka-028` contract stays planning-focused: it repairs exact StatefulSet inventory, headless Service inspection, ordinal DNS guidance, PVC inventory, and safe manifest review while exporting evidence without deleting StatefulSets or PVCs.
 - The current `cka-029` contract stays planning-focused: it repairs exact DaemonSet inventory, rollout status, node coverage, update-strategy guidance, and safe manifest review while exporting evidence without deleting the DaemonSet or cordoning nodes.
+- The current `cka-031` contract is defined as planning-focused: it repairs exact Job inventory, completions, parallelism, backoffLimit, pod evidence, and safe manifest review while exporting evidence without deleting the Job or creating a replacement Job.
 
 ## Design Constraints
 
