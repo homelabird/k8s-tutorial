@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-015
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-016
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -29,6 +29,7 @@ Supported suites:
   cka-013  Node troubleshooting and maintenance drill
   cka-014  Gateway API traffic management drill
   cka-015  Logs and resource usage triage drill
+  cka-016  Kubeadm lifecycle planning drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -196,6 +197,7 @@ resolve_suite_namespace() {
     cka-013) printf '%s\n' 'node-lab' ;;
     cka-014) printf '%s\n' 'gateway-lab' ;;
     cka-015) printf '%s\n' 'triage-lab' ;;
+    cka-016) printf '%s\n' 'kubeadm-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -565,6 +567,49 @@ done
 [ -s /tmp/exam/q1/ops-api-top.txt ]
 COMMAND
       ;;
+    cka-016)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: upgrade-brief
+  namespace: kubeadm-lab
+data:
+  currentVersion: v1.31.5
+  targetVersion: v1.31.8
+  controlPlaneEndpoint: k8s-api-server:6443
+  maintenanceNode: cp-maint-0
+  planCommand: kubeadm upgrade plan v1.31.8
+  applyCommand: kubeadm upgrade apply v1.31.8 -y
+  drainCommand: kubectl drain cp-maint-0 --ignore-daemonsets --delete-emptydir-data
+  uncordonCommand: kubectl uncordon cp-maint-0
+  backupPaths: /etc/kubernetes/admin.conf,/etc/kubernetes/pki,/var/lib/etcd
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_PLAN' > /tmp/exam/q1/upgrade-plan.txt
+Pre-flight
+- kubectl get nodes -o wide
+- kubeadm upgrade plan v1.31.8
+
+Backups
+- /etc/kubernetes/admin.conf
+- /etc/kubernetes/pki
+- /var/lib/etcd
+
+Execution
+- kubectl drain cp-maint-0 --ignore-daemonsets --delete-emptydir-data
+- kubeadm upgrade apply v1.31.8 -y
+
+Post-upgrade
+- kubectl uncordon cp-maint-0
+- kubectl get nodes -o wide
+EOF_PLAN
+kubectl get configmap upgrade-brief -n kubeadm-lab -o yaml > /tmp/exam/q1/upgrade-brief.yaml
+[ -s /tmp/exam/q1/upgrade-plan.txt ]
+[ -s /tmp/exam/q1/upgrade-brief.yaml ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -680,7 +725,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016
   exit 0
 fi
 
@@ -691,7 +736,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016)
 fi
 
 for suite in "${SUITES[@]}"; do
