@@ -211,6 +211,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-022",
+      "assetPath": "assets/exams/cka/022",
+      "name": "CKA 2026 Single Domain Drill - kubelet and node NotReady troubleshooting",
+      "category": "CKA",
+      "description": "Standalone node recovery planning drill focused on repairing node condition, kubelet service, runtime, and config guidance with exported evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

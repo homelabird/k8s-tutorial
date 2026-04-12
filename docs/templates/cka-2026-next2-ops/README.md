@@ -13,7 +13,8 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 ## Current Template State
 
 - Question `601` (`kubelet and node NotReady troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- The remaining work is promoting `q601` into a real facilitator pack with discovery and runtime coverage.
+- Question `601` has now been promoted into facilitator pack `cka-022`.
+- No further promotion work remains in this template set.
 
 ## Important Constraints
 
@@ -23,7 +24,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 
 ## Recommended Promotion Order
 
-1. Question `601` because kubelet and node NotReady troubleshooting is now the highest-priority remaining operator workflow gap in the roadmap.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

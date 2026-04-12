@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "node-health-lab",
+      "machineHostname": "ckad9999",
+      "question": "A node recovery brief is incomplete and contains unsafe kubelet remediation guidance.\n\nA ConfigMap named `node-recovery-brief` already exists in namespace `node-health-lab`. Repair it so that:\n- `targetNode` is `kind-cluster-worker`\n- `nodeConditionCheck` is `kubectl describe node kind-cluster-worker | grep -A3 Conditions`\n- `kubeletServiceCheck` is `sudo systemctl status kubelet`\n- `kubeletLogCheck` is `sudo journalctl -u kubelet -n 50`\n- `configCheck` is `sudo test -f /var/lib/kubelet/config.yaml`\n- `runtimeCheck` is `sudo crictl info`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/node-recovery-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/node-notready-checklist.txt` with the sections `Node Conditions`, `Kubelet Service`, and `Runtime and Config`\n\nDo not restart kubelet, do not reboot the node, and do not drain or uncordon nodes during this drill.",
+      "concepts": [
+        "nodes",
+        "kubelet",
+        "control-plane",
+        "troubleshooting",
+        "operations"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The node recovery brief ConfigMap uses the intended node target, kubelet checks, and runtime/config inspection commands",
+          "verificationScriptFile": "q1_s1_validate_node_recovery_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact node condition, kubelet, and runtime/config commands",
+          "verificationScriptFile": "q1_s2_validate_node_notready_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe node remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_node_recovery_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
