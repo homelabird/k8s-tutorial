@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-028
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-029
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -42,6 +42,7 @@ Supported suites:
   cka-026  StorageClass and dynamic provisioning diagnostics drill
   cka-027  PodDisruptionBudget and drain planning drill
   cka-028  StatefulSet identity and headless service diagnostics drill
+  cka-029  DaemonSet rollout and node coverage diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -222,6 +223,7 @@ resolve_suite_namespace() {
     cka-026) printf '%s\n' 'storageclass-lab' ;;
     cka-027) printf '%s\n' 'disruption-lab' ;;
     cka-028) printf '%s\n' 'stateful-lab' ;;
+    cka-029) printf '%s\n' 'daemonset-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1123,6 +1125,42 @@ kubectl get configmap stateful-identity-brief -n stateful-lab -o yaml > /tmp/exa
 [ -s /tmp/exam/q1/stateful-identity-checklist.txt ]
 COMMAND
       ;;
+    cka-029)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: daemonset-rollout-brief
+  namespace: daemonset-lab
+data:
+  targetDaemonSet: log-agent
+  daemonSetInventory: kubectl get daemonset log-agent -n daemonset-lab -o wide
+  rolloutStatusCheck: kubectl rollout status daemonset/log-agent -n daemonset-lab --timeout=180s
+  nodeInventory: kubectl get nodes -o wide
+  nodeCoverageCheck: kubectl get pods -n daemonset-lab -l app=log-agent -o wide
+  updateStrategyCheck: kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.spec.updateStrategy.type}'
+  safeManifestNote: "confirm desiredNumberScheduled matches running pods before changing DaemonSet manifests"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/daemonset-rollout-checklist.txt
+DaemonSet Inventory
+- kubectl get daemonset log-agent -n daemonset-lab -o wide
+- kubectl rollout status daemonset/log-agent -n daemonset-lab --timeout=180s
+
+Node Coverage
+- kubectl get nodes -o wide
+- kubectl get pods -n daemonset-lab -l app=log-agent -o wide
+
+Safe Rollout Review
+- kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.spec.updateStrategy.type}'
+- confirm desiredNumberScheduled matches running pods before changing DaemonSet manifests
+EOF_CHECKLIST
+kubectl get configmap daemonset-rollout-brief -n daemonset-lab -o yaml > /tmp/exam/q1/daemonset-rollout-brief.yaml
+[ -s /tmp/exam/q1/daemonset-rollout-brief.yaml ]
+[ -s /tmp/exam/q1/daemonset-rollout-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1238,7 +1276,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029
   exit 0
 fi
 
@@ -1249,7 +1287,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029)
 fi
 
 for suite in "${SUITES[@]}"; do
