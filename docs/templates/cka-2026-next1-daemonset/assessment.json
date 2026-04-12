@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1001",
+      "namespace": "daemonset-lab",
+      "machineHostname": "ckad9999",
+      "question": "A DaemonSet diagnostics brief is incomplete and contains stale or unsafe rollout guidance.\n\nA ConfigMap named `daemonset-rollout-brief` already exists in namespace `daemonset-lab`. Repair it so that:\n- `targetDaemonSet` is `log-agent`\n- `daemonSetInventory` is `kubectl get daemonset log-agent -n daemonset-lab -o wide`\n- `rolloutStatusCheck` is `kubectl rollout status daemonset/log-agent -n daemonset-lab --timeout=180s`\n- `nodeInventory` is `kubectl get nodes -o wide`\n- `nodeCoverageCheck` is `kubectl get pods -n daemonset-lab -l app=log-agent -o wide`\n- `updateStrategyCheck` is `kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.spec.updateStrategy.type}'`\n- `safeManifestNote` is `confirm desiredNumberScheduled matches running pods before changing DaemonSet manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1001/daemonset-rollout-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1001/daemonset-rollout-checklist.txt` with the sections `DaemonSet Inventory`, `Node Coverage`, and `Safe Rollout Review`\n\nDo not delete the DaemonSet, do not cordon nodes, and do not convert the workload into a Deployment during this drill.",
+      "concepts": [
+        "daemonset",
+        "rollout",
+        "node-coverage",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The DaemonSet diagnostics brief ConfigMap uses the intended workload target, rollout status check, node inventory, node coverage, and safe manifest guidance",
+          "verificationScriptFile": "q1001_s1_validate_daemonset_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact DaemonSet inventory, node coverage, and safe rollout review commands",
+          "verificationScriptFile": "q1001_s2_validate_daemonset_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe DaemonSet remediation guidance is removed",
+          "verificationScriptFile": "q1001_s3_validate_daemonset_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
