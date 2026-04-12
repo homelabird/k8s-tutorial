@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "autoscale-lab",
+      "machineHostname": "ckad9999",
+      "question": "Autoscaling for an API Deployment in namespace `autoscale-lab` is misconfigured.\n\nA Deployment `worker-api` and a HorizontalPodAutoscaler `worker-api-hpa` already exist. Repair the autoscaling configuration so that:\n- the HPA targets Deployment `worker-api`\n- `minReplicas` is `2`\n- `maxReplicas` is `5`\n- CPU utilization target is `60`\n- the `api` container in Deployment `worker-api` has a CPU request of `200m`\n- the repaired HPA manifest is saved to `/tmp/exam/q1/worker-api-hpa.yaml`\n\nDo not recreate the Deployment unless it is strictly required.",
+      "concepts": [
+        "hpa",
+        "autoscaling",
+        "deployments",
+        "resources"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "HPA targets the intended Deployment and uses the required replica bounds",
+          "verificationScriptFile": "q1_s1_validate_hpa_target.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "CPU autoscaling target and workload CPU request are configured correctly",
+          "verificationScriptFile": "q1_s2_validate_cpu_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired HPA manifest is saved to the expected file",
+          "verificationScriptFile": "q1_s3_validate_exported_manifest.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

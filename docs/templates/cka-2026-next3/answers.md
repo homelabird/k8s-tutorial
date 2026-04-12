@@ -5,34 +5,48 @@ Repair the `report-viewer` Deployment so it reads all runtime configuration from
 ```yaml
 kubectl set env deployment/report-viewer -n config-lab APP_MODE- REPORT_USER- REPORT_PASS-
 
-cat <<'EOF_PATCH' | kubectl apply -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: report-viewer
-  namespace: config-lab
-spec:
-  template:
-    spec:
-      containers:
-      - name: viewer
-        env:
-        - name: APP_MODE
-          valueFrom:
-            configMapKeyRef:
-              name: report-config
-              key: APP_MODE
-        - name: REPORT_USER
-          valueFrom:
-            secretKeyRef:
-              name: report-credentials
-              key: username
-        - name: REPORT_PASS
-          valueFrom:
-            secretKeyRef:
-              name: report-credentials
-              key: password
-EOF_PATCH
+kubectl patch deployment report-viewer -n config-lab --type strategic -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "viewer",
+            "env": [
+              {
+                "name": "APP_MODE",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "report-config",
+                    "key": "APP_MODE"
+                  }
+                }
+              },
+              {
+                "name": "REPORT_USER",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "report-credentials",
+                    "key": "username"
+                  }
+                }
+              },
+              {
+                "name": "REPORT_PASS",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "report-credentials",
+                    "key": "password"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}'
 ```
 
 Expected checks:
@@ -47,24 +61,7 @@ Expected checks:
 Repair the HPA and its workload resource contract.
 
 ```bash
-kubectl patch deployment worker-api -n autoscale-lab --type merge -p '{
-  "spec": {
-    "template": {
-      "spec": {
-        "containers": [
-          {
-            "name": "api",
-            "resources": {
-              "requests": {
-                "cpu": "200m"
-              }
-            }
-          }
-        ]
-      }
-    }
-  }
-}'
+kubectl set resources deployment worker-api -n autoscale-lab --containers=api --requests=cpu=200m
 
 cat <<'EOF_HPA' | kubectl apply -f -
 apiVersion: autoscaling/v2

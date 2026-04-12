@@ -206,6 +206,9 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-008` scheduling constraints
 - `cka-009` NetworkPolicy troubleshooting
 - `cka-010` persistent storage troubleshooting
+- `cka-011` ConfigMap and Secret repair
+- `cka-012` HPA troubleshooting
+- `cka-013` node troubleshooting and maintenance
 
 To check the runner wiring without starting the Podman stack:
 

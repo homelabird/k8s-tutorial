@@ -12,22 +12,22 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-008` scheduling constraints
 - `cka-009` NetworkPolicy troubleshooting
 - `cka-010` persistent storage troubleshooting
+- `cka-011` ConfigMap and Secret repair
+- `cka-012` HPA troubleshooting
+- `cka-013` node troubleshooting and maintenance
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship a second expansion wave as `cka-011+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-014+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, and `cka-013` are now scaffolded as draft templates under `docs/templates/cka-2026-next3/`. They are not promoted facilitator packs yet. `cka-014+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, and `cka-013` are now promoted facilitator packs. `cka-014+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-011` | ConfigMap and Secret repair | Basic workload configuration is still uncovered in the promoted drill set. | Low | Draft scaffolded; promote next |
-| `cka-012` | HorizontalPodAutoscaler troubleshooting | Autoscaling is a common exam workflow and currently missing. | Medium | Draft scaffolded; promote next |
-| `cka-013` | Node troubleshooting and maintenance | Adds `cordon`, `drain`, `uncordon`, and node readiness recovery. | Medium | Draft scaffolded; promote next |
 | `cka-014` | Gateway API traffic management | Covers the newer public curriculum direction beyond classic Ingress. | Medium | Build after `cka-011..013` |
 | `cka-015` | Logs and resource usage triage | Covers `kubectl logs`, `previous`, `top`, and fast operator diagnosis workflows. | Low | Build after `cka-014` |
 | `cka-016` | Kubeadm lifecycle / upgrade planning | High-value admin skill, but heavier to simulate correctly. | High | Keep as stretch goal |
@@ -35,13 +35,10 @@ Ship a second expansion wave as `cka-011+` drills that fills the remaining pract
 
 ## Proposed Build Order
 
-1. `cka-011` ConfigMap and Secret repair
-2. `cka-012` HPA troubleshooting
-3. `cka-013` node troubleshooting and maintenance
-4. `cka-014` Gateway API traffic management
-5. `cka-015` logs and resource usage triage
-6. `cka-016` kubeadm lifecycle planning
-7. `cka-017` CRD / operator installation checks
+1. `cka-014` Gateway API traffic management
+2. `cka-015` logs and resource usage triage
+3. `cka-016` kubeadm lifecycle planning
+4. `cka-017` CRD / operator installation checks
 
 ## Suggested Problem Shapes
 

@@ -15,8 +15,8 @@ These drafts cover the next three recommended packs from the `cka-011+` roadmap:
 ## Current Template State
 
 - Questions `301` (`ConfigMap/Secret`), `302` (`HPA`), and `303` (`node maintenance`) are fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- None of these drafts have been promoted into facilitator packs yet.
-- The expected promotion path is `q301 -> cka-011`, `q302 -> cka-012`, and `q303 -> cka-013`.
+- All three drafts have now been promoted into facilitator packs `cka-011` through `cka-013`.
+- The remaining work is no longer authoring. It is runtime/discovery coverage and deciding whether these single-domain drills should be bundled into a later multi-question pack.
 
 ## Important Constraints
 

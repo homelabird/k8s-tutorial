@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "node-lab",
+      "machineHostname": "ckad9999",
+      "question": "A node reserved for queue processing was left in maintenance mode.\n\nNamespace `node-lab` contains a Deployment `queue-consumer` pinned to nodes labeled `maintenance-lab=target`. The target node is currently unschedulable, so the workload is not running.\n\nReturn the labeled node to service so that `queue-consumer` becomes Running on the intended node pool.\n\nAlso save the output of `kubectl get node <target-node> -o wide` to `/tmp/exam/q303/node-status.txt`. Discover the target node by label; do not remove the label and do not retarget the Deployment to a different node.",
+      "concepts": [
+        "nodes",
+        "troubleshooting",
+        "maintenance",
+        "scheduling"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The maintenance target node is Ready and schedulable again",
+          "verificationScriptFile": "q1_s1_validate_node_schedulable.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "queue-consumer is Running on the labeled maintenance target node",
+          "verificationScriptFile": "q1_s2_validate_workload_placement.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "A node status report is saved for the recovered target node",
+          "verificationScriptFile": "q1_s3_validate_status_report.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

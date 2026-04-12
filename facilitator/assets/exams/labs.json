@@ -159,6 +159,36 @@
       "warmUpTimeInSeconds": 260,
       "difficulty": "Medium",
       "examDurationInMinutes": 90
+    },
+    {
+      "id": "cka-011",
+      "assetPath": "assets/exams/cka/011",
+      "name": "CKA 2026 Single Domain Drill - ConfigMap and Secret Repair",
+      "category": "CKA",
+      "description": "Standalone workload configuration repair drill focused on restoring ConfigMap and Secret references without hardcoding sensitive values.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-012",
+      "assetPath": "assets/exams/cka/012",
+      "name": "CKA 2026 Single Domain Drill - HPA Troubleshooting",
+      "category": "CKA",
+      "description": "Standalone autoscaling drill focused on repairing HPA target references, replica bounds, CPU utilization targets, and workload resource requests.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-013",
+      "assetPath": "assets/exams/cka/013",
+      "name": "CKA 2026 Single Domain Drill - Node Troubleshooting and Maintenance",
+      "category": "CKA",
+      "description": "Standalone node maintenance drill focused on restoring schedulability on the intended labeled node and proving workload placement after recovery.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }
