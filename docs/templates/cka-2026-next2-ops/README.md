@@ -4,6 +4,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 
 1. kubelet and node NotReady troubleshooting
 2. PKI and certificate expiry troubleshooting
+3. resource quota and LimitRange troubleshooting
 
 ## Intended Use
 
@@ -17,7 +18,8 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 - Question `601` has now been promoted into facilitator pack `cka-022`.
 - Question `602` (`PKI and certificate expiry troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `602` has now been promoted into facilitator pack `cka-023`.
-- No further promotion work remains in this template set.
+- Question `603` (`resource quota and LimitRange troubleshooting`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `603` has not yet been promoted and is planned as facilitator pack `cka-024`.
 
 ## Important Constraints
 
@@ -27,12 +29,16 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 - Question `602` should stay in the `planning + evidence export` lane. It should validate certificate inspection, kubeadm expiry checks, renewal planning, and readiness verification without running live certificate renewal.
 - Question `602` should export exact evidence files instead of rotating certificates or rewriting static pod manifests inside the drill.
 - Question `602` should avoid `kubeadm reset`, `systemctl restart kubelet`, and deleting manifests as corrective actions in the expected answer.
+- Question `603` should stay in the `planning + evidence export` lane. It should validate exact resource quota, LimitRange, workload sizing, and safe remediation guidance without deleting guardrail objects or mutating live workload replicas.
+- Question `603` should export exact evidence files instead of deleting quota objects or stripping requests and limits from workloads inside the drill.
+- Question `603` should avoid `kubectl delete resourcequota`, `kubectl delete limitrange`, and `kubectl scale deployment api -n quota-lab --replicas=0` as corrective actions in the expected answer.
 
 ## Recommended Promotion Order
 
-1. No further promotion work remains in this template set.
+1. `q603` -> `facilitator/assets/exams/cka/024`
 
 ## Planned Facilitator Mapping
 
 - `q601` -> `facilitator/assets/exams/cka/022`
 - `q602` -> `facilitator/assets/exams/cka/023`
+- `q603` -> `facilitator/assets/exams/cka/024`
