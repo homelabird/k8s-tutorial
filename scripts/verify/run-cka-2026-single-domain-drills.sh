@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-010
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-013
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -24,6 +24,9 @@ Supported suites:
   cka-008  Scheduling constraints drill
   cka-009  NetworkPolicy troubleshooting drill
   cka-010  Persistent storage troubleshooting drill
+  cka-011  ConfigMap and Secret repair drill
+  cka-012  HPA troubleshooting drill
+  cka-013  Node troubleshooting and maintenance drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -186,6 +189,9 @@ resolve_suite_namespace() {
     cka-008) printf '%s\n' 'scheduling-lab' ;;
     cka-009) printf '%s\n' 'netpol-lab' ;;
     cka-010) printf '%s\n' 'storage-lab' ;;
+    cka-011) printf '%s\n' 'config-lab' ;;
+    cka-012) printf '%s\n' 'autoscale-lab' ;;
+    cka-013) printf '%s\n' 'node-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -366,6 +372,93 @@ EOF_PVC
 kubectl rollout status deployment/reporting-app -n storage-lab --timeout=180s
 COMMAND
       ;;
+
+    cka-011)
+      cat <<'COMMAND'
+kubectl set env deployment/report-viewer -n config-lab APP_MODE- REPORT_USER- REPORT_PASS-
+kubectl patch deployment report-viewer -n config-lab --type strategic -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "viewer",
+            "env": [
+              {
+                "name": "APP_MODE",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "report-config",
+                    "key": "APP_MODE"
+                  }
+                }
+              },
+              {
+                "name": "REPORT_USER",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "report-credentials",
+                    "key": "username"
+                  }
+                }
+              },
+              {
+                "name": "REPORT_PASS",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "report-credentials",
+                    "key": "password"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}'
+kubectl rollout status deployment/report-viewer -n config-lab --timeout=180s
+COMMAND
+      ;;
+    cka-012)
+      cat <<'COMMAND'
+kubectl set resources deployment worker-api -n autoscale-lab --containers=api --requests=cpu=200m
+cat <<'EOF_HPA' | kubectl apply -f -
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker-api-hpa
+  namespace: autoscale-lab
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker-api
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+EOF_HPA
+mkdir -p /tmp/exam/q1
+kubectl get hpa worker-api-hpa -n autoscale-lab -o yaml > /tmp/exam/q1/worker-api-hpa.yaml
+kubectl rollout status deployment/worker-api -n autoscale-lab --timeout=180s
+COMMAND
+      ;;
+    cka-013)
+      cat <<'COMMAND'
+TARGET_NODE="$(kubectl get nodes -l maintenance-lab=target -o jsonpath='{.items[0].metadata.name}')"
+kubectl uncordon "$TARGET_NODE"
+kubectl rollout status deployment/queue-consumer -n node-lab --timeout=180s
+mkdir -p /tmp/exam/q1
+kubectl get node "$TARGET_NODE" -o wide > /tmp/exam/q1/node-status.txt
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -481,7 +574,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013
   exit 0
 fi
 
@@ -492,7 +585,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013)
 fi
 
 for suite in "${SUITES[@]}"; do

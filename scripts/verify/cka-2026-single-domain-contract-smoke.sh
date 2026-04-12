@@ -5,9 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RUNNER="$ROOT_DIR/scripts/verify/run-cka-2026-single-domain-drills.sh"
 LABS_JSON="$ROOT_DIR/facilitator/assets/exams/labs.json"
 FACILITATOR_README="$ROOT_DIR/facilitator/README.md"
-TEMPLATE_README="$ROOT_DIR/docs/templates/cka-2026-next5/README.md"
+TEMPLATE_README_NEXT5="$ROOT_DIR/docs/templates/cka-2026-next5/README.md"
+TEMPLATE_README_NEXT3="$ROOT_DIR/docs/templates/cka-2026-next3/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -47,7 +48,8 @@ for suite in "${EXPECTED_SUITES[@]}"; do
   grep -Fq -- "$suite" "$FACILITATOR_README"
 done
 
-grep -Fq 'All five drafts have now been promoted into facilitator packs `cka-006` through `cka-010`.' "$TEMPLATE_README"
+grep -Fq 'All five drafts have now been promoted into facilitator packs `cka-006` through `cka-010`.' "$TEMPLATE_README_NEXT5"
+grep -Fq 'All three drafts have now been promoted into facilitator packs `cka-011` through `cka-013`.' "$TEMPLATE_README_NEXT3"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'

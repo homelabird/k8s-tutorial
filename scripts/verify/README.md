@@ -17,7 +17,7 @@ This directory contains local regression scripts for the exam stack.
 - `cka-2026-diagnostics-pack-smoke.sh`
   - Exercises the archive path with a synthetic diagnostics directory so `pack-cka-2026-diagnostics.sh` keeps including the expected summary, lifecycle, host log, and metadata files in a shareable tarball, then verifies that the extracted `summary.txt` still renders cleanly through the markdown summary script.
 - `cka-2026-single-domain-contract-smoke.sh`
-  - Verifies that the promoted single-domain `cka-006` through `cka-010` drills stay aligned across the runner inventory, facilitator `labs.json`, facilitator README listing, and promoted template docs without starting the Podman stack.
+  - Verifies that the promoted single-domain `cka-006` through `cka-013` drills stay aligned across the runner inventory, facilitator `labs.json`, facilitator README listing, and promoted template docs without starting the Podman stack.
 - `cka-2026-workflow-contract-smoke.sh`
   - Verifies the self-hosted workflow contract without running Podman, checking that `.github/workflows/cka-2026-regressions.yml` still exposes the expected manual inputs, timeout guard, diagnostics packing gates, summary publication, and artifact upload steps in the expected order.
 - `review-batch-workflow-contract-smoke.sh`
@@ -31,7 +31,7 @@ This directory contains local regression scripts for the exam stack.
 - `run-cka-2026-regressions.sh`
   - Runs the selected CKA 2026 regressions sequentially.
 - `run-cka-2026-single-domain-drills.sh`
-  - Runs the promoted single-domain `cka-006` through `cka-010` drills sequentially, resetting the local Podman stack and solving each drill through the shared jumphost before evaluation.
+  - Runs the promoted single-domain `cka-006` through `cka-013` drills sequentially, resetting the local Podman stack and solving each drill through the shared jumphost before evaluation.
 - `run-verify-contract-smokes.sh`
   - Runs the lightweight diagnostics/workflow/browser/review-handoff contract smokes sequentially, including both GitHub workflow contract checks, with `--list` support for quick inventory checks.
 - `run-review-batch-checks.sh`
@@ -66,7 +66,7 @@ Run the promoted single-domain CKA 2026 drills:
 Run only one single-domain drill:
 
 ```bash
-./scripts/verify/run-cka-2026-single-domain-drills.sh cka-010
+./scripts/verify/run-cka-2026-single-domain-drills.sh cka-013
 ```
 
 List the available single-domain drill suites:
