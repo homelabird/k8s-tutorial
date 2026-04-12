@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-021
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-022
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -35,6 +35,7 @@ Supported suites:
   cka-019  scheduler and controller-manager troubleshooting drill
   cka-020  service and pod connectivity diagnostics drill
   cka-021  service exposure and endpoint debugging drill
+  cka-022  kubelet and node NotReady troubleshooting drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -208,6 +209,7 @@ resolve_suite_namespace() {
     cka-019) printf '%s\n' 'controlplane-lab' ;;
     cka-020) printf '%s\n' 'connectivity-lab' ;;
     cka-021) printf '%s\n' 'service-debug-lab' ;;
+    cka-022) printf '%s\n' 'node-health-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -852,6 +854,41 @@ kubectl get configmap service-exposure-brief -n service-debug-lab -o yaml > /tmp
 [ -s /tmp/exam/q1/service-exposure-checklist.txt ]
 COMMAND
       ;;
+    cka-022)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-recovery-brief
+  namespace: node-health-lab
+data:
+  targetNode: kind-cluster-worker
+  nodeConditionCheck: kubectl describe node kind-cluster-worker | grep -A3 Conditions
+  kubeletServiceCheck: sudo systemctl status kubelet
+  kubeletLogCheck: sudo journalctl -u kubelet -n 50
+  configCheck: sudo test -f /var/lib/kubelet/config.yaml
+  runtimeCheck: sudo crictl info
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/node-notready-checklist.txt
+Node Conditions
+- kubectl get nodes
+- kubectl describe node kind-cluster-worker | grep -A3 Conditions
+
+Kubelet Service
+- sudo systemctl status kubelet
+- sudo journalctl -u kubelet -n 50
+
+Runtime and Config
+- sudo crictl info
+- sudo test -f /var/lib/kubelet/config.yaml
+EOF_CHECKLIST
+kubectl get configmap node-recovery-brief -n node-health-lab -o yaml > /tmp/exam/q1/node-recovery-brief.yaml
+[ -s /tmp/exam/q1/node-recovery-brief.yaml ]
+[ -s /tmp/exam/q1/node-notready-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -967,7 +1004,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022
   exit 0
 fi
 
@@ -978,7 +1015,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022)
 fi
 
 for suite in "${SUITES[@]}"; do
