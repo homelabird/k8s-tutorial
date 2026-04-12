@@ -18,8 +18,8 @@ These drafts cover the next four recommended packs from the `cka-014+` roadmap:
 - Questions `401` (`Gateway API`), `402` (`logs/resource triage`), and `403` (`kubeadm lifecycle planning`) are fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
 - Question `401` has now been promoted into facilitator pack `cka-014`.
 - Question `402` has now been promoted into facilitator pack `cka-015`.
-- Question `403` is now scaffolded in the template wave and should be promoted only after its planning/export contract is proven in facilitator runtime.
-- Question `404` remains roadmap-only and should be authored after `q403` is stable.
+- Question `403` has now been promoted into facilitator pack `cka-016`.
+- Question `404` remains roadmap-only and should be authored after `cka-016` runtime and discovery coverage are stable.
 
 ## Important Constraints
 
@@ -31,8 +31,7 @@ These drafts cover the next four recommended packs from the `cka-014+` roadmap:
 
 ## Recommended Promotion Order
 
-1. Question 403 (`kubeadm lifecycle`) once the planning/export contract is judged good enough to promote as `cka-016`.
-2. Question 404 (`CRD/operator checks`) as the final stretch goal in this wave.
+1. Question 404 (`CRD/operator checks`) as the final stretch goal in this wave.
 
 ## Planned Facilitator Mapping
 

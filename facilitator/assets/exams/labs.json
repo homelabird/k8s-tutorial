@@ -151,6 +151,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-016",
+      "assetPath": "assets/exams/cka/016",
+      "name": "CKA 2026 Single Domain Drill - Kubeadm Lifecycle Planning",
+      "category": "CKA",
+      "description": "Standalone kubeadm lifecycle planning drill focused on repairing upgrade sequencing, backup scope, and exported control-plane maintenance evidence.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",
