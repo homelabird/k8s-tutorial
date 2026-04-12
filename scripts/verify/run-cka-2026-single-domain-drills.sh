@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-017
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-018
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -31,6 +31,7 @@ Supported suites:
   cka-015  Logs and resource usage triage drill
   cka-016  Kubeadm lifecycle planning drill
   cka-017  CRD and operator installation checks drill
+  cka-018  etcd backup and restore workflow drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -200,6 +201,7 @@ resolve_suite_namespace() {
     cka-015) printf '%s\n' 'triage-lab' ;;
     cka-016) printf '%s\n' 'kubeadm-lab' ;;
     cka-017) printf '%s\n' 'operator-lab' ;;
+    cka-018) printf '%s\n' 'etcd-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -691,6 +693,43 @@ kubectl get crd widgets.training.cka.io -o yaml > /tmp/exam/q1/widget-crd.yaml
 [ -s /tmp/exam/q1/widget-crd.yaml ]
 COMMAND
       ;;
+    cka-018)
+      cat <<'COMMAND'
+cat <<'EOF_PLAN' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: etcd-recovery-plan
+  namespace: etcd-lab
+data:
+  snapshotPath: /var/backups/etcd/snapshot.db
+  endpoint: https://127.0.0.1:2379
+  caPath: /etc/kubernetes/pki/etcd/ca.crt
+  certPath: /etc/kubernetes/pki/etcd/server.crt
+  keyPath: /etc/kubernetes/pki/etcd/server.key
+  snapshotCommand: ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot save /var/backups/etcd/snapshot.db
+  restoreCommand: ETCDCTL_API=3 etcdctl snapshot restore /var/backups/etcd/snapshot.db --data-dir=/var/lib/etcd-restore
+  staticPodManifest: /etc/kubernetes/manifests/etcd.yaml
+EOF_PLAN
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/etcd-recovery-checklist.txt
+Snapshot
+- ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot save /var/backups/etcd/snapshot.db
+
+Restore
+- ETCDCTL_API=3 etcdctl snapshot restore /var/backups/etcd/snapshot.db --data-dir=/var/lib/etcd-restore
+
+Static Pod Update
+- edit /etc/kubernetes/manifests/etcd.yaml to point at /var/lib/etcd-restore
+
+Verification
+- ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key endpoint health
+EOF_CHECKLIST
+kubectl get configmap etcd-recovery-plan -n etcd-lab -o yaml > /tmp/exam/q1/etcd-recovery-plan.yaml
+[ -s /tmp/exam/q1/etcd-recovery-plan.yaml ]
+[ -s /tmp/exam/q1/etcd-recovery-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -806,7 +845,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018
   exit 0
 fi
 
@@ -817,7 +856,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018)
 fi
 
 for suite in "${SUITES[@]}"; do
