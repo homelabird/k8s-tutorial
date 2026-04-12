@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-024
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-025
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -38,6 +38,7 @@ Supported suites:
   cka-022  kubelet and node NotReady troubleshooting drill
   cka-023  PKI and certificate expiry troubleshooting drill
   cka-024  Resource quota and LimitRange troubleshooting drill
+  cka-025  Container runtime and CRI endpoint diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -214,6 +215,7 @@ resolve_suite_namespace() {
     cka-022) printf '%s\n' 'node-health-lab' ;;
     cka-023) printf '%s\n' 'pki-lab' ;;
     cka-024) printf '%s\n' 'quota-lab' ;;
+    cka-025) printf '%s\n' 'runtime-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -964,6 +966,42 @@ kubectl get configmap resource-guardrails-brief -n quota-lab -o yaml > /tmp/exam
 [ -s /tmp/exam/q1/resource-quota-checklist.txt ]
 COMMAND
       ;;
+    cka-025)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: runtime-diagnostics-brief
+  namespace: runtime-lab
+data:
+  targetNode: kind-cluster-control-plane
+  kubeletConfigCheck: sudo grep -n containerRuntimeEndpoint /var/lib/kubelet/config.yaml
+  runtimeSocketCheck: sudo test -S /run/containerd/containerd.sock
+  crictlInfoCheck: sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock info
+  crictlPodsCheck: sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock pods
+  runtimeServiceCheck: sudo systemctl status containerd
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/runtime-diagnostics-checklist.txt
+Kubelet Wiring
+- sudo grep -n containerRuntimeEndpoint /var/lib/kubelet/config.yaml
+- sudo test -f /var/lib/kubelet/config.yaml
+
+CRI Connectivity
+- sudo test -S /run/containerd/containerd.sock
+- sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock info
+- sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock pods
+
+Runtime Service
+- sudo systemctl status containerd
+- sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock ps -a
+EOF_CHECKLIST
+kubectl get configmap runtime-diagnostics-brief -n runtime-lab -o yaml > /tmp/exam/q1/runtime-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/runtime-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/runtime-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1079,7 +1117,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025
   exit 0
 fi
 
@@ -1090,7 +1128,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025)
 fi
 
 for suite in "${SUITES[@]}"; do
