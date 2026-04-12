@@ -171,6 +171,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-018",
+      "assetPath": "assets/exams/cka/018",
+      "name": "CKA 2026 Single Domain Drill - etcd Backup and Restore Workflow",
+      "category": "CKA",
+      "description": "Standalone etcd recovery planning drill focused on exact snapshot and restore commands, static pod handoff, and exported evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

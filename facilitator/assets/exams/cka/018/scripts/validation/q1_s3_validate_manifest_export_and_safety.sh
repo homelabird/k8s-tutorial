@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-EXPORT_FILE="/tmp/exam/q405/etcd-recovery-plan.yaml"
-CHECKLIST_FILE="/tmp/exam/q405/etcd-recovery-checklist.txt"
+EXPORT_FILE="/tmp/exam/q1/etcd-recovery-plan.yaml"
+CHECKLIST_FILE="/tmp/exam/q1/etcd-recovery-checklist.txt"
 
 [ -f "$EXPORT_FILE" ] || { echo "Expected manifest export at $EXPORT_FILE"; exit 1; }
 [ -f "$CHECKLIST_FILE" ] || { echo "Expected checklist export at $CHECKLIST_FILE"; exit 1; }

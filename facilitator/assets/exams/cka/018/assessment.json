@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "etcd-lab",
+      "machineHostname": "ckad9999",
+      "question": "An etcd recovery planning brief is incomplete and contains unsafe backup and restore details.\n\nA ConfigMap named `etcd-recovery-plan` already exists in namespace `etcd-lab`. Repair it so that:\n- `snapshotPath` is `/var/backups/etcd/snapshot.db`\n- `endpoint` is `https://127.0.0.1:2379`\n- `caPath` is `/etc/kubernetes/pki/etcd/ca.crt`\n- `certPath` is `/etc/kubernetes/pki/etcd/server.crt`\n- `keyPath` is `/etc/kubernetes/pki/etcd/server.key`\n- `snapshotCommand` is `ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot save /var/backups/etcd/snapshot.db`\n- `restoreCommand` is `ETCDCTL_API=3 etcdctl snapshot restore /var/backups/etcd/snapshot.db --data-dir=/var/lib/etcd-restore`\n- `staticPodManifest` is `/etc/kubernetes/manifests/etcd.yaml`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/etcd-recovery-plan.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/etcd-recovery-checklist.txt` with the sections `Snapshot`, `Restore`, `Static Pod Update`, and `Verification`\n\nDo not attempt a live restore and do not delete `/var/lib/etcd` during this drill.",
+      "concepts": [
+        "etcd",
+        "backup",
+        "restore",
+        "control-plane",
+        "disaster-recovery"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The recovery plan ConfigMap uses the intended snapshot, certificate, endpoint, and restore contract",
+          "verificationScriptFile": "q1_s1_validate_recovery_plan_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported plain-text checklist contains the required sections and exact backup and restore commands",
+          "verificationScriptFile": "q1_s2_validate_recovery_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe restore paths are removed",
+          "verificationScriptFile": "q1_s3_validate_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

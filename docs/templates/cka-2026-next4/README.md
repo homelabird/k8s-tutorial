@@ -21,6 +21,7 @@ These drafts cover the next five recommended packs from the `cka-014+` roadmap:
 - Question `402` has now been promoted into facilitator pack `cka-015`.
 - Question `403` has now been promoted into facilitator pack `cka-016`.
 - Question `404` has now been promoted into facilitator pack `cka-017`.
+- Question `405` has now been promoted into facilitator pack `cka-018`.
 
 ## Important Constraints
 
@@ -34,7 +35,7 @@ These drafts cover the next five recommended packs from the `cka-014+` roadmap:
 
 ## Recommended Promotion Order
 
-The `cka-014` through `cka-017` wave is now fully promoted. Question `405` is scaffolded next and should become facilitator pack `cka-018`.
+The `cka-014` through `cka-018` wave is now fully promoted.
 
 ## Planned Facilitator Mapping
 
