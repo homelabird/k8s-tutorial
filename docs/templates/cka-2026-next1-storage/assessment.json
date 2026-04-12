@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "701",
+      "namespace": "storageclass-lab",
+      "machineHostname": "ckad9999",
+      "question": "A dynamic provisioning brief is incomplete and contains stale or unsafe StorageClass guidance.\n\nA ConfigMap named `dynamic-provisioning-brief` already exists in namespace `storageclass-lab`. Repair it so that:\n- `targetNamespace` is `storageclass-lab`\n- `targetPVC` is `reports-pvc`\n- `targetStorageClass` is `exam-standard`\n- `storageClassInventory` is `kubectl get storageclass`\n- `defaultClassCheck` is `kubectl get storageclass -o custom-columns=NAME:.metadata.name,DEFAULT:.metadata.annotations.storageclass\\\\.kubernetes\\\\.io/is-default-class`\n- `pvcDescribe` is `kubectl describe pvc reports-pvc -n storageclass-lab`\n- `workloadDescribe` is `kubectl describe pod reports-api -n storageclass-lab`\n- `eventCheck` is `kubectl get events -n storageclass-lab --sort-by=.lastTimestamp`\n- `recommendedManifestLine` is `storageClassName: exam-standard`\n- save the repaired ConfigMap manifest to `/tmp/exam/q701/dynamic-provisioning-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q701/dynamic-provisioning-checklist.txt` with the sections `StorageClass Inventory`, `PVC Analysis`, and `Safe Manifest Fix`\n\nDo not delete StorageClass objects, do not patch cluster-scoped provisioners, and do not delete the PVC during this drill.",
+      "concepts": [
+        "storageclass",
+        "dynamic-provisioning",
+        "pvc",
+        "troubleshooting",
+        "operations"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The dynamic provisioning brief ConfigMap uses the intended namespace target, PVC target, StorageClass target, storage inspection commands, and safe manifest guidance",
+          "verificationScriptFile": "q701_s1_validate_dynamic_provisioning_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact StorageClass inventory, PVC analysis, and safe manifest guidance commands",
+          "verificationScriptFile": "q701_s2_validate_dynamic_provisioning_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe storage remediation guidance is removed",
+          "verificationScriptFile": "q701_s3_validate_dynamic_provisioning_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
