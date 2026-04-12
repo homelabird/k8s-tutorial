@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-014
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-015
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -28,6 +28,7 @@ Supported suites:
   cka-012  HPA troubleshooting drill
   cka-013  Node troubleshooting and maintenance drill
   cka-014  Gateway API traffic management drill
+  cka-015  Logs and resource usage triage drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -194,6 +195,7 @@ resolve_suite_namespace() {
     cka-012) printf '%s\n' 'autoscale-lab' ;;
     cka-013) printf '%s\n' 'node-lab' ;;
     cka-014) printf '%s\n' 'gateway-lab' ;;
+    cka-015) printf '%s\n' 'triage-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -513,6 +515,56 @@ mkdir -p /tmp/exam/q1
 kubectl get httproute app-routes -n gateway-lab -o yaml > /tmp/exam/q1/app-routes.yaml
 COMMAND
       ;;
+    cka-015)
+      cat <<'COMMAND'
+mkdir -p /tmp/exam/q1
+BROKEN_POD=""
+for attempt in $(seq 1 30); do
+  BROKEN_POD="$(kubectl get pods -n triage-lab -l app=ops-api -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+  if [ -n "$BROKEN_POD" ] && kubectl logs "$BROKEN_POD" -n triage-lab -c log-agent --previous > /tmp/exam/q1/log-agent-previous.log 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+[ -s /tmp/exam/q1/log-agent-previous.log ]
+kubectl patch deployment ops-api -n triage-lab --type strategic -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "api",
+            "ports": [{"containerPort": 80}],
+            "resources": {
+              "requests": {"cpu": "50m", "memory": "128Mi"},
+              "limits": {"cpu": "100m", "memory": "256Mi"}
+            },
+            "livenessProbe": {
+              "httpGet": {"path": "/", "port": 80},
+              "initialDelaySeconds": 3,
+              "periodSeconds": 3
+            }
+          },
+          {
+            "name": "log-agent",
+            "env": [{"name": "LOG_TARGET", "value": "/var/log/ops/app.log"}]
+          }
+        ]
+      }
+    }
+  }
+}'
+kubectl rollout status deployment/ops-api -n triage-lab --timeout=180s
+for attempt in $(seq 1 30); do
+  POD_NAME="$(kubectl get pods -n triage-lab -l app=ops-api -o jsonpath='{range .items[*]}{.metadata.name}{"|"}{.metadata.deletionTimestamp}{"|"}{.status.phase}{"\n"}{end}' | awk -F'|' '$2=="" && $3=="Running" {print $1; exit}')"
+  if [ -n "$POD_NAME" ] && kubectl top pod "$POD_NAME" -n triage-lab --containers > /tmp/exam/q1/ops-api-top.txt 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+[ -s /tmp/exam/q1/ops-api-top.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -594,7 +646,7 @@ run_suite_with_timeout() {
   started_at="$(date +%s)"
   set +e
   if [ "$SUITE_TIMEOUT_SECONDS" -gt 0 ] && command -v timeout >/dev/null 2>&1; then
-    timeout --foreground "${SUITE_TIMEOUT_SECONDS}s" bash -lc "$(printf '%q ' declare -f log require_command compose_cmd cleanup wait_for_http wait_for_health wait_for_exam_status wait_for_evaluated wait_for_no_current_exam wait_for_no_inner_clusters shared_exec run_suite); CURRENT_EXAM=''; ROOT_DIR=$(printf '%q' "$ROOT_DIR"); BASE_URL=$(printf '%q' "$BASE_URL"); HTTP_WAIT_ATTEMPTS=$(printf '%q' "$HTTP_WAIT_ATTEMPTS"); HEALTH_WAIT_ATTEMPTS=$(printf '%q' "$HEALTH_WAIT_ATTEMPTS"); EXAM_STATUS_WAIT_ATTEMPTS=$(printf '%q' "$EXAM_STATUS_WAIT_ATTEMPTS"); EVALUATED_WAIT_ATTEMPTS=$(printf '%q' "$EVALUATED_WAIT_ATTEMPTS"); CLEANUP_WAIT_ATTEMPTS=$(printf '%q' "$CLEANUP_WAIT_ATTEMPTS"); trap cleanup EXIT; run_suite $(printf '%q' "$suite") $(printf '%q' "$expected_namespace") $(printf '%q' "$solve_command")"
+    timeout --foreground "${SUITE_TIMEOUT_SECONDS}s" bash -lc "$(printf '%q ' declare -f log require_command compose_cmd cleanup wait_for_http wait_for_health wait_for_exam_status wait_for_evaluated wait_for_no_current_exam wait_for_no_inner_clusters shared_exec post_solve_check run_suite); CURRENT_EXAM=''; ROOT_DIR=$(printf '%q' "$ROOT_DIR"); BASE_URL=$(printf '%q' "$BASE_URL"); HTTP_WAIT_ATTEMPTS=$(printf '%q' "$HTTP_WAIT_ATTEMPTS"); HEALTH_WAIT_ATTEMPTS=$(printf '%q' "$HEALTH_WAIT_ATTEMPTS"); EXAM_STATUS_WAIT_ATTEMPTS=$(printf '%q' "$EXAM_STATUS_WAIT_ATTEMPTS"); EVALUATED_WAIT_ATTEMPTS=$(printf '%q' "$EVALUATED_WAIT_ATTEMPTS"); CLEANUP_WAIT_ATTEMPTS=$(printf '%q' "$CLEANUP_WAIT_ATTEMPTS"); trap cleanup EXIT; run_suite $(printf '%q' "$suite") $(printf '%q' "$expected_namespace") $(printf '%q' "$solve_command")"
     exit_code=$?
   else
     run_suite "$suite" "$expected_namespace" "$solve_command"
@@ -628,7 +680,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015
   exit 0
 fi
 
@@ -639,7 +691,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015)
 fi
 
 for suite in "${SUITES[@]}"; do
