@@ -191,6 +191,16 @@
       "examDurationInMinutes": 20
     },
     {
+      "id": "cka-020",
+      "assetPath": "assets/exams/cka/020",
+      "name": "CKA 2026 Single Domain Drill - Service and Pod Connectivity Diagnostics",
+      "category": "CKA",
+      "description": "Standalone connectivity diagnostics drill focused on repairing service, headless service, pod DNS, and exact probe guidance with exported evidence artifacts.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
+    },
+    {
       "id": "cka-001",
       "assetPath": "assets/exams/cka/001",
       "name": "CKA Practice Lab - Core Concepts",

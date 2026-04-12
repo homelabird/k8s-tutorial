@@ -21,36 +21,27 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-017` CRD and operator installation checks
 - `cka-018` etcd backup and restore workflow
 - `cka-019` scheduler / controller-manager troubleshooting
+- `cka-020` service and pod connectivity diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-020+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-021+` drills that fills the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, and `cka-019` are now promoted facilitator packs. `cka-020` is template-scaffolded, and `cka-021+` remain roadmap-only candidates.
+`cka-011`, `cka-012`, `cka-013`, `cka-014`, `cka-015`, `cka-016`, `cka-017`, `cka-018`, `cka-019`, and `cka-020` are now promoted facilitator packs. `cka-021+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-020` | service and pod connectivity diagnostics | Covers the remaining pod-to-pod and service reachability gap with evidence export and deterministic contracts. | Medium | Highest priority |
-| `cka-021` | service exposure and endpoint debugging | Adds a focused drill for broken Service selectors, endpoints, and traffic exposure without overlapping ingress drills. | Low | Recommended |
+| `cka-021` | service exposure and endpoint debugging | Adds a focused drill for broken Service selectors, endpoints, and traffic exposure without overlapping ingress drills. | Low | Highest priority |
 
 ## Proposed Build Order
 
-1. `cka-020` service and pod connectivity diagnostics
-2. `cka-021` service exposure and endpoint debugging
+1. `cka-021` service exposure and endpoint debugging
 
 ## Suggested Problem Shapes
-
-### `cka-020` service and pod connectivity diagnostics
-
-- Pods and Services exist, but the connectivity brief, probe path, or expected reachability matrix is wrong.
-- Candidate verifies:
-  - pod-to-pod and pod-to-service paths are repaired
-  - exported evidence captures both the failing and repaired connectivity state
-  - validation stays deterministic without depending on external traffic generators
 
 ### `cka-021` service exposure and endpoint debugging
 
@@ -66,12 +57,12 @@ Ship the next expansion wave as `cka-020+` drills that fills the remaining pract
 - `cka-017` is now promoted as facilitator pack `cka-017`, sourced from template question `404` in `docs/templates/cka-2026-next4`.
 - `cka-018` is now promoted as facilitator pack `cka-018`, sourced from template question `405` in `docs/templates/cka-2026-next4`.
 - `cka-019` is now promoted as facilitator pack `cka-019`, sourced from template question `501` in `docs/templates/cka-2026-next3-ops`.
-- `cka-020` is now template-scaffolded as question `502` in `docs/templates/cka-2026-next3-ops`.
+- `cka-020` is now promoted as facilitator pack `cka-020`, sourced from template question `502` in `docs/templates/cka-2026-next3-ops`.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
 - The current `cka-018` contract stays planning-focused: it validates exact `etcdctl` snapshot/restore commands, static pod manifest handoff, and evidence export without performing a live restore.
 - The current `cka-019` contract stays planning-focused: it repairs exact scheduler/controller-manager manifest paths, health endpoints, kubeconfig references, and evidence export without touching live static Pods.
-- The current `cka-020` template stays evidence-export focused: it repairs exact service, headless service, pod DNS, and probe commands without mutating live selectors or workloads.
+- The current `cka-020` contract stays evidence-export focused: it repairs exact service, headless service, pod DNS, and probe commands without mutating live selectors or workloads.
 
 ## Design Constraints
 
@@ -82,7 +73,7 @@ Ship the next expansion wave as `cka-020+` drills that fills the remaining pract
 
 ## Exit Criteria
 
-A `cka-020+` drill should be considered ready only when all of the following are true:
+A `cka-021+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
