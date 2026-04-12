@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-016
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-017
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -30,6 +30,7 @@ Supported suites:
   cka-014  Gateway API traffic management drill
   cka-015  Logs and resource usage triage drill
   cka-016  Kubeadm lifecycle planning drill
+  cka-017  CRD and operator installation checks drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -198,6 +199,7 @@ resolve_suite_namespace() {
     cka-014) printf '%s\n' 'gateway-lab' ;;
     cka-015) printf '%s\n' 'triage-lab' ;;
     cka-016) printf '%s\n' 'kubeadm-lab' ;;
+    cka-017) printf '%s\n' 'operator-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -610,6 +612,85 @@ kubectl get configmap upgrade-brief -n kubeadm-lab -o yaml > /tmp/exam/q1/upgrad
 [ -s /tmp/exam/q1/upgrade-brief.yaml ]
 COMMAND
       ;;
+    cka-017)
+      cat <<'COMMAND'
+cat <<'EOF_CRD' | kubectl apply -f -
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.training.cka.io
+spec:
+  group: training.cka.io
+  scope: Namespaced
+  names:
+    plural: widgets
+    singular: widget
+    kind: Widget
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - image
+            - replicas
+            properties:
+              image:
+                type: string
+              replicas:
+                type: integer
+EOF_CRD
+
+kubectl wait --for=condition=established --timeout=120s crd/widgets.training.cka.io
+
+cat <<'EOF_OPERATOR' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: widget-operator
+  namespace: operator-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: widget-operator
+  template:
+    metadata:
+      labels:
+        app: widget-operator
+    spec:
+      containers:
+      - name: manager
+        image: busybox:1.36.1
+        command:
+        - sh
+        - -c
+        - sleep 3600
+EOF_OPERATOR
+
+kubectl rollout status deployment/widget-operator -n operator-lab --timeout=180s
+
+cat <<'EOF_WIDGET' | kubectl apply -f -
+apiVersion: training.cka.io/v1alpha1
+kind: Widget
+metadata:
+  name: sample-widget
+  namespace: operator-lab
+spec:
+  image: nginx:1.25.5
+  replicas: 2
+EOF_WIDGET
+
+mkdir -p /tmp/exam/q1
+kubectl get crd widgets.training.cka.io -o yaml > /tmp/exam/q1/widget-crd.yaml
+[ -s /tmp/exam/q1/widget-crd.yaml ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -725,7 +806,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017
   exit 0
 fi
 
@@ -736,7 +817,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017)
 fi
 
 for suite in "${SUITES[@]}"; do
