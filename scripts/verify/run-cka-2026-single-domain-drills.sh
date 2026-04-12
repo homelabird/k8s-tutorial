@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-022
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-023
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -36,6 +36,7 @@ Supported suites:
   cka-020  service and pod connectivity diagnostics drill
   cka-021  service exposure and endpoint debugging drill
   cka-022  kubelet and node NotReady troubleshooting drill
+  cka-023  PKI and certificate expiry troubleshooting drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -210,6 +211,7 @@ resolve_suite_namespace() {
     cka-020) printf '%s\n' 'connectivity-lab' ;;
     cka-021) printf '%s\n' 'service-debug-lab' ;;
     cka-022) printf '%s\n' 'node-health-lab' ;;
+    cka-023) printf '%s\n' 'pki-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -889,6 +891,42 @@ kubectl get configmap node-recovery-brief -n node-health-lab -o yaml > /tmp/exam
 [ -s /tmp/exam/q1/node-notready-checklist.txt ]
 COMMAND
       ;;
+    cka-023)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: certificate-renewal-brief
+  namespace: pki-lab
+data:
+  targetCertificate: /etc/kubernetes/pki/apiserver.crt
+  expiryCheck: sudo kubeadm certs check-expiration
+  dateInspection: sudo openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -dates
+  kubeconfigCheck: sudo grep -n client-certificate-data /etc/kubernetes/admin.conf
+  renewalCommand: sudo kubeadm certs renew apiserver
+  readinessCheck: kubectl get --raw='/readyz?verbose'
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/certificate-expiry-checklist.txt
+Certificate Inspection
+- sudo kubeadm certs check-expiration
+- sudo openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -dates
+- sudo grep -n client-certificate-data /etc/kubernetes/admin.conf
+
+Renewal Planning
+- sudo kubeadm certs renew apiserver
+- sudo cp /etc/kubernetes/manifests/kube-apiserver.yaml /tmp/exam/q1/kube-apiserver.yaml.bak
+
+Post-Renewal Verification
+- kubectl get --raw='/readyz?verbose'
+- kubectl get pods -n kube-system -l component=kube-apiserver
+EOF_CHECKLIST
+kubectl get configmap certificate-renewal-brief -n pki-lab -o yaml > /tmp/exam/q1/certificate-renewal-brief.yaml
+[ -s /tmp/exam/q1/certificate-renewal-brief.yaml ]
+[ -s /tmp/exam/q1/certificate-expiry-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1004,7 +1042,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023
   exit 0
 fi
 
@@ -1015,7 +1053,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023)
 fi
 
 for suite in "${SUITES[@]}"; do
