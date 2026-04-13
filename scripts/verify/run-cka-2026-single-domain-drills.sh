@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-041
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-042
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -55,6 +55,7 @@ Supported suites:
   cka-039  ServiceAccount imagePullSecrets and private registry diagnostics drill
   cka-040  PersistentVolume reclaim policy and claimRef diagnostics drill
   cka-041  PersistentVolumeClaim expansion and resize diagnostics drill
+  cka-042  Ephemeral containers and kubectl debug diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -248,6 +249,7 @@ resolve_suite_namespace() {
     cka-039) printf '%s\n' 'registry-auth-lab' ;;
     cka-040) printf '%s\n' 'pv-reclaim-lab' ;;
     cka-041) printf '%s\n' 'pv-resize-lab' ;;
+    cka-042) printf '%s\n' 'debug-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1679,6 +1681,47 @@ kubectl get configmap resize-diagnostics-brief -n pv-resize-lab -o yaml > /tmp/e
 [ -s /tmp/exam/q1/resize-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-042)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: debug-diagnostics-brief
+  namespace: debug-lab
+data:
+  targetPod: orders-api
+  podInventory: kubectl get pod orders-api -n debug-lab -o wide
+  containerInventory: kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.containers[*].name}'
+  logsCheck: kubectl logs orders-api -n debug-lab -c api --tail=50
+  nodeCheck: kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.nodeName}'
+  debugCommand: kubectl debug pod/orders-api -n debug-lab -it --image=busybox:1.36 --target=api
+  ephemeralContainerCheck: kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}'
+  eventCheck: kubectl get events -n debug-lab --sort-by=.lastTimestamp
+  safeManifestNote: confirm target pod, target container, debug image, and ephemeral container evidence before changing workload manifests
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/debug-diagnostics-checklist.txt
+Pod Inventory
+- kubectl get pod orders-api -n debug-lab -o wide
+- kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.containers[*].name}'
+- kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.nodeName}'
+
+Debug Path
+- kubectl logs orders-api -n debug-lab -c api --tail=50
+- kubectl debug pod/orders-api -n debug-lab -it --image=busybox:1.36 --target=api
+- kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}'
+- kubectl get events -n debug-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get pod orders-api -n debug-lab -o yaml
+- confirm target pod, target container, debug image, and ephemeral container evidence before changing workload manifests
+EOF_CHECKLIST
+kubectl get configmap debug-diagnostics-brief -n debug-lab -o yaml > /tmp/exam/q1/debug-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/debug-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/debug-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1808,7 +1851,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042
   exit 0
 fi
 
@@ -1819,7 +1862,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042)
 fi
 
 for suite in "${SUITES[@]}"; do
