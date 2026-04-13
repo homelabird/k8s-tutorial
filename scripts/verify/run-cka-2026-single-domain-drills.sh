@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-036
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-037
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -50,6 +50,7 @@ Supported suites:
   cka-034  Pod anti-affinity and topology spread diagnostics drill
   cka-035  ServiceAccount identity and projected token diagnostics drill
   cka-036  Pod securityContext and fsGroup diagnostics drill
+  cka-037  PriorityClass and preemption diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -238,6 +239,7 @@ resolve_suite_namespace() {
     cka-034) printf '%s\n' 'affinity-lab' ;;
     cka-035) printf '%s\n' 'identity-lab' ;;
     cka-036) printf '%s\n' 'securitycontext-lab' ;;
+    cka-037) printf '%s\n' 'priority-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1457,6 +1459,50 @@ kubectl get configmap securitycontext-diagnostics-brief -n securitycontext-lab -
 [ -s /tmp/exam/q1/securitycontext-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-037)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: priority-diagnostics-brief
+  namespace: priority-lab
+data:
+  targetDeployment: batch-api
+  targetPriorityClass: ops-critical
+  priorityClassInventory: kubectl get priorityclass ops-critical -o yaml
+  deploymentInventory: kubectl get deployment batch-api -n priority-lab -o wide
+  priorityClassNameCheck: kubectl get deployment batch-api -n priority-lab -o jsonpath='{.spec.template.spec.priorityClassName}'
+  priorityValueCheck: kubectl get priorityclass ops-critical -o jsonpath='{.value}'
+  preemptionPolicyCheck: kubectl get priorityclass ops-critical -o jsonpath='{.preemptionPolicy}'
+  globalDefaultCheck: kubectl get priorityclass ops-critical -o jsonpath='{.globalDefault}'
+  schedulerCheck: kubectl get pods -n priority-lab -o wide
+  eventCheck: kubectl get events -n priority-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm priorityClassName, priority value, preemption policy, and scheduler events before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/priority-diagnostics-checklist.txt
+PriorityClass Inventory
+- kubectl get priorityclass ops-critical -o yaml
+- kubectl get priorityclass ops-critical -o jsonpath='{.value}'
+- kubectl get priorityclass ops-critical -o jsonpath='{.preemptionPolicy}'
+- kubectl get priorityclass ops-critical -o jsonpath='{.globalDefault}'
+
+Workload Checks
+- kubectl get deployment batch-api -n priority-lab -o wide
+- kubectl get deployment batch-api -n priority-lab -o jsonpath='{.spec.template.spec.priorityClassName}'
+- kubectl get pods -n priority-lab -o wide
+- kubectl get events -n priority-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment batch-api -n priority-lab -o yaml
+- confirm priorityClassName, priority value, preemption policy, and scheduler events before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap priority-diagnostics-brief -n priority-lab -o yaml > /tmp/exam/q1/priority-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/priority-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/priority-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1586,7 +1632,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037
   exit 0
 fi
 
@@ -1597,7 +1643,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037)
 fi
 
 for suite in "${SUITES[@]}"; do
