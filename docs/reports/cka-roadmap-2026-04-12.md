@@ -45,20 +45,20 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-039+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-040+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-038` are now promoted facilitator packs, `cka-039` is now template-scaffolded, and `cka-040+` remain roadmap-only candidates.
+`cka-011` through `cka-039` are now promoted facilitator packs, and `cka-040+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-039` | ServiceAccount imagePullSecrets and private registry diagnostics | Covers a remaining workload-identity gap around registry auth wiring, secret type validation, ServiceAccount linkage, and safe manifest inspection without mutating the live Deployment. | Low | Template scaffolded |
+| `cka-039` | ServiceAccount imagePullSecrets and private registry diagnostics | Covers a remaining workload-identity gap around registry auth wiring, secret type validation, ServiceAccount linkage, and safe manifest inspection without mutating the live Deployment. | Low | Promoted |
 
 ## Proposed Build Order
 
-1. Promote `cka-039` into facilitator pack `cka-039`
-2. Define the next `cka-040` candidate from the remaining uncovered operator workflows after registry-auth coverage is closed
+1. Define the next `cka-040` candidate from the remaining uncovered operator workflows after registry-auth coverage is closed
+2. Keep broadening workload-identity and registry-operability only if it adds genuinely new operator signal instead of repeating ServiceAccount wiring drills
 
 ## Suggested Problem Shapes
 
@@ -92,7 +92,7 @@ Ship the next expansion wave as `cka-039+` drills that fill the remaining practi
 - `cka-036` is now promoted as facilitator pack `cka-036`, sourced from template question `1701` in `docs/templates/cka-2026-next1-securitycontext`.
 - `cka-037` is now promoted as facilitator pack `cka-037`, sourced from template question `1801` in `docs/templates/cka-2026-next1-priorityclass`.
 - `cka-038` is now promoted as facilitator pack `cka-038`, sourced from template question `1901` in `docs/templates/cka-2026-next1-qos`.
-- `cka-039` is now scaffolded as template question `2001` in `docs/templates/cka-2026-next1-imagepullsecret`.
+- `cka-039` is now promoted as facilitator pack `cka-039`, sourced from template question `2001` in `docs/templates/cka-2026-next1-imagepullsecret`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.

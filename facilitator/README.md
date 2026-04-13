@@ -234,6 +234,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-036` Pod securityContext and fsGroup diagnostics
 - `cka-037` PriorityClass and preemption diagnostics
 - `cka-038` Pod resource requests, limits, and QoS diagnostics
+- `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
 
 To check the runner wiring without starting the Podman stack:
 

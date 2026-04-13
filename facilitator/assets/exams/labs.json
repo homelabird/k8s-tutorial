@@ -439,6 +439,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-039",
+      "assetPath": "assets/exams/cka/039",
+      "name": "CKA 2026 Single Domain Drill - ServiceAccount imagePullSecrets and private registry diagnostics",
+      "category": "CKA",
+      "description": "Standalone registry-auth diagnostics drill focused on ServiceAccount wiring, imagePullSecrets inspection, secret-type evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

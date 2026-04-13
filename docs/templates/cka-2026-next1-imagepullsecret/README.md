@@ -13,7 +13,7 @@ These drafts cover the next recommended registry-auth pack from the `cka-039+` r
 ## Current Template State
 
 - Question `2001` (`ServiceAccount imagePullSecrets and private registry diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2001` has not been promoted yet and should be the next candidate for facilitator pack `cka-039`.
+- Question `2001` has now been promoted into facilitator pack `cka-039`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended registry-auth pack from the `cka-039+` r
 
 ## Recommended Promotion Order
 
-1. Promote `q2001` into facilitator pack `cka-039`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 
