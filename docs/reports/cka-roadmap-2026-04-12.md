@@ -48,25 +48,27 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-044+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-045+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-042` are now promoted facilitator packs, and `cka-043+` remain roadmap-only candidates.
+`cka-011` through `cka-042` are now promoted facilitator packs, `cka-043` is now template-scaffolded, and `cka-044+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-042` | Ephemeral containers and kubectl debug diagnostics | Covers a remaining troubleshooting gap around exact pod targeting, debug entry path, ephemeral-container evidence, logs, and safe manifest review without mutating live workloads. | Low | Promoted |
+| `cka-043` | Static pod manifest and mirror pod diagnostics | Covers a remaining cluster-architecture gap around mirror-pod evidence, manifest-path inspection, hostNetwork review, and safe static-pod troubleshooting without mutating kubelet-managed manifests. | Low | Template scaffolded |
 
 ## Proposed Build Order
 
-1. Define the next `cka-043` candidate from the remaining uncovered operator workflows after debug coverage is closed
+1. Promote `cka-043` into facilitator pack `cka-043`
+2. Define the next `cka-044` candidate from the remaining uncovered operator workflows after static-pod coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-043` Next candidate to be defined
+### `cka-043` Static pod manifest and mirror pod diagnostics
 
-- Choose the next candidate only after `cka-042` promotion is closed and the remaining uncovered workflows are re-ranked.
+- This drill targets one remaining static-pod workflow that still fits the deterministic single-domain model.
+- It stays in the planning/evidence-export contract and focuses on mirror pod inventory, manifest-path inspection, hostNetwork evidence, container command review, and safe manifest guidance without mutating kubelet-managed manifests.
 
 ## Current Authoring State
 
@@ -97,6 +99,7 @@ Ship the next expansion wave as `cka-044+` drills that fill the remaining practi
 - `cka-040` is now promoted as facilitator pack `cka-040`, sourced from template question `2101` in `docs/templates/cka-2026-next1-pvreclaim`.
 - `cka-041` is now promoted as facilitator pack `cka-041`, sourced from template question `2201` in `docs/templates/cka-2026-next1-pvresize`.
 - `cka-042` is now promoted as facilitator pack `cka-042`, sourced from template question `2301` in `docs/templates/cka-2026-next1-ephemeraldebug`.
+- `cka-043` is now scaffolded as template question `2401` in `docs/templates/cka-2026-next1-staticpod`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -124,6 +127,7 @@ Ship the next expansion wave as `cka-044+` drills that fill the remaining practi
 - The current `cka-040` contract stays planning-focused: it repairs exact PVC inventory, PV reclaim-policy inspection, claimRef evidence, workload mount-path checks, and safe manifest review while exporting evidence without deleting storage objects, scaling the Deployment, or patching the live PV, PVC, or Deployment fields.
 - The current `cka-041` contract stays planning-focused: it repairs exact requested-size, current-capacity, resize-support, PVC-condition, and mount-path evidence while exporting safe manifest review without editing the PVC, restarting the Deployment, or patching the live StorageClass or workload fields.
 - The current `cka-042` contract stays planning-focused: it repairs exact pod inventory, logs, debug-entry commands, ephemeral-container evidence, and safe manifest review while exporting evidence without deleting the Pod, restarting the workload, or patching the live Pod spec.
+- The current `cka-043` contract stays planning-focused: it repairs exact mirror-pod inventory, static-pod manifest-path evidence, hostNetwork checks, container-command review, and safe manifest guidance while exporting evidence without deleting the mirror pod, restarting kubelet, or rewriting the live manifest path.
 
 ## Design Constraints
 
@@ -134,7 +138,7 @@ Ship the next expansion wave as `cka-044+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-044+` drill should be considered ready only when all of the following are true:
+A `cka-045+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
