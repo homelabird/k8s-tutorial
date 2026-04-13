@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-042
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-043
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -56,6 +56,7 @@ Supported suites:
   cka-040  PersistentVolume reclaim policy and claimRef diagnostics drill
   cka-041  PersistentVolumeClaim expansion and resize diagnostics drill
   cka-042  Ephemeral containers and kubectl debug diagnostics drill
+  cka-043  Static pod manifest and mirror pod diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -250,6 +251,7 @@ resolve_suite_namespace() {
     cka-040) printf '%s\n' 'pv-reclaim-lab' ;;
     cka-041) printf '%s\n' 'pv-resize-lab' ;;
     cka-042) printf '%s\n' 'debug-lab' ;;
+    cka-043) printf '%s\n' 'staticpod-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1722,6 +1724,47 @@ kubectl get configmap debug-diagnostics-brief -n debug-lab -o yaml > /tmp/exam/q
 [ -s /tmp/exam/q1/debug-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-043)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: staticpod-diagnostics-brief
+  namespace: staticpod-lab
+data:
+  targetMirrorPod: audit-agent-ckad9999
+  mirrorPodInventory: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o wide
+  staticPodPathCheck: sudo ls -l /etc/kubernetes/manifests/audit-agent.yaml
+  manifestPreviewCheck: sudo sed -n '1,160p' /etc/kubernetes/manifests/audit-agent.yaml
+  hostNetworkCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.hostNetwork}'
+  containerCommandCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.containers[0].command}'
+  nodeCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.nodeName}'
+  eventCheck: kubectl get events -n staticpod-lab --sort-by=.lastTimestamp
+  safeManifestNote: confirm manifest path, mirror pod inventory, hostNetwork setting, and container command before changing static pod manifests
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/staticpod-diagnostics-checklist.txt
+Mirror Pod Inventory
+- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o wide
+- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.nodeName}'
+
+Static Pod Checks
+- sudo ls -l /etc/kubernetes/manifests/audit-agent.yaml
+- sudo sed -n '1,160p' /etc/kubernetes/manifests/audit-agent.yaml
+- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.hostNetwork}'
+- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.containers[0].command}'
+- kubectl get events -n staticpod-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o yaml
+- confirm manifest path, mirror pod inventory, hostNetwork setting, and container command before changing static pod manifests
+EOF_CHECKLIST
+kubectl get configmap staticpod-diagnostics-brief -n staticpod-lab -o yaml > /tmp/exam/q1/staticpod-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/staticpod-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/staticpod-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1851,7 +1894,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043
   exit 0
 fi
 
@@ -1862,7 +1905,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043)
 fi
 
 for suite in "${SUITES[@]}"; do

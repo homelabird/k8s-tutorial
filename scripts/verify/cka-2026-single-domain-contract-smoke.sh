@@ -27,8 +27,9 @@ TEMPLATE_README_NEXT1_IMAGEPULLSECRET="$ROOT_DIR/docs/templates/cka-2026-next1-i
 TEMPLATE_README_NEXT1_PVRECLAIM="$ROOT_DIR/docs/templates/cka-2026-next1-pvreclaim/README.md"
 TEMPLATE_README_NEXT1_PVRESIZE="$ROOT_DIR/docs/templates/cka-2026-next1-pvresize/README.md"
 TEMPLATE_README_NEXT1_EPHEMERALDEBUG="$ROOT_DIR/docs/templates/cka-2026-next1-ephemeraldebug/README.md"
+TEMPLATE_README_NEXT1_STATICPOD="$ROOT_DIR/docs/templates/cka-2026-next1-staticpod/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -99,6 +100,7 @@ grep -Fq 'Question `2001` has now been promoted into facilitator pack `cka-039`.
 grep -Fq 'Question `2101` has now been promoted into facilitator pack `cka-040`.' "$TEMPLATE_README_NEXT1_PVRECLAIM"
 grep -Fq 'Question `2201` has now been promoted into facilitator pack `cka-041`.' "$TEMPLATE_README_NEXT1_PVRESIZE"
 grep -Fq 'Question `2301` has now been promoted into facilitator pack `cka-042`.' "$TEMPLATE_README_NEXT1_EPHEMERALDEBUG"
+grep -Fq 'Question `2401` has now been promoted into facilitator pack `cka-043`.' "$TEMPLATE_README_NEXT1_STATICPOD"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'
