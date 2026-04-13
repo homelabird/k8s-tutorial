@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-039
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-040
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -53,6 +53,7 @@ Supported suites:
   cka-037  PriorityClass and preemption diagnostics drill
   cka-038  Pod resource requests, limits, and QoS diagnostics drill
   cka-039  ServiceAccount imagePullSecrets and private registry diagnostics drill
+  cka-040  PersistentVolume reclaim policy and claimRef diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -244,6 +245,7 @@ resolve_suite_namespace() {
     cka-037) printf '%s\n' 'priority-lab' ;;
     cka-038) printf '%s\n' 'qos-lab' ;;
     cka-039) printf '%s\n' 'registry-auth-lab' ;;
+    cka-040) printf '%s\n' 'pv-reclaim-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1589,6 +1591,48 @@ kubectl get configmap pull-auth-diagnostics-brief -n registry-auth-lab -o yaml >
 [ -s /tmp/exam/q1/pull-auth-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-040)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reclaim-diagnostics-brief
+  namespace: pv-reclaim-lab
+data:
+  targetPvc: reports-data
+  pvcInventory: kubectl get pvc reports-data -n pv-reclaim-lab -o wide
+  volumeNameCheck: kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.volumeName}'
+  storageClassCheck: kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.storageClassName}'
+  reclaimPolicyCheck: kubectl get pv reports-pv -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'
+  claimRefCheck: kubectl get pv reports-pv -o jsonpath='{.spec.claimRef.namespace}/{.spec.claimRef.name}'
+  mountPathCheck: kubectl get deployment reports-db -n pv-reclaim-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+  eventCheck: kubectl get events -n pv-reclaim-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm PVC binding, PV reclaim policy, claimRef, and workload mount path before changing storage manifests"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/reclaim-diagnostics-checklist.txt
+PVC Inventory
+- kubectl get pvc reports-data -n pv-reclaim-lab -o wide
+- kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.volumeName}'
+- kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.storageClassName}'
+
+PV Checks
+- kubectl get pv reports-pv -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'
+- kubectl get pv reports-pv -o jsonpath='{.spec.claimRef.namespace}/{.spec.claimRef.name}'
+- kubectl get deployment reports-db -n pv-reclaim-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+- kubectl get events -n pv-reclaim-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment reports-db -n pv-reclaim-lab -o yaml
+- kubectl get pv reports-pv -o yaml
+- confirm PVC binding, PV reclaim policy, claimRef, and workload mount path before changing storage manifests
+EOF_CHECKLIST
+kubectl get configmap reclaim-diagnostics-brief -n pv-reclaim-lab -o yaml > /tmp/exam/q1/reclaim-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/reclaim-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/reclaim-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1718,7 +1762,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040
   exit 0
 fi
 
@@ -1729,7 +1773,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040)
 fi
 
 for suite in "${SUITES[@]}"; do
