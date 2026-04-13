@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MANIFEST="/tmp/exam/q2501/projected-volume-brief.yaml"
+MANIFEST="/tmp/exam/q1/projected-volume-brief.yaml"
 [[ -f "${MANIFEST}" ]]
 
 grep -F "targetDeployment: bundle-api" "${MANIFEST}" >/dev/null

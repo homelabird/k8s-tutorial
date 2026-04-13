@@ -13,7 +13,7 @@ These drafts cover the next recommended workload-configuration pack from the `ck
 ## Current Template State
 
 - Question `2501` (`Projected ConfigMap and Secret volume diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2501` has not yet been promoted into a facilitator pack.
+- Question `2501` has now been promoted into facilitator pack `cka-044`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended workload-configuration pack from the `ck
 
 ## Recommended Promotion Order
 
-1. Promote `q2501` into `facilitator/assets/exams/cka/044`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

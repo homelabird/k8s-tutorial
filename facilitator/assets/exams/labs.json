@@ -489,6 +489,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-044",
+      "assetPath": "assets/exams/cka/044",
+      "name": "CKA 2026 Single Domain Drill - Projected ConfigMap and Secret volume diagnostics",
+      "category": "CKA",
+      "description": "Standalone projected-volume diagnostics drill focused on ConfigMap and Secret source wiring, item-path evidence, mount-path inspection, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }
