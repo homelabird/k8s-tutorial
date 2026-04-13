@@ -40,25 +40,27 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-036` Pod securityContext and fsGroup diagnostics
 - `cka-037` PriorityClass and preemption diagnostics
 - `cka-038` Pod resource requests, limits, and QoS diagnostics
+- `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
+- `cka-040` PersistentVolume reclaim policy and claimRef diagnostics
+- `cka-041` PersistentVolumeClaim expansion and resize diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-043+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-042+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-040` are now promoted facilitator packs, `cka-041` is now template-scaffolded, and `cka-042+` remain roadmap-only candidates.
+`cka-011` through `cka-041` are now promoted facilitator packs, and `cka-042+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-041` | PersistentVolumeClaim expansion and resize diagnostics | Covers a remaining storage-ops gap around requested size, current capacity, resize support, PVC conditions, and workload mount inspection without mutating live storage objects. | Low | Template scaffolded |
+| `cka-041` | PersistentVolumeClaim expansion and resize diagnostics | Covers a remaining storage-ops gap around requested size, current capacity, resize support, PVC conditions, and workload mount inspection without mutating live storage objects. | Low | Promoted |
 
 ## Proposed Build Order
 
-1. Promote `cka-041` into facilitator pack `cka-041`
-2. Define the next `cka-042` candidate from the remaining uncovered operator workflows after resize coverage is closed
+1. Define the next `cka-042` candidate from the remaining uncovered operator workflows after resize coverage is closed
 
 ## Suggested Problem Shapes
 
@@ -94,7 +96,7 @@ Ship the next expansion wave as `cka-043+` drills that fill the remaining practi
 - `cka-038` is now promoted as facilitator pack `cka-038`, sourced from template question `1901` in `docs/templates/cka-2026-next1-qos`.
 - `cka-039` is now promoted as facilitator pack `cka-039`, sourced from template question `2001` in `docs/templates/cka-2026-next1-imagepullsecret`.
 - `cka-040` is now promoted as facilitator pack `cka-040`, sourced from template question `2101` in `docs/templates/cka-2026-next1-pvreclaim`.
-- `cka-041` is now scaffolded as template question `2201` in `docs/templates/cka-2026-next1-pvresize`.
+- `cka-041` is now promoted as facilitator pack `cka-041`, sourced from template question `2201` in `docs/templates/cka-2026-next1-pvresize`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.

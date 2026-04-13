@@ -459,6 +459,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-041",
+      "assetPath": "assets/exams/cka/041",
+      "name": "CKA 2026 Single Domain Drill - PersistentVolumeClaim expansion and resize diagnostics",
+      "category": "CKA",
+      "description": "Standalone storage resize diagnostics drill focused on requested-size inspection, current-capacity evidence, StorageClass expansion support, PVC conditions, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

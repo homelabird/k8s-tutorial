@@ -236,8 +236,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-038` Pod resource requests, limits, and QoS diagnostics
 - `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
 - `cka-040` PersistentVolume reclaim policy and claimRef diagnostics
-- `cka-038` Pod resource requests, limits, and QoS diagnostics
-- `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
+- `cka-041` PersistentVolumeClaim expansion and resize diagnostics
 
 To check the runner wiring without starting the Podman stack:
 

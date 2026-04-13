@@ -13,7 +13,7 @@ These drafts cover the next recommended storage-resize pack from the `cka-041+` 
 ## Current Template State
 
 - Question `2201` (`PersistentVolumeClaim expansion and resize diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2201` has not been promoted yet and should be the next candidate for facilitator pack `cka-041`.
+- Question `2201` has now been promoted into facilitator pack `cka-041`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended storage-resize pack from the `cka-041+` 
 
 ## Recommended Promotion Order
 
-1. Promote `q2201` into facilitator pack `cka-041`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 
