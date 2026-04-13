@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "identity-lab",
+      "machineHostname": "ckad9999",
+      "question": "A workload identity diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `identity-diagnostics-brief` already exists in namespace `identity-lab`. Repair it so that:\n- `targetDeployment` is `metrics-api`\n- `deploymentInventory` is `kubectl get deployment metrics-api -n identity-lab -o wide`\n- `serviceAccountCheck` is `kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'`\n- `automountCheck` is `kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'`\n- `projectedTokenPathCheck` is `kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'`\n- `projectedAudienceCheck` is `kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'`\n- `mountPathCheck` is `kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `eventCheck` is `kubectl get events -n identity-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/identity-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/identity-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Identity Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live ServiceAccount fields during this drill.",
+      "concepts": [
+        "serviceAccount",
+        "projectedVolume",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The identity diagnostics brief ConfigMap uses the intended workload target, ServiceAccount inspection commands, projected token checks, event check, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_identity_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact deployment inventory, identity checks, and safe manifest review commands",
+          "verificationScriptFile": "q1_s2_validate_identity_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe identity remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_identity_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

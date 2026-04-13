@@ -399,6 +399,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-035",
+      "assetPath": "assets/exams/cka/035",
+      "name": "CKA 2026 Single Domain Drill - ServiceAccount identity and projected token diagnostics",
+      "category": "CKA",
+      "description": "Standalone workload identity diagnostics drill focused on ServiceAccount wiring, projected token inspection, event evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

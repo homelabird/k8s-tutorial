@@ -36,32 +36,32 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-032` Readiness, liveness, and startupProbe diagnostics
 - `cka-033` InitContainer and shared volume diagnostics
 - `cka-034` Pod anti-affinity and topology spread diagnostics
+- `cka-035` ServiceAccount identity and projected token diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-035+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-036+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-034` are now promoted facilitator packs, `cka-035` is template-scaffolded, and `cka-036+` remain roadmap-only candidates.
+`cka-011` through `cka-035` are now promoted facilitator packs, and `cka-036+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-035` | ServiceAccount identity and projected token diagnostics | Covers workload identity review, projected service account token checks, mount-path evidence, and safe manifest inspection without mutating the live Deployment. | Low | Promote next |
+| `cka-036` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the ServiceAccount diagnostics drill lands. | TBD | Backlog definition needed |
 
 ## Proposed Build Order
 
-1. Promote `cka-035` ServiceAccount identity and projected token diagnostics into a facilitator pack
-2. Define the next `cka-036` candidate from the remaining uncovered operator workflows
+1. Define the next `cka-036` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
 
-### `cka-035` ServiceAccount identity and projected token diagnostics
+### Next candidate to be defined after `cka-035`
 
-- This drill targets one remaining workload-identity workflow that still fits the deterministic single-domain model.
-- It stays in the planning/evidence-export contract and focuses on ServiceAccount inventory, projected token inspection, mount-path evidence, and safe manifest review without mutating the live Deployment.
+- The next drill after `cka-035` should target one uncovered operator workflow that still fits the deterministic single-domain model.
+- It should follow the same planning/evidence-export contract unless a safe live remediation contract is clearly reproducible in local Podman/kind environments.
 
 ## Current Authoring State
 
@@ -84,7 +84,7 @@ Ship the next expansion wave as `cka-035+` drills that fill the remaining practi
 - `cka-032` is now promoted as facilitator pack `cka-032`, sourced from template question `1301` in `docs/templates/cka-2026-next1-probes`.
 - `cka-033` is now promoted as facilitator pack `cka-033`, sourced from template question `1401` in `docs/templates/cka-2026-next1-initcontainer`.
 - `cka-034` is now promoted as facilitator pack `cka-034`, sourced from template question `1501` in `docs/templates/cka-2026-next1-affinity`.
-- `cka-035` is now template-scaffolded from template question `1601` in `docs/templates/cka-2026-next1-serviceaccount`.
+- `cka-035` is now promoted as facilitator pack `cka-035`, sourced from template question `1601` in `docs/templates/cka-2026-next1-serviceaccount`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -104,7 +104,7 @@ Ship the next expansion wave as `cka-035+` drills that fill the remaining practi
 - The current `cka-032` contract stays planning-focused: it repairs exact startup, liveness, and readiness probe inventory, event evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching live probe fields.
 - The current `cka-033` contract stays planning-focused: it repairs exact init container inventory, shared volume checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live init container command.
 - The current `cka-034` contract stays planning-focused: it repairs exact anti-affinity selectors, topology spread constraints, event evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, scaling replicas, or patching the live placement rules.
-- The current `cka-035` contract should stay planning-focused: it should repair exact ServiceAccount inventory, projected token checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live ServiceAccount fields.
+- The current `cka-035` contract stays planning-focused: it repairs exact ServiceAccount inventory, projected token checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live ServiceAccount fields.
 
 ## Design Constraints
 
@@ -115,7 +115,7 @@ Ship the next expansion wave as `cka-035+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-036+` drill should be considered ready only when all of the following are true:
+A `cka-037+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
