@@ -22,8 +22,9 @@ TEMPLATE_README_NEXT1_AFFINITY="$ROOT_DIR/docs/templates/cka-2026-next1-affinity
 TEMPLATE_README_NEXT1_SERVICEACCOUNT="$ROOT_DIR/docs/templates/cka-2026-next1-serviceaccount/README.md"
 TEMPLATE_README_NEXT1_SECURITYCONTEXT="$ROOT_DIR/docs/templates/cka-2026-next1-securitycontext/README.md"
 TEMPLATE_README_NEXT1_PRIORITYCLASS="$ROOT_DIR/docs/templates/cka-2026-next1-priorityclass/README.md"
+TEMPLATE_README_NEXT1_QOS="$ROOT_DIR/docs/templates/cka-2026-next1-qos/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -89,6 +90,7 @@ grep -Fq 'Question `1501` has now been promoted into facilitator pack `cka-034`.
 grep -Fq 'Question `1601` has now been promoted into facilitator pack `cka-035`.' "$TEMPLATE_README_NEXT1_SERVICEACCOUNT"
 grep -Fq 'Question `1701` has now been promoted into facilitator pack `cka-036`.' "$TEMPLATE_README_NEXT1_SECURITYCONTEXT"
 grep -Fq 'Question `1801` has now been promoted into facilitator pack `cka-037`.' "$TEMPLATE_README_NEXT1_PRIORITYCLASS"
+grep -Fq 'Question `1901` has now been promoted into facilitator pack `cka-038`.' "$TEMPLATE_README_NEXT1_QOS"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'

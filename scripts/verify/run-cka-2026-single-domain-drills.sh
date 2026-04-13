@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-037
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-038
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -51,6 +51,7 @@ Supported suites:
   cka-035  ServiceAccount identity and projected token diagnostics drill
   cka-036  Pod securityContext and fsGroup diagnostics drill
   cka-037  PriorityClass and preemption diagnostics drill
+  cka-038  Pod resource requests, limits, and QoS diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -240,6 +241,7 @@ resolve_suite_namespace() {
     cka-035) printf '%s\n' 'identity-lab' ;;
     cka-036) printf '%s\n' 'securitycontext-lab' ;;
     cka-037) printf '%s\n' 'priority-lab' ;;
+    cka-038) printf '%s\n' 'qos-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1503,6 +1505,47 @@ kubectl get configmap priority-diagnostics-brief -n priority-lab -o yaml > /tmp/
 [ -s /tmp/exam/q1/priority-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-038)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qos-diagnostics-brief
+  namespace: qos-lab
+data:
+  targetDeployment: reporting-api
+  deploymentInventory: kubectl get deployment reporting-api -n qos-lab -o wide
+  requestsCpuCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}'
+  requestsMemoryCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}'
+  limitsCpuCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.cpu}'
+  limitsMemoryCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}'
+  qosClassCheck: kubectl get pods -n qos-lab -l app=reporting-api -o jsonpath='{.items[0].status.qosClass}'
+  eventCheck: kubectl get events -n qos-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm requests, limits, QoS class, and namespace events before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/qos-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment reporting-api -n qos-lab -o wide
+
+Resource Checks
+- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}'
+- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}'
+- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.cpu}'
+- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}'
+- kubectl get pods -n qos-lab -l app=reporting-api -o jsonpath='{.items[0].status.qosClass}'
+- kubectl get events -n qos-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment reporting-api -n qos-lab -o yaml
+- confirm requests, limits, QoS class, and namespace events before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap qos-diagnostics-brief -n qos-lab -o yaml > /tmp/exam/q1/qos-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/qos-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/qos-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1632,7 +1675,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038
   exit 0
 fi
 
@@ -1643,7 +1686,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038)
 fi
 
 for suite in "${SUITES[@]}"; do
