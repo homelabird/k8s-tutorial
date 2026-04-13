@@ -13,7 +13,7 @@ These drafts cover the next recommended cluster-architecture pack from the `cka-
 ## Current Template State
 
 - Question `2401` (`Static pod manifest and mirror pod diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2401` has not been promoted yet and should be the next candidate for facilitator pack `cka-043`.
+- Question `2401` has now been promoted into facilitator pack `cka-043`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended cluster-architecture pack from the `cka-
 
 ## Recommended Promotion Order
 
-1. Promote `q2401` into facilitator pack `cka-043`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

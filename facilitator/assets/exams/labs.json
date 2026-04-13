@@ -479,6 +479,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-043",
+      "assetPath": "assets/exams/cka/043",
+      "name": "CKA 2026 Single Domain Drill - Static pod manifest and mirror pod diagnostics",
+      "category": "CKA",
+      "description": "Standalone static-pod diagnostics drill focused on mirror-pod inventory, manifest-path inspection, hostNetwork evidence, container-command review, and safe manifest guidance.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

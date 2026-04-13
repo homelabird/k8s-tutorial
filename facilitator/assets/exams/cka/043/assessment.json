@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "staticpod-lab",
+      "machineHostname": "ckad9999",
+      "question": "A static pod diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `staticpod-diagnostics-brief` already exists in namespace `staticpod-lab`. Repair it so that:\n- `targetMirrorPod` is `audit-agent-ckad9999`\n- `mirrorPodInventory` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o wide`\n- `staticPodPathCheck` is `sudo ls -l /etc/kubernetes/manifests/audit-agent.yaml`\n- `manifestPreviewCheck` is `sudo sed -n '1,160p' /etc/kubernetes/manifests/audit-agent.yaml`\n- `hostNetworkCheck` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.hostNetwork}'`\n- `containerCommandCheck` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.containers[0].command}'`\n- `nodeCheck` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.nodeName}'`\n- `eventCheck` is `kubectl get events -n staticpod-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm manifest path, mirror pod inventory, hostNetwork setting, and container command before changing static pod manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/staticpod-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/staticpod-diagnostics-checklist.txt` with the sections `Mirror Pod Inventory`, `Static Pod Checks`, and `Safe Manifest Review`\n\nDo not delete the mirror pod, do not restart kubelet, and do not edit the live manifest path during this drill.",
+      "concepts": [
+        "staticpod",
+        "mirrorpod",
+        "kubelet",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The static pod diagnostics brief ConfigMap uses the intended mirror pod target, exact manifest path and pod inspection commands, event evidence, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_staticpod_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact mirror pod inventory, static pod manifest, and safe review commands",
+          "verificationScriptFile": "q1_s2_validate_staticpod_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe static-pod remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_staticpod_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

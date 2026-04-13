@@ -43,32 +43,32 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
 - `cka-040` PersistentVolume reclaim policy and claimRef diagnostics
 - `cka-041` PersistentVolumeClaim expansion and resize diagnostics
+- `cka-042` Ephemeral containers and kubectl debug diagnostics
+- `cka-043` Static pod manifest and mirror pod diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-045+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-044+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-042` are now promoted facilitator packs, `cka-043` is now template-scaffolded, and `cka-044+` remain roadmap-only candidates.
+`cka-011` through `cka-043` are now promoted facilitator packs, and `cka-044+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-043` | Static pod manifest and mirror pod diagnostics | Covers a remaining cluster-architecture gap around mirror-pod evidence, manifest-path inspection, hostNetwork review, and safe static-pod troubleshooting without mutating kubelet-managed manifests. | Low | Template scaffolded |
+| `cka-044` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after static-pod coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
 
 ## Proposed Build Order
 
-1. Promote `cka-043` into facilitator pack `cka-043`
-2. Define the next `cka-044` candidate from the remaining uncovered operator workflows after static-pod coverage is closed
+1. Define the next `cka-044` candidate from the remaining uncovered operator workflows after static-pod coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-043` Static pod manifest and mirror pod diagnostics
+### `cka-044` Next candidate to be defined
 
-- This drill targets one remaining static-pod workflow that still fits the deterministic single-domain model.
-- It stays in the planning/evidence-export contract and focuses on mirror pod inventory, manifest-path inspection, hostNetwork evidence, container command review, and safe manifest guidance without mutating kubelet-managed manifests.
+- Choose the next candidate only after `cka-043` promotion is closed and the remaining uncovered workflows are re-ranked.
 
 ## Current Authoring State
 
@@ -99,7 +99,7 @@ Ship the next expansion wave as `cka-045+` drills that fill the remaining practi
 - `cka-040` is now promoted as facilitator pack `cka-040`, sourced from template question `2101` in `docs/templates/cka-2026-next1-pvreclaim`.
 - `cka-041` is now promoted as facilitator pack `cka-041`, sourced from template question `2201` in `docs/templates/cka-2026-next1-pvresize`.
 - `cka-042` is now promoted as facilitator pack `cka-042`, sourced from template question `2301` in `docs/templates/cka-2026-next1-ephemeraldebug`.
-- `cka-043` is now scaffolded as template question `2401` in `docs/templates/cka-2026-next1-staticpod`.
+- `cka-043` is now promoted as facilitator pack `cka-043`, sourced from template question `2401` in `docs/templates/cka-2026-next1-staticpod`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -138,7 +138,7 @@ Ship the next expansion wave as `cka-045+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-045+` drill should be considered ready only when all of the following are true:
+A `cka-044+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
