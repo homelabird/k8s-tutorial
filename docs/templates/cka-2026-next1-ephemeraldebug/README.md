@@ -13,7 +13,7 @@ These drafts cover the next recommended troubleshooting pack from the `cka-042+`
 ## Current Template State
 
 - Question `2301` (`Ephemeral containers and kubectl debug diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2301` has not been promoted yet and should be the next candidate for facilitator pack `cka-042`.
+- Question `2301` has now been promoted into facilitator pack `cka-042`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended troubleshooting pack from the `cka-042+`
 
 ## Recommended Promotion Order
 
-1. Promote `q2301` into facilitator pack `cka-042`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

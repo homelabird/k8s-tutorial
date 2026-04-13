@@ -469,6 +469,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-042",
+      "assetPath": "assets/exams/cka/042",
+      "name": "CKA 2026 Single Domain Drill - Ephemeral containers and kubectl debug diagnostics",
+      "category": "CKA",
+      "description": "Standalone pod-debug diagnostics drill focused on target pod inventory, logs, kubectl debug entry, ephemeral-container evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }
