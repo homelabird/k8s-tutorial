@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-035
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-036
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -49,6 +49,7 @@ Supported suites:
   cka-033  InitContainer and shared volume diagnostics drill
   cka-034  Pod anti-affinity and topology spread diagnostics drill
   cka-035  ServiceAccount identity and projected token diagnostics drill
+  cka-036  Pod securityContext and fsGroup diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -236,6 +237,7 @@ resolve_suite_namespace() {
     cka-033) printf '%s\n' 'init-lab' ;;
     cka-034) printf '%s\n' 'affinity-lab' ;;
     cka-035) printf '%s\n' 'identity-lab' ;;
+    cka-036) printf '%s\n' 'securitycontext-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1412,6 +1414,49 @@ kubectl get configmap identity-diagnostics-brief -n identity-lab -o yaml > /tmp/
 [ -s /tmp/exam/q1/identity-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-036)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: securitycontext-diagnostics-brief
+  namespace: securitycontext-lab
+data:
+  targetDeployment: secure-api
+  deploymentInventory: kubectl get deployment secure-api -n securitycontext-lab -o wide
+  runAsUserCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'
+  fsGroupCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'
+  seccompCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'
+  allowPrivilegeEscalationCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
+  capabilitiesDropCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'
+  mountPathCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+  eventCheck: kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/securitycontext-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment secure-api -n securitycontext-lab -o wide
+- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'
+
+Security Context Checks
+- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'
+- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'
+- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
+- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'
+- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+- kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment secure-api -n securitycontext-lab -o yaml
+- confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap securitycontext-diagnostics-brief -n securitycontext-lab -o yaml > /tmp/exam/q1/securitycontext-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/securitycontext-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/securitycontext-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1488,12 +1533,26 @@ run_suite_with_timeout() {
   local suite="$1"
   local expected_namespace="$2"
   local solve_command="$3"
-  local started_at elapsed exit_code
+  local started_at elapsed exit_code timeout_script function_defs
 
   started_at="$(date +%s)"
   set +e
   if [ "$SUITE_TIMEOUT_SECONDS" -gt 0 ] && command -v timeout >/dev/null 2>&1; then
-    timeout --foreground "${SUITE_TIMEOUT_SECONDS}s" bash -lc "$(printf '%q ' declare -f log require_command compose_cmd cleanup wait_for_http wait_for_health wait_for_exam_status wait_for_evaluated wait_for_no_current_exam wait_for_no_inner_clusters shared_exec post_solve_check run_suite); CURRENT_EXAM=''; ROOT_DIR=$(printf '%q' "$ROOT_DIR"); BASE_URL=$(printf '%q' "$BASE_URL"); HTTP_WAIT_ATTEMPTS=$(printf '%q' "$HTTP_WAIT_ATTEMPTS"); HEALTH_WAIT_ATTEMPTS=$(printf '%q' "$HEALTH_WAIT_ATTEMPTS"); EXAM_STATUS_WAIT_ATTEMPTS=$(printf '%q' "$EXAM_STATUS_WAIT_ATTEMPTS"); EVALUATED_WAIT_ATTEMPTS=$(printf '%q' "$EVALUATED_WAIT_ATTEMPTS"); CLEANUP_WAIT_ATTEMPTS=$(printf '%q' "$CLEANUP_WAIT_ATTEMPTS"); trap cleanup EXIT; run_suite $(printf '%q' "$suite") $(printf '%q' "$expected_namespace") $(printf '%q' "$solve_command")"
+    function_defs="$(declare -f log require_command compose_cmd cleanup wait_for_http wait_for_health wait_for_exam_status wait_for_evaluated wait_for_no_current_exam wait_for_no_inner_clusters shared_exec post_solve_check run_suite)"
+    printf -v timeout_script '%s\nCURRENT_EXAM=%q\nROOT_DIR=%q\nBASE_URL=%q\nHTTP_WAIT_ATTEMPTS=%q\nHEALTH_WAIT_ATTEMPTS=%q\nEXAM_STATUS_WAIT_ATTEMPTS=%q\nEVALUATED_WAIT_ATTEMPTS=%q\nCLEANUP_WAIT_ATTEMPTS=%q\ntrap cleanup EXIT\nrun_suite %q %q %q\n' \
+      "$function_defs" \
+      "" \
+      "$ROOT_DIR" \
+      "$BASE_URL" \
+      "$HTTP_WAIT_ATTEMPTS" \
+      "$HEALTH_WAIT_ATTEMPTS" \
+      "$EXAM_STATUS_WAIT_ATTEMPTS" \
+      "$EVALUATED_WAIT_ATTEMPTS" \
+      "$CLEANUP_WAIT_ATTEMPTS" \
+      "$suite" \
+      "$expected_namespace" \
+      "$solve_command"
+    timeout --foreground "${SUITE_TIMEOUT_SECONDS}s" bash -lc "$timeout_script"
     exit_code=$?
   else
     run_suite "$suite" "$expected_namespace" "$solve_command"
@@ -1527,7 +1586,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036
   exit 0
 fi
 
@@ -1538,7 +1597,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036)
 fi
 
 for suite in "${SUITES[@]}"; do
