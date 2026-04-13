@@ -409,6 +409,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-036",
+      "assetPath": "assets/exams/cka/036",
+      "name": "CKA 2026 Single Domain Drill - Pod securityContext and fsGroup diagnostics",
+      "category": "CKA",
+      "description": "Standalone workload security diagnostics drill focused on pod-level securityContext inspection, fsGroup evidence, privilege checks, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "securitycontext-lab",
+      "machineHostname": "ckad9999",
+      "question": "A workload security diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `securitycontext-diagnostics-brief` already exists in namespace `securitycontext-lab`. Repair it so that:\n- `targetDeployment` is `secure-api`\n- `deploymentInventory` is `kubectl get deployment secure-api -n securitycontext-lab -o wide`\n- `runAsUserCheck` is `kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'`\n- `fsGroupCheck` is `kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'`\n- `seccompCheck` is `kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'`\n- `allowPrivilegeEscalationCheck` is `kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'`\n- `capabilitiesDropCheck` is `kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'`\n- `mountPathCheck` is `kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `eventCheck` is `kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/securitycontext-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/securitycontext-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Security Context Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live securityContext fields during this drill.",
+      "concepts": [
+        "securityContext",
+        "fsGroup",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The security diagnostics brief ConfigMap uses the intended workload target, securityContext inspection commands, event check, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_securitycontext_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact deployment inventory, securityContext checks, and safe manifest review commands",
+          "verificationScriptFile": "q1_s2_validate_securitycontext_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe securityContext remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_securitycontext_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

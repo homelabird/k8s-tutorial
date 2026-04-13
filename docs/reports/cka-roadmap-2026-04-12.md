@@ -37,25 +37,26 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-033` InitContainer and shared volume diagnostics
 - `cka-034` Pod anti-affinity and topology spread diagnostics
 - `cka-035` ServiceAccount identity and projected token diagnostics
+- `cka-036` Pod securityContext and fsGroup diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-036+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-037+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-035` are now promoted facilitator packs, `cka-036` is template-scaffolded, and `cka-037+` remain roadmap-only candidates.
+`cka-011` through `cka-036` are now promoted facilitator packs, and `cka-037+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-036` | Pod securityContext and fsGroup diagnostics | Covers workload security review, pod-level securityContext fields, container privilege checks, and safe manifest inspection without mutating the live Deployment. | Low | Promote next |
+| `cka-036` | Pod securityContext and fsGroup diagnostics | Covers workload security review, pod-level securityContext fields, container privilege checks, and safe manifest inspection without mutating the live Deployment. | Low | Promoted |
 
 ## Proposed Build Order
 
-1. Promote `cka-036` Pod securityContext and fsGroup diagnostics into a facilitator pack
-2. Define the next `cka-037` candidate from the remaining uncovered operator workflows
+1. Define the next `cka-037` candidate from the remaining uncovered operator workflows
+2. Keep broadening the workload-security wave only if it adds a genuinely new operator signal instead of rehashing PSA-only checks
 
 ## Suggested Problem Shapes
 
@@ -86,7 +87,7 @@ Ship the next expansion wave as `cka-036+` drills that fill the remaining practi
 - `cka-033` is now promoted as facilitator pack `cka-033`, sourced from template question `1401` in `docs/templates/cka-2026-next1-initcontainer`.
 - `cka-034` is now promoted as facilitator pack `cka-034`, sourced from template question `1501` in `docs/templates/cka-2026-next1-affinity`.
 - `cka-035` is now promoted as facilitator pack `cka-035`, sourced from template question `1601` in `docs/templates/cka-2026-next1-serviceaccount`.
-- `cka-036` is now template-scaffolded from template question `1701` in `docs/templates/cka-2026-next1-securitycontext`.
+- `cka-036` is now promoted as facilitator pack `cka-036`, sourced from template question `1701` in `docs/templates/cka-2026-next1-securitycontext`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -107,7 +108,7 @@ Ship the next expansion wave as `cka-036+` drills that fill the remaining practi
 - The current `cka-033` contract stays planning-focused: it repairs exact init container inventory, shared volume checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live init container command.
 - The current `cka-034` contract stays planning-focused: it repairs exact anti-affinity selectors, topology spread constraints, event evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, scaling replicas, or patching the live placement rules.
 - The current `cka-035` contract stays planning-focused: it repairs exact ServiceAccount inventory, projected token checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live ServiceAccount fields.
-- The current `cka-036` contract should stay planning-focused: it should repair exact pod-level securityContext inventory, container privilege checks, fsGroup evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live securityContext fields.
+- The current `cka-036` contract stays planning-focused: it repairs exact pod-level securityContext inventory, container privilege checks, fsGroup evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live securityContext fields.
 
 ## Design Constraints
 

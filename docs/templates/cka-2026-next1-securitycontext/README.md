@@ -1,6 +1,6 @@
 # CKA 2026 Next SecurityContext Wave
 
-These drafts cover the next recommended workload-security pack from the `cka-036+` roadmap:
+These drafts cover the workload-security pack that was promoted from the `cka-036+` roadmap:
 
 1. Pod securityContext and fsGroup diagnostics
 
@@ -13,7 +13,7 @@ These drafts cover the next recommended workload-security pack from the `cka-036
 ## Current Template State
 
 - Question `1701` (`Pod securityContext and fsGroup diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1701` has not yet been promoted into a facilitator pack.
+- Question `1701` has now been promoted into facilitator pack `cka-036`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended workload-security pack from the `cka-036
 
 ## Recommended Promotion Order
 
-1. Promote question `1701` into facilitator pack `cka-036`
+1. Validate facilitator discovery and single-domain runtime coverage for `cka-036`
 
 ## Planned Facilitator Mapping
 
