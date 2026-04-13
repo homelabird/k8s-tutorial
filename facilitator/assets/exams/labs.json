@@ -449,6 +449,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-040",
+      "assetPath": "assets/exams/cka/040",
+      "name": "CKA 2026 Single Domain Drill - PersistentVolume reclaim policy and claimRef diagnostics",
+      "category": "CKA",
+      "description": "Standalone storage diagnostics drill focused on PVC binding, PV reclaim-policy inspection, claimRef evidence, workload mount-path checks, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "pv-reclaim-lab",
+      "machineHostname": "ckad9999",
+      "question": "A persistent volume diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `reclaim-diagnostics-brief` already exists in namespace `pv-reclaim-lab`. Repair it so that:\n- `targetPvc` is `reports-data`\n- `pvcInventory` is `kubectl get pvc reports-data -n pv-reclaim-lab -o wide`\n- `volumeNameCheck` is `kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.volumeName}'`\n- `storageClassCheck` is `kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.storageClassName}'`\n- `reclaimPolicyCheck` is `kubectl get pv reports-pv -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'`\n- `claimRefCheck` is `kubectl get pv reports-pv -o jsonpath='{.spec.claimRef.namespace}/{.spec.claimRef.name}'`\n- `mountPathCheck` is `kubectl get deployment reports-db -n pv-reclaim-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `eventCheck` is `kubectl get events -n pv-reclaim-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm PVC binding, PV reclaim policy, claimRef, and workload mount path before changing storage manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/reclaim-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/reclaim-diagnostics-checklist.txt` with the sections `PVC Inventory`, `PV Checks`, and `Safe Manifest Review`\n\nDo not delete the PVC or PV, do not scale the Deployment, and do not patch the live reclaim policy or claimRef during this drill.",
+      "concepts": [
+        "persistentvolume",
+        "persistentvolumeclaim",
+        "reclaimPolicy",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The PV reclaim diagnostics brief ConfigMap uses the intended PVC target, exact PVC and PV inspection commands, claimRef evidence, event check, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_reclaim_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact PVC inventory, PV reclaim, claimRef, and workload mount inspection commands",
+          "verificationScriptFile": "q1_s2_validate_reclaim_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe PV remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_reclaim_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

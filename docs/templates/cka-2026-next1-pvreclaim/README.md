@@ -13,7 +13,7 @@ These drafts cover the next recommended storage-ops pack from the `cka-040+` roa
 ## Current Template State
 
 - Question `2101` (`PersistentVolume reclaim policy and claimRef diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2101` has not been promoted yet and should be the next candidate for facilitator pack `cka-040`.
+- Question `2101` has now been promoted into facilitator pack `cka-040`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended storage-ops pack from the `cka-040+` roa
 
 ## Recommended Promotion Order
 
-1. Promote `q2101` into facilitator pack `cka-040`.
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

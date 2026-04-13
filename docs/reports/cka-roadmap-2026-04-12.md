@@ -45,27 +45,26 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-041+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-042+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-039` are now promoted facilitator packs, `cka-040` is now template-scaffolded, and `cka-041+` remain roadmap-only candidates.
+`cka-011` through `cka-040` are now promoted facilitator packs, and `cka-041+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-040` | PersistentVolume reclaim policy and claimRef diagnostics | Covers a remaining storage-ops gap around PVC binding, PV reclaim behavior, claimRef evidence, and workload mount inspection without mutating live storage objects. | Low | Template scaffolded |
+| `cka-040` | PersistentVolume reclaim policy and claimRef diagnostics | Covers a remaining storage-ops gap around PVC binding, PV reclaim behavior, claimRef evidence, and workload mount inspection without mutating live storage objects. | Low | Promoted |
 
 ## Proposed Build Order
 
-1. Promote `cka-040` into facilitator pack `cka-040`
-2. Define the next `cka-041` candidate from the remaining uncovered operator workflows after reclaim-policy coverage is closed
+1. Define the next `cka-041` candidate from the remaining uncovered operator workflows after reclaim-policy coverage is closed
+2. Keep broadening storage-ops coverage only if it adds genuinely new operator signal instead of repeating PVC binding inspection drills
 
 ## Suggested Problem Shapes
 
-### `cka-040` PersistentVolume reclaim policy and claimRef diagnostics
-
-- This drill targets one remaining storage-ops workflow that still fits the deterministic single-domain model.
-- It stays in the planning/evidence-export contract and focuses on PVC inventory, PV reclaim-policy inspection, claimRef evidence, workload mount-path verification, and safe manifest review without mutating live storage objects.
+### `cka-041` Next storage-ops candidate
+- The next candidate should avoid overlapping with `cka-010`, `cka-026`, and `cka-040`.
+- A good target is a storage lifecycle workflow that still exposes new operator evidence without requiring nondeterministic controller timing.
 
 ## Current Authoring State
 
@@ -93,7 +92,7 @@ Ship the next expansion wave as `cka-041+` drills that fill the remaining practi
 - `cka-037` is now promoted as facilitator pack `cka-037`, sourced from template question `1801` in `docs/templates/cka-2026-next1-priorityclass`.
 - `cka-038` is now promoted as facilitator pack `cka-038`, sourced from template question `1901` in `docs/templates/cka-2026-next1-qos`.
 - `cka-039` is now promoted as facilitator pack `cka-039`, sourced from template question `2001` in `docs/templates/cka-2026-next1-imagepullsecret`.
-- `cka-040` is now scaffolded as template question `2101` in `docs/templates/cka-2026-next1-pvreclaim`.
+- `cka-040` is now promoted as facilitator pack `cka-040`, sourced from template question `2101` in `docs/templates/cka-2026-next1-pvreclaim`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -129,7 +128,7 @@ Ship the next expansion wave as `cka-041+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-040+` drill should be considered ready only when all of the following are true:
+A `cka-041+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
