@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "2001",
+      "namespace": "registry-auth-lab",
+      "machineHostname": "ckad9999",
+      "question": "A private registry diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `pull-auth-diagnostics-brief` already exists in namespace `registry-auth-lab`. Repair it so that:\n- `targetDeployment` is `private-api`\n- `deploymentInventory` is `kubectl get deployment private-api -n registry-auth-lab -o wide`\n- `serviceAccountCheck` is `kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'`\n- `imagePullSecretsCheck` is `kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}'`\n- `imageReferenceCheck` is `kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `secretTypeCheck` is `kubectl get secret regcred -n registry-auth-lab -o jsonpath='{.type}'`\n- `serviceAccountSecretCheck` is `kubectl get serviceaccount puller -n registry-auth-lab -o jsonpath='{.imagePullSecrets[*].name}'`\n- `eventCheck` is `kubectl get events -n registry-auth-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm imagePullSecrets, ServiceAccount wiring, secret type, and image reference before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q2001/pull-auth-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q2001/pull-auth-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Pull Secret Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live ServiceAccount or Deployment during this drill.",
+      "concepts": [
+        "serviceaccount",
+        "imagePullSecrets",
+        "registry-auth",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The private registry diagnostics brief ConfigMap uses the intended Deployment target, exact ServiceAccount and imagePullSecrets inspection commands, secret-type evidence, event check, and safe manifest guidance",
+          "verificationScriptFile": "q2001_s1_validate_identity_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact deployment inventory, ServiceAccount, imagePullSecrets, and secret inspection commands",
+          "verificationScriptFile": "q2001_s2_validate_identity_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe registry-auth remediation guidance is removed",
+          "verificationScriptFile": "q2001_s3_validate_identity_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

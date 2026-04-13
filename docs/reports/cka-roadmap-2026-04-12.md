@@ -38,32 +38,34 @@ The current CKA 2026 line now includes these promoted packs:
 - `cka-034` Pod anti-affinity and topology spread diagnostics
 - `cka-035` ServiceAccount identity and projected token diagnostics
 - `cka-036` Pod securityContext and fsGroup diagnostics
+- `cka-037` PriorityClass and preemption diagnostics
+- `cka-038` Pod resource requests, limits, and QoS diagnostics
 
 This closes the first high-value curriculum gaps identified in the April 2026 audit. The next milestone should avoid repeating PSA, Ingress, and CoreDNS, and should focus on the remaining uncovered CKA operator workflows.
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-038+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-039+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-038` are now promoted facilitator packs, and `cka-039+` remain roadmap-only candidates.
+`cka-011` through `cka-038` are now promoted facilitator packs, `cka-039` is now template-scaffolded, and `cka-040+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-038` | Pod resource requests, limits, and QoS diagnostics | Covers pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest inspection without mutating the live Deployment. | Low | Promoted |
+| `cka-039` | ServiceAccount imagePullSecrets and private registry diagnostics | Covers a remaining workload-identity gap around registry auth wiring, secret type validation, ServiceAccount linkage, and safe manifest inspection without mutating the live Deployment. | Low | Template scaffolded |
 
 ## Proposed Build Order
 
-1. Define the next `cka-039` candidate from the remaining uncovered operator workflows
-2. Keep broadening the workload-resource wave only if it adds a genuinely new operator signal instead of repeating existing quota and guardrail drills
+1. Promote `cka-039` into facilitator pack `cka-039`
+2. Define the next `cka-040` candidate from the remaining uncovered operator workflows after registry-auth coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-038` Pod resource requests, limits, and QoS diagnostics
+### `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
 
-- This drill targets one remaining workload-resource workflow that still fits the deterministic single-domain model.
-- It stays in the planning/evidence-export contract and focuses on pod-level requests and limits, QoS-class evidence, event visibility, and safe manifest review without mutating the live Deployment.
+- This drill targets one remaining workload-identity workflow that still fits the deterministic single-domain model.
+- It stays in the planning/evidence-export contract and focuses on ServiceAccount wiring, imagePullSecrets inspection, secret-type evidence, event visibility, and safe manifest review without mutating the live Deployment.
 
 ## Current Authoring State
 
@@ -90,6 +92,7 @@ Ship the next expansion wave as `cka-038+` drills that fill the remaining practi
 - `cka-036` is now promoted as facilitator pack `cka-036`, sourced from template question `1701` in `docs/templates/cka-2026-next1-securitycontext`.
 - `cka-037` is now promoted as facilitator pack `cka-037`, sourced from template question `1801` in `docs/templates/cka-2026-next1-priorityclass`.
 - `cka-038` is now promoted as facilitator pack `cka-038`, sourced from template question `1901` in `docs/templates/cka-2026-next1-qos`.
+- `cka-039` is now scaffolded as template question `2001` in `docs/templates/cka-2026-next1-imagepullsecret`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -113,6 +116,7 @@ Ship the next expansion wave as `cka-038+` drills that fill the remaining practi
 - The current `cka-036` contract stays planning-focused: it repairs exact pod-level securityContext inventory, container privilege checks, fsGroup evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live securityContext fields.
 - The current `cka-037` contract stays planning-focused: it repairs exact PriorityClass inventory, workload priority wiring, preemption-policy evidence, scheduler visibility, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live PriorityClass or Deployment fields.
 - The current `cka-038` contract stays planning-focused: it repairs exact pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live resource requests and limits.
+- The current `cka-039` contract stays planning-focused: it repairs exact ServiceAccount, imagePullSecrets, image reference, secret-type, and event evidence while exporting safe manifest review without restarting the Deployment, deleting pods, or patching the live ServiceAccount or Deployment fields.
 
 ## Design Constraints
 
