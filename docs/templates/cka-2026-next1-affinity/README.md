@@ -13,7 +13,7 @@ These drafts cover the next recommended workload-placement pack from the `cka-03
 ## Current Template State
 
 - Question `1501` (`Pod anti-affinity and topology spread diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1501` has not yet been promoted into a facilitator pack.
+- Question `1501` has now been promoted into facilitator pack `cka-034`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended workload-placement pack from the `cka-03
 
 ## Recommended Promotion Order
 
-1. Promote question `1501` into facilitator pack `cka-034`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

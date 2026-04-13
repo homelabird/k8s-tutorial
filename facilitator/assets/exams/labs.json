@@ -389,6 +389,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-034",
+      "assetPath": "assets/exams/cka/034",
+      "name": "CKA 2026 Single Domain Drill - Pod anti-affinity and topology spread diagnostics",
+      "category": "CKA",
+      "description": "Standalone workload placement diagnostics drill focused on anti-affinity selectors, topology spread constraints, event evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }
