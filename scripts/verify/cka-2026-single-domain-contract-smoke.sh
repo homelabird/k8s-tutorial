@@ -18,8 +18,9 @@ TEMPLATE_README_NEXT1_CRONJOB="$ROOT_DIR/docs/templates/cka-2026-next1-cronjob/R
 TEMPLATE_README_NEXT1_JOB="$ROOT_DIR/docs/templates/cka-2026-next1-job/README.md"
 TEMPLATE_README_NEXT1_PROBES="$ROOT_DIR/docs/templates/cka-2026-next1-probes/README.md"
 TEMPLATE_README_NEXT1_INITCONTAINER="$ROOT_DIR/docs/templates/cka-2026-next1-initcontainer/README.md"
+TEMPLATE_README_NEXT1_AFFINITY="$ROOT_DIR/docs/templates/cka-2026-next1-affinity/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -81,6 +82,7 @@ grep -Fq 'Question `1101` has now been promoted into facilitator pack `cka-030`.
 grep -Fq 'Question `1201` has now been promoted into facilitator pack `cka-031`.' "$TEMPLATE_README_NEXT1_JOB"
 grep -Fq 'Question `1301` has now been promoted into facilitator pack `cka-032`.' "$TEMPLATE_README_NEXT1_PROBES"
 grep -Fq 'Question `1401` has now been promoted into facilitator pack `cka-033`.' "$TEMPLATE_README_NEXT1_INITCONTAINER"
+grep -Fq 'Question `1501` has now been promoted into facilitator pack `cka-034`.' "$TEMPLATE_README_NEXT1_AFFINITY"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'
