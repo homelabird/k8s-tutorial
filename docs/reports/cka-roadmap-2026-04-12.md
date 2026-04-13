@@ -45,27 +45,27 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 ## Goal For The Next Milestone
 
-Ship the next expansion wave as `cka-040+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
+Ship the next expansion wave as `cka-041+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-039` are now promoted facilitator packs, and `cka-040+` remain roadmap-only candidates.
+`cka-011` through `cka-039` are now promoted facilitator packs, `cka-040` is now template-scaffolded, and `cka-041+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-039` | ServiceAccount imagePullSecrets and private registry diagnostics | Covers a remaining workload-identity gap around registry auth wiring, secret type validation, ServiceAccount linkage, and safe manifest inspection without mutating the live Deployment. | Low | Promoted |
+| `cka-040` | PersistentVolume reclaim policy and claimRef diagnostics | Covers a remaining storage-ops gap around PVC binding, PV reclaim behavior, claimRef evidence, and workload mount inspection without mutating live storage objects. | Low | Template scaffolded |
 
 ## Proposed Build Order
 
-1. Define the next `cka-040` candidate from the remaining uncovered operator workflows after registry-auth coverage is closed
-2. Keep broadening workload-identity and registry-operability only if it adds genuinely new operator signal instead of repeating ServiceAccount wiring drills
+1. Promote `cka-040` into facilitator pack `cka-040`
+2. Define the next `cka-041` candidate from the remaining uncovered operator workflows after reclaim-policy coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-039` ServiceAccount imagePullSecrets and private registry diagnostics
+### `cka-040` PersistentVolume reclaim policy and claimRef diagnostics
 
-- This drill targets one remaining workload-identity workflow that still fits the deterministic single-domain model.
-- It stays in the planning/evidence-export contract and focuses on ServiceAccount wiring, imagePullSecrets inspection, secret-type evidence, event visibility, and safe manifest review without mutating the live Deployment.
+- This drill targets one remaining storage-ops workflow that still fits the deterministic single-domain model.
+- It stays in the planning/evidence-export contract and focuses on PVC inventory, PV reclaim-policy inspection, claimRef evidence, workload mount-path verification, and safe manifest review without mutating live storage objects.
 
 ## Current Authoring State
 
@@ -93,6 +93,7 @@ Ship the next expansion wave as `cka-040+` drills that fill the remaining practi
 - `cka-037` is now promoted as facilitator pack `cka-037`, sourced from template question `1801` in `docs/templates/cka-2026-next1-priorityclass`.
 - `cka-038` is now promoted as facilitator pack `cka-038`, sourced from template question `1901` in `docs/templates/cka-2026-next1-qos`.
 - `cka-039` is now promoted as facilitator pack `cka-039`, sourced from template question `2001` in `docs/templates/cka-2026-next1-imagepullsecret`.
+- `cka-040` is now scaffolded as template question `2101` in `docs/templates/cka-2026-next1-pvreclaim`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -117,6 +118,7 @@ Ship the next expansion wave as `cka-040+` drills that fill the remaining practi
 - The current `cka-037` contract stays planning-focused: it repairs exact PriorityClass inventory, workload priority wiring, preemption-policy evidence, scheduler visibility, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live PriorityClass or Deployment fields.
 - The current `cka-038` contract stays planning-focused: it repairs exact pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live resource requests and limits.
 - The current `cka-039` contract stays planning-focused: it repairs exact ServiceAccount, imagePullSecrets, image reference, secret-type, and event evidence while exporting safe manifest review without restarting the Deployment, deleting pods, or patching the live ServiceAccount or Deployment fields.
+- The current `cka-040` contract stays planning-focused: it repairs exact PVC inventory, PV reclaim-policy inspection, claimRef evidence, workload mount-path checks, and safe manifest review while exporting evidence without deleting storage objects, scaling the Deployment, or patching the live PV, PVC, or Deployment fields.
 
 ## Design Constraints
 
@@ -127,7 +129,7 @@ Ship the next expansion wave as `cka-040+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-039+` drill should be considered ready only when all of the following are true:
+A `cka-040+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
