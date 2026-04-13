@@ -379,6 +379,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-033",
+      "assetPath": "assets/exams/cka/033",
+      "name": "CKA 2026 Single Domain Drill - InitContainer and shared volume diagnostics",
+      "category": "CKA",
+      "description": "Standalone init container diagnostics drill focused on init inventory, shared volume mounts, event evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

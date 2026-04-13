@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "init-lab",
+      "machineHostname": "ckad9999",
+      "question": "An init container diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `init-diagnostics-brief` already exists in namespace `init-lab`. Repair it so that:\n- `targetDeployment` is `report-api`\n- `deploymentInventory` is `kubectl get deployment report-api -n init-lab -o wide`\n- `initContainerInventory` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'`\n- `initCommandCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'`\n- `sharedVolumeCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'`\n- `initMountCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'`\n- `appMountCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `eventCheck` is `kubectl get events -n init-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm init container command, shared volume name, and mount paths before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/init-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/init-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Init Container Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live init container command during this drill.",
+      "concepts": [
+        "initContainers",
+        "volumes",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The init diagnostics brief ConfigMap uses the intended workload target, init container inspection commands, event check, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_init_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact deployment inventory, init container checks, and safe manifest review commands",
+          "verificationScriptFile": "q1_s2_validate_init_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe init container remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_init_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

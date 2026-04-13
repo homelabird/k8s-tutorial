@@ -13,7 +13,7 @@ These drafts cover the next recommended workload-startup pack from the `cka-033+
 ## Current Template State
 
 - Question `1401` (`InitContainer and shared volume diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1401` has not yet been promoted into a facilitator pack.
+- Question `1401` has now been promoted into facilitator pack `cka-033`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended workload-startup pack from the `cka-033+
 
 ## Recommended Promotion Order
 
-1. Promote question `1401` into facilitator pack `cka-033`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

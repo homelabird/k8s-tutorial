@@ -228,6 +228,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-030` CronJob schedule, suspend, and history diagnostics
 - `cka-031` Job completions, parallelism, and backoff diagnostics
 - `cka-032` readiness, liveness, and startupProbe diagnostics
+- `cka-033` initContainer and shared volume diagnostics
 
 To check the runner wiring without starting the Podman stack:
 
