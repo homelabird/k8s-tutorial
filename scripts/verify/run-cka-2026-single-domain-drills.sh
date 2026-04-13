@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-038
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-039
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -52,6 +52,7 @@ Supported suites:
   cka-036  Pod securityContext and fsGroup diagnostics drill
   cka-037  PriorityClass and preemption diagnostics drill
   cka-038  Pod resource requests, limits, and QoS diagnostics drill
+  cka-039  ServiceAccount imagePullSecrets and private registry diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -242,6 +243,7 @@ resolve_suite_namespace() {
     cka-036) printf '%s\n' 'securitycontext-lab' ;;
     cka-037) printf '%s\n' 'priority-lab' ;;
     cka-038) printf '%s\n' 'qos-lab' ;;
+    cka-039) printf '%s\n' 'registry-auth-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1546,6 +1548,47 @@ kubectl get configmap qos-diagnostics-brief -n qos-lab -o yaml > /tmp/exam/q1/qo
 [ -s /tmp/exam/q1/qos-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-039)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pull-auth-diagnostics-brief
+  namespace: registry-auth-lab
+data:
+  targetDeployment: private-api
+  deploymentInventory: kubectl get deployment private-api -n registry-auth-lab -o wide
+  serviceAccountCheck: kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
+  imagePullSecretsCheck: kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}'
+  imageReferenceCheck: kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+  secretTypeCheck: kubectl get secret regcred -n registry-auth-lab -o jsonpath='{.type}'
+  serviceAccountSecretCheck: kubectl get serviceaccount puller -n registry-auth-lab -o jsonpath='{.imagePullSecrets[*].name}'
+  eventCheck: kubectl get events -n registry-auth-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm imagePullSecrets, ServiceAccount wiring, secret type, and image reference before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/pull-auth-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment private-api -n registry-auth-lab -o wide
+
+Pull Secret Checks
+- kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
+- kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}'
+- kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+- kubectl get secret regcred -n registry-auth-lab -o jsonpath='{.type}'
+- kubectl get serviceaccount puller -n registry-auth-lab -o jsonpath='{.imagePullSecrets[*].name}'
+- kubectl get events -n registry-auth-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment private-api -n registry-auth-lab -o yaml
+- confirm imagePullSecrets, ServiceAccount wiring, secret type, and image reference before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap pull-auth-diagnostics-brief -n registry-auth-lab -o yaml > /tmp/exam/q1/pull-auth-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/pull-auth-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/pull-auth-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1675,7 +1718,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039
   exit 0
 fi
 
@@ -1686,7 +1729,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039)
 fi
 
 for suite in "${SUITES[@]}"; do
