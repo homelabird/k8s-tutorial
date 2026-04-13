@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-032
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-033
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -46,6 +46,7 @@ Supported suites:
   cka-030  CronJob schedule, suspend, and history diagnostics drill
   cka-031  Job completions, parallelism, and backoff diagnostics drill
   cka-032  Readiness, liveness, and startupProbe diagnostics drill
+  cka-033  InitContainer and shared volume diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -230,6 +231,7 @@ resolve_suite_namespace() {
     cka-030) printf '%s\n' 'cronjob-lab' ;;
     cka-031) printf '%s\n' 'job-lab' ;;
     cka-032) printf '%s\n' 'probe-lab' ;;
+    cka-033) printf '%s\n' 'init-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1281,6 +1283,47 @@ kubectl get configmap probe-diagnostics-brief -n probe-lab -o yaml > /tmp/exam/q
 [ -s /tmp/exam/q1/probe-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-033)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-diagnostics-brief
+  namespace: init-lab
+data:
+  targetDeployment: report-api
+  deploymentInventory: kubectl get deployment report-api -n init-lab -o wide
+  initContainerInventory: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'
+  initCommandCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'
+  sharedVolumeCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'
+  initMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'
+  appMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+  eventCheck: kubectl get events -n init-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm init container command, shared volume name, and mount paths before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/init-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment report-api -n init-lab -o wide
+- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'
+
+Init Container Checks
+- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'
+- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'
+- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'
+- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+- kubectl get events -n init-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment report-api -n init-lab -o yaml
+- confirm init container command, shared volume name, and mount paths before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap init-diagnostics-brief -n init-lab -o yaml > /tmp/exam/q1/init-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/init-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/init-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1396,7 +1439,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033
   exit 0
 fi
 
@@ -1407,7 +1450,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033)
 fi
 
 for suite in "${SUITES[@]}"; do
