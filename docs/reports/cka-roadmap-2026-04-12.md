@@ -41,24 +41,25 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-033+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-032` are now promoted facilitator packs, and `cka-033+` remain roadmap-only candidates.
+`cka-011` through `cka-032` are now promoted facilitator packs, `cka-033` is template-scaffolded, and `cka-034+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-033` | backlog candidate to be defined | Choose the next uncovered deterministic operator workflow after the probe diagnostics drill lands. | TBD | Backlog definition needed |
+| `cka-033` | InitContainer and shared volume diagnostics | Covers init container inventory, command inspection, shared volume mounts, and safe manifest review without mutating the live Deployment. | Low | Promote next |
 
 ## Proposed Build Order
 
-1. Define the next `cka-033` candidate from the remaining uncovered operator workflows
+1. Promote `cka-033` init container and shared volume diagnostics into a facilitator pack
+2. Define the next `cka-034` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
 
-### Next candidate to be defined after `cka-032`
+### `cka-033` init container and shared volume diagnostics
 
-- The next drill after `cka-032` should target one uncovered operator workflow that still fits the deterministic single-domain model.
-- It should follow the same planning/evidence-export contract unless a safe live remediation contract is clearly reproducible in local Podman/kind environments.
+- This drill targets one remaining workload-startup workflow that still fits the deterministic single-domain model.
+- It stays in the planning/evidence-export contract and focuses on init container inventory, shared volume inspection, mount-path checks, and safe manifest review without mutating the live Deployment.
 
 ## Current Authoring State
 
@@ -79,6 +80,7 @@ Ship the next expansion wave as `cka-033+` drills that fill the remaining practi
 - `cka-030` is now promoted as facilitator pack `cka-030`, sourced from template question `1101` in `docs/templates/cka-2026-next1-cronjob`.
 - `cka-031` is now promoted as facilitator pack `cka-031`, sourced from template question `1201` in `docs/templates/cka-2026-next1-job`.
 - `cka-032` is now promoted as facilitator pack `cka-032`, sourced from template question `1301` in `docs/templates/cka-2026-next1-probes`.
+- `cka-033` is now template-scaffolded from question `1401` in `docs/templates/cka-2026-next1-initcontainer`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -96,6 +98,7 @@ Ship the next expansion wave as `cka-033+` drills that fill the remaining practi
 - The current `cka-029` contract stays planning-focused: it repairs exact DaemonSet inventory, rollout status, node coverage, update-strategy guidance, and safe manifest review while exporting evidence without deleting the DaemonSet or cordoning nodes.
 - The current `cka-031` contract stays planning-focused: it repairs exact Job inventory, completions, parallelism, backoffLimit, pod evidence, and safe manifest review while exporting evidence without deleting the Job or creating a replacement Job.
 - The current `cka-032` contract stays planning-focused: it repairs exact startup, liveness, and readiness probe inventory, event evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching live probe fields.
+- The current `cka-033` contract should stay planning-focused: it should repair exact init container inventory, shared volume checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live init container command.
 
 ## Design Constraints
 
@@ -106,7 +109,7 @@ Ship the next expansion wave as `cka-033+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-033+` drill should be considered ready only when all of the following are true:
+A `cka-034+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
