@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "qos-lab",
+      "machineHostname": "ckad9999",
+      "question": "A workload resource diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `qos-diagnostics-brief` already exists in namespace `qos-lab`. Repair it so that:\n- `targetDeployment` is `reporting-api`\n- `deploymentInventory` is `kubectl get deployment reporting-api -n qos-lab -o wide`\n- `requestsCpuCheck` is `kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}'`\n- `requestsMemoryCheck` is `kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}'`\n- `limitsCpuCheck` is `kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.cpu}'`\n- `limitsMemoryCheck` is `kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}'`\n- `qosClassCheck` is `kubectl get pods -n qos-lab -l app=reporting-api -o jsonpath='{.items[0].status.qosClass}'`\n- `eventCheck` is `kubectl get events -n qos-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm requests, limits, QoS class, and namespace events before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/qos-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/qos-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Resource Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live resource requests or limits during this drill.",
+      "concepts": [
+        "resources",
+        "qosClass",
+        "operations",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The QoS diagnostics brief ConfigMap uses the intended workload target, exact resource inspection commands, QoS evidence, event check, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_qos_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact deployment inventory, resource checks, and safe manifest review commands",
+          "verificationScriptFile": "q1_s2_validate_qos_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe QoS remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_qos_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

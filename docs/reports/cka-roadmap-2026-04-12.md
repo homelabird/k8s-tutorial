@@ -45,18 +45,18 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-038+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-037` are now promoted facilitator packs, `cka-038` is template-scaffolded, and `cka-039+` remain roadmap-only candidates.
+`cka-011` through `cka-038` are now promoted facilitator packs, and `cka-039+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-038` | Pod resource requests, limits, and QoS diagnostics | Covers pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest inspection without mutating the live Deployment. | Low | Promote next |
+| `cka-038` | Pod resource requests, limits, and QoS diagnostics | Covers pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest inspection without mutating the live Deployment. | Low | Promoted |
 
 ## Proposed Build Order
 
-1. Promote `cka-038` Pod resource requests, limits, and QoS diagnostics into a facilitator pack
-2. Define the next `cka-039` candidate from the remaining uncovered operator workflows
+1. Define the next `cka-039` candidate from the remaining uncovered operator workflows
+2. Keep broadening the workload-resource wave only if it adds a genuinely new operator signal instead of repeating existing quota and guardrail drills
 
 ## Suggested Problem Shapes
 
@@ -89,7 +89,7 @@ Ship the next expansion wave as `cka-038+` drills that fill the remaining practi
 - `cka-035` is now promoted as facilitator pack `cka-035`, sourced from template question `1601` in `docs/templates/cka-2026-next1-serviceaccount`.
 - `cka-036` is now promoted as facilitator pack `cka-036`, sourced from template question `1701` in `docs/templates/cka-2026-next1-securitycontext`.
 - `cka-037` is now promoted as facilitator pack `cka-037`, sourced from template question `1801` in `docs/templates/cka-2026-next1-priorityclass`.
-- `cka-038` is now template-scaffolded from template question `1901` in `docs/templates/cka-2026-next1-qos`.
+- `cka-038` is now promoted as facilitator pack `cka-038`, sourced from template question `1901` in `docs/templates/cka-2026-next1-qos`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -112,7 +112,7 @@ Ship the next expansion wave as `cka-038+` drills that fill the remaining practi
 - The current `cka-035` contract stays planning-focused: it repairs exact ServiceAccount inventory, projected token checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live ServiceAccount fields.
 - The current `cka-036` contract stays planning-focused: it repairs exact pod-level securityContext inventory, container privilege checks, fsGroup evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live securityContext fields.
 - The current `cka-037` contract stays planning-focused: it repairs exact PriorityClass inventory, workload priority wiring, preemption-policy evidence, scheduler visibility, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live PriorityClass or Deployment fields.
-- The current `cka-038` contract should stay planning-focused: it should repair exact pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live resource requests and limits.
+- The current `cka-038` contract stays planning-focused: it repairs exact pod-level resource inventory, QoS-class evidence, namespace events, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live resource requests and limits.
 
 ## Design Constraints
 

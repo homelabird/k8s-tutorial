@@ -429,6 +429,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-038",
+      "assetPath": "assets/exams/cka/038",
+      "name": "CKA 2026 Single Domain Drill - Pod resource requests, limits, and QoS diagnostics",
+      "category": "CKA",
+      "description": "Standalone workload resource diagnostics drill focused on requests and limits inspection, QoS evidence, namespace events, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

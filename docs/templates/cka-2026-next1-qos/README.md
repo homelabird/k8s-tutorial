@@ -13,7 +13,7 @@ These drafts cover the next recommended workload-resource pack from the `cka-038
 ## Current Template State
 
 - Question `1901` (`Pod resource requests, limits, and QoS diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1901` has not yet been promoted into a facilitator pack.
+- Question `1901` has now been promoted into facilitator pack `cka-038`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended workload-resource pack from the `cka-038
 
 ## Recommended Promotion Order
 
-1. Promote question `1901` into facilitator pack `cka-038`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 
