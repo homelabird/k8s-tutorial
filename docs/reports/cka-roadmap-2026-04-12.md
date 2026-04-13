@@ -45,25 +45,25 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-037+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-036` are now promoted facilitator packs, and `cka-037+` remain roadmap-only candidates.
+`cka-011` through `cka-036` are now promoted facilitator packs, `cka-037` is template-scaffolded, and `cka-038+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-036` | Pod securityContext and fsGroup diagnostics | Covers workload security review, pod-level securityContext fields, container privilege checks, and safe manifest inspection without mutating the live Deployment. | Low | Promoted |
+| `cka-037` | PriorityClass and preemption diagnostics | Covers workload priority wiring, PriorityClass inspection, preemption-policy review, and scheduler evidence without mutating the live Deployment or PriorityClass. | Low | Promote next |
 
 ## Proposed Build Order
 
-1. Define the next `cka-037` candidate from the remaining uncovered operator workflows
-2. Keep broadening the workload-security wave only if it adds a genuinely new operator signal instead of rehashing PSA-only checks
+1. Promote `cka-037` PriorityClass and preemption diagnostics into a facilitator pack
+2. Define the next `cka-038` candidate from the remaining uncovered operator workflows
 
 ## Suggested Problem Shapes
 
-### `cka-036` Pod securityContext and fsGroup diagnostics
+### `cka-037` PriorityClass and preemption diagnostics
 
-- This drill targets one remaining workload-security workflow that still fits the deterministic single-domain model.
-- It stays in the planning/evidence-export contract and focuses on pod-level securityContext inventory, container privilege inspection, fsGroup evidence, and safe manifest review without mutating the live Deployment.
+- This drill targets one remaining scheduling and operator workflow that still fits the deterministic single-domain model.
+- It stays in the planning/evidence-export contract and focuses on PriorityClass inventory, workload priority wiring, preemption-policy evidence, scheduler visibility, and safe manifest review without mutating the live Deployment or PriorityClass.
 
 ## Current Authoring State
 
@@ -88,6 +88,7 @@ Ship the next expansion wave as `cka-037+` drills that fill the remaining practi
 - `cka-034` is now promoted as facilitator pack `cka-034`, sourced from template question `1501` in `docs/templates/cka-2026-next1-affinity`.
 - `cka-035` is now promoted as facilitator pack `cka-035`, sourced from template question `1601` in `docs/templates/cka-2026-next1-serviceaccount`.
 - `cka-036` is now promoted as facilitator pack `cka-036`, sourced from template question `1701` in `docs/templates/cka-2026-next1-securitycontext`.
+- `cka-037` is now template-scaffolded from template question `1801` in `docs/templates/cka-2026-next1-priorityclass`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -109,6 +110,7 @@ Ship the next expansion wave as `cka-037+` drills that fill the remaining practi
 - The current `cka-034` contract stays planning-focused: it repairs exact anti-affinity selectors, topology spread constraints, event evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, scaling replicas, or patching the live placement rules.
 - The current `cka-035` contract stays planning-focused: it repairs exact ServiceAccount inventory, projected token checks, mount-path evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live ServiceAccount fields.
 - The current `cka-036` contract stays planning-focused: it repairs exact pod-level securityContext inventory, container privilege checks, fsGroup evidence, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live securityContext fields.
+- The current `cka-037` contract should stay planning-focused: it should repair exact PriorityClass inventory, workload priority wiring, preemption-policy evidence, scheduler visibility, and safe manifest review while exporting evidence without restarting the Deployment, deleting pods, or patching the live PriorityClass or Deployment fields.
 
 ## Design Constraints
 
@@ -119,7 +121,7 @@ Ship the next expansion wave as `cka-037+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-037+` drill should be considered ready only when all of the following are true:
+A `cka-038+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
