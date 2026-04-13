@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-034
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-035
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -48,6 +48,7 @@ Supported suites:
   cka-032  Readiness, liveness, and startupProbe diagnostics drill
   cka-033  InitContainer and shared volume diagnostics drill
   cka-034  Pod anti-affinity and topology spread diagnostics drill
+  cka-035  ServiceAccount identity and projected token diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -234,6 +235,7 @@ resolve_suite_namespace() {
     cka-032) printf '%s\n' 'probe-lab' ;;
     cka-033) printf '%s\n' 'init-lab' ;;
     cka-034) printf '%s\n' 'affinity-lab' ;;
+    cka-035) printf '%s\n' 'identity-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1369,6 +1371,47 @@ kubectl get configmap placement-diagnostics-brief -n affinity-lab -o yaml > /tmp
 [ -s /tmp/exam/q1/placement-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-035)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: identity-diagnostics-brief
+  namespace: identity-lab
+data:
+  targetDeployment: metrics-api
+  deploymentInventory: kubectl get deployment metrics-api -n identity-lab -o wide
+  serviceAccountCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
+  automountCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'
+  projectedTokenPathCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'
+  projectedAudienceCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'
+  mountPathCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+  eventCheck: kubectl get events -n identity-lab --sort-by=.lastTimestamp
+  safeManifestNote: "confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest"
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/identity-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment metrics-api -n identity-lab -o wide
+- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
+
+Identity Checks
+- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'
+- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'
+- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'
+- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+- kubectl get events -n identity-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment metrics-api -n identity-lab -o yaml
+- confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap identity-diagnostics-brief -n identity-lab -o yaml > /tmp/exam/q1/identity-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/identity-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/identity-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1484,7 +1527,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035
   exit 0
 fi
 
@@ -1495,7 +1538,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035)
 fi
 
 for suite in "${SUITES[@]}"; do
