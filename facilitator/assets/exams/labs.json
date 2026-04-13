@@ -419,6 +419,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-037",
+      "assetPath": "assets/exams/cka/037",
+      "name": "CKA 2026 Single Domain Drill - PriorityClass and preemption diagnostics",
+      "category": "CKA",
+      "description": "Standalone workload priority diagnostics drill focused on PriorityClass wiring, preemption-policy inspection, scheduler evidence, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

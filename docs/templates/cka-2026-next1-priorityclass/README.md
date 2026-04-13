@@ -13,7 +13,7 @@ These drafts cover the next recommended scheduling-operations pack from the `cka
 ## Current Template State
 
 - Question `1801` (`PriorityClass and preemption diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `1801` has not yet been promoted into a facilitator pack.
+- Question `1801` has now been promoted into facilitator pack `cka-037`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended scheduling-operations pack from the `cka
 
 ## Recommended Promotion Order
 
-1. Promote question `1801` into facilitator pack `cka-037`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 
