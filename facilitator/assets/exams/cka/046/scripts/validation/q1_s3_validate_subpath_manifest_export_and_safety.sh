@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MANIFEST="${MANIFEST:-/tmp/exam/q2701/subpath-diagnostics-brief.yaml}"
+MANIFEST="${MANIFEST:-/tmp/exam/q1/subpath-diagnostics-brief.yaml}"
 
 [[ -f "${MANIFEST}" ]]
 grep -F "targetDeployment: subpath-api" "${MANIFEST}" >/dev/null

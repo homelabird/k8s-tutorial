@@ -1,0 +1,10 @@
+{
+  "id": "cka-046",
+  "title": "CKA 2026 Single Domain Drill - ConfigMap subPath mount diagnostics",
+  "description": "Standalone subPath diagnostics drill focused on ConfigMap-backed item paths, mount targets, subPath wiring, and safe manifest review.",
+  "assetPath": "assets/exams/cka/046",
+  "assessmentFile": "assessment.json",
+  "answersFile": "answers.md",
+  "questionCount": 1,
+  "type": "cka-single-domain"
+}

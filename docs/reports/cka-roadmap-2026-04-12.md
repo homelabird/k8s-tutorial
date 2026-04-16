@@ -54,26 +54,23 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-046+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-045` are now promoted facilitator packs, and `cka-046+` remain roadmap-only candidates.
+`cka-011` through `cka-046` are now promoted facilitator packs, and `cka-047+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-046` | ConfigMap subPath mount diagnostics | Covers a common workload-storage wiring failure mode that is still missing after projected-volume and envFrom coverage, while staying deterministic and single-domain. | Low | Scaffold now |
+| `cka-047` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after subPath coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
 
 ## Proposed Build Order
 
-1. Scaffold `cka-046` as the ConfigMap `subPath` diagnostics drill
+1. Define the next `cka-047` candidate from the remaining uncovered operator workflows after subPath coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-046` ConfigMap subPath mount diagnostics
+### `cka-047` Next candidate to be defined
 
-- Scope the drill to one Deployment mounting a single ConfigMap-backed file through `subPath`.
-- Keep it in the `planning + evidence export` lane: repair a diagnostics brief, export a checklist, and save the repaired manifest without mutating the live Deployment or ConfigMap.
-- Validate exact ConfigMap name, item path, `subPath`, mount path, `readOnly` evidence, container identity, and safe manifest guidance.
-- Avoid restarts, pod deletes, or live `kubectl patch` shortcuts so the drill stays deterministic in the local Podman/kind stack.
+- Choose the next candidate only after `cka-046` promotion is closed and the remaining uncovered workflows are re-ranked.
 
 ## Current Authoring State
 
@@ -107,7 +104,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - `cka-043` is now promoted as facilitator pack `cka-043`, sourced from template question `2401` in `docs/templates/cka-2026-next1-staticpod`.
 - `cka-044` is now promoted as facilitator pack `cka-044`, sourced from template question `2501` in `docs/templates/cka-2026-next1-projectedvolume`.
 - `cka-045` is now promoted as facilitator pack `cka-045`, sourced from template question `2601` in `docs/templates/cka-2026-next1-envfrom`.
-- `cka-046` is currently scaffolded as template question `2701` in `docs/templates/cka-2026-next1-subpath` and has not yet been promoted.
+- `cka-046` is now promoted as facilitator pack `cka-046`, sourced from template question `2701` in `docs/templates/cka-2026-next1-subpath`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -149,7 +146,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-046+` drill should be considered ready only when all of the following are true:
+A `cka-047+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
