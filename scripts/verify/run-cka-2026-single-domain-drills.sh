@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-045
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-046
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -59,6 +59,7 @@ Supported suites:
   cka-043  Static pod manifest and mirror pod diagnostics drill
   cka-044  Projected ConfigMap and Secret volume diagnostics drill
   cka-045  ConfigMap and Secret envFrom diagnostics drill
+  cka-046  ConfigMap subPath mount diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -256,6 +257,7 @@ resolve_suite_namespace() {
     cka-043) printf '%s\n' 'staticpod-lab' ;;
     cka-044) printf '%s\n' 'projectedvolume-lab' ;;
     cka-045) printf '%s\n' 'envfrom-lab' ;;
+    cka-046) printf '%s\n' 'subpath-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1853,6 +1855,51 @@ kubectl get configmap envfrom-diagnostics-brief -n envfrom-lab -o yaml > /tmp/ex
 [ -s /tmp/exam/q1/envfrom-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-046)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: subpath-diagnostics-brief
+  namespace: subpath-lab
+data:
+  targetDeployment: subpath-api
+  deploymentInventory: kubectl get deployment subpath-api -n subpath-lab -o wide
+  configMapNameCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.name}'
+  itemPathCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.items[0].path}'
+  mountPathCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+  subPathCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].subPath}'
+  readOnlyCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
+  containerNameCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
+  imageCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+  eventCheck: kubectl get events -n subpath-lab --sort-by=.lastTimestamp
+  safeManifestNote: confirm ConfigMap item path, subPath, and target mount path before changing the Deployment manifest
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/subpath-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment subpath-api -n subpath-lab -o wide
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
+
+subPath Checks
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.name}'
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.items[0].path}'
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].subPath}'
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
+- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+- kubectl get events -n subpath-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment subpath-api -n subpath-lab -o yaml
+- confirm ConfigMap item path, subPath, and target mount path before changing the Deployment manifest
+EOF_CHECKLIST
+kubectl get configmap subpath-diagnostics-brief -n subpath-lab -o yaml > /tmp/exam/q1/subpath-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/subpath-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/subpath-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1982,7 +2029,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046
   exit 0
 fi
 
@@ -1993,7 +2040,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046)
 fi
 
 for suite in "${SUITES[@]}"; do
