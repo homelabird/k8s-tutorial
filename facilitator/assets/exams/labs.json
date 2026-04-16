@@ -499,6 +499,16 @@
       "warmUpTimeInSeconds": 90,
       "difficulty": "Medium",
       "examDurationInMinutes": 20
+    },
+    {
+      "id": "cka-045",
+      "assetPath": "assets/exams/cka/045",
+      "name": "CKA 2026 Single Domain Drill - ConfigMap and Secret envFrom diagnostics",
+      "category": "CKA",
+      "description": "Standalone envFrom diagnostics drill focused on ConfigMap and Secret source order, prefix wiring, container identity, and safe manifest review.",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20
     }
   ]
 }

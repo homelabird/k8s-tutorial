@@ -240,6 +240,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-042` Ephemeral containers and kubectl debug diagnostics
 - `cka-043` Static pod manifest and mirror pod diagnostics
 - `cka-044` Projected ConfigMap and Secret volume diagnostics
+- `cka-045` ConfigMap and Secret envFrom diagnostics
 
 To check the runner wiring without starting the Podman stack:
 
