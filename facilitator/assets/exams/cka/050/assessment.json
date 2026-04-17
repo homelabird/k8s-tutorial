@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "downwardapi-lab",
+      "machineHostname": "ckad9999",
+      "question": "A metadata diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `meta-diagnostics-brief` already exists in namespace `downwardapi-lab`. Repair it so that:\n- `targetDeployment` is `meta-api`\n- `deploymentInventory` is `kubectl get deployment meta-api -n downwardapi-lab -o wide`\n- `envNameCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'`\n- `fieldPathCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'`\n- `namespaceFieldCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'`\n- `containerNameCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'`\n- `imageCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/meta-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/meta-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Downward API Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch the live Deployment during this drill.",
+      "concepts": [
+        "downwardAPI",
+        "fieldRef",
+        "env",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The metadata diagnostics brief ConfigMap uses the intended deployment target, exact Downward API inspection commands, event evidence, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_downwardapi_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact Downward API env and metadata inspection commands",
+          "verificationScriptFile": "q1_s2_validate_downwardapi_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe Downward API remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_downwardapi_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

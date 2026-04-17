@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-049
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-050
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -63,6 +63,7 @@ Supported suites:
   cka-047  ReadWriteOncePod and PVC access mode diagnostics drill
   cka-048  Pod DNS policy and dnsConfig diagnostics drill
   cka-049  Lifecycle hooks and graceful termination diagnostics drill
+  cka-050  Downward API env and metadata diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -264,6 +265,7 @@ resolve_suite_namespace() {
     cka-047) printf '%s\n' 'rwop-lab' ;;
     cka-048) printf '%s\n' 'dnspolicy-lab' ;;
     cka-049) printf '%s\n' 'lifecycle-lab' ;;
+    cka-050) printf '%s\n' 'downwardapi-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -2031,6 +2033,47 @@ kubectl get configmap lifecycle-diagnostics-brief -n lifecycle-lab -o yaml > /tm
 [ -s /tmp/exam/q1/lifecycle-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-050)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meta-diagnostics-brief
+  namespace: downwardapi-lab
+data:
+  targetDeployment: meta-api
+  deploymentInventory: kubectl get deployment meta-api -n downwardapi-lab -o wide
+  envNameCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'
+  fieldPathCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'
+  namespaceFieldCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'
+  containerNameCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
+  imageCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+  eventCheck: kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp
+  safeManifestNote: confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/meta-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment meta-api -n downwardapi-lab -o wide
+- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'
+
+Downward API Checks
+- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'
+- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'
+- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
+- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+- kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment meta-api -n downwardapi-lab -o yaml
+- confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation
+EOF_CHECKLIST
+kubectl get configmap meta-diagnostics-brief -n downwardapi-lab -o yaml > /tmp/exam/q1/meta-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/meta-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/meta-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -2160,7 +2203,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050
   exit 0
 fi
 
@@ -2171,7 +2214,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050)
 fi
 
 for suite in "${SUITES[@]}"; do

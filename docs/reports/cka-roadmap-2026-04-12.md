@@ -54,25 +54,23 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-046+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-049` are now promoted facilitator packs, and `cka-050+` remain roadmap-only candidates.
+`cka-011` through `cka-050` are now promoted facilitator packs, and `cka-051+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-050` | Downward API env and metadata diagnostics | Covers workload-level `fieldRef`, env wiring, and metadata evidence without relying on live pod recreation. | Low | Template scaffold next |
+| `cka-051` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after Downward API coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
 
 ## Proposed Build Order
 
-1. Promote `cka-050` Downward API env and metadata diagnostics from template to facilitator pack
+1. Define the next `cka-051` candidate from the remaining uncovered operator workflows after Downward API coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-050` Downward API env and metadata diagnostics
+### `cka-051` Next candidate to be defined
 
-- Validate exact env names, `fieldRef.fieldPath` values, and target container wiring for a single deployment.
-- Export event history and manifest evidence without relying on live pod recreation.
-- Keep the drill planning-focused by forbidding pod deletion, rollout restart, and ad hoc deployment patching.
+- Choose the next candidate only after `cka-050` promotion is closed and the remaining uncovered workflows are re-ranked.
 
 ## Current Authoring State
 
@@ -110,7 +108,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - `cka-047` is now promoted as facilitator pack `cka-047`, sourced from template question `2801` in `docs/templates/cka-2026-next1-rwop`.
 - `cka-048` is now promoted as facilitator pack `cka-048`, sourced from template question `4801` in `docs/templates/cka-2026-next1-dnspolicy`.
 - `cka-049` is now promoted as facilitator pack `cka-049`, sourced from template question `4901` in `docs/templates/cka-2026-next1-lifecycle`.
-- `cka-050` is now template-scaffolded as question `5001` in `docs/templates/cka-2026-next1-downwardapi`.
+- `cka-050` is now promoted as facilitator pack `cka-050`, sourced from template question `5001` in `docs/templates/cka-2026-next1-downwardapi`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.

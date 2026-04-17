@@ -541,6 +541,15 @@
       "examDurationInMinutes": 20,
       "assetPath": "assets/exams/cka/049",
       "type": "cka-single-domain"
+    },
+    {
+      "id": "cka-050",
+      "name": "CKA 2026 Single Domain Drill - Downward API env and metadata diagnostics",
+      "description": "Standalone Downward API diagnostics drill focused on fieldRef env wiring, metadata evidence, and safe manifest review.",
+      "category": "CKA",
+      "examDurationInMinutes": 20,
+      "assetPath": "assets/exams/cka/050",
+      "type": "cka-single-domain"
     }
   ]
 }

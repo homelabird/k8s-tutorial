@@ -34,8 +34,9 @@ TEMPLATE_README_NEXT1_SUBPATH="$ROOT_DIR/docs/templates/cka-2026-next1-subpath/R
 TEMPLATE_README_NEXT1_RWOP="$ROOT_DIR/docs/templates/cka-2026-next1-rwop/README.md"
 TEMPLATE_README_NEXT1_DNSPOLICY="$ROOT_DIR/docs/templates/cka-2026-next1-dnspolicy/README.md"
 TEMPLATE_README_NEXT1_LIFECYCLE="$ROOT_DIR/docs/templates/cka-2026-next1-lifecycle/README.md"
+TEMPLATE_README_NEXT1_DOWNWARDAPI="$ROOT_DIR/docs/templates/cka-2026-next1-downwardapi/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -113,6 +114,7 @@ grep -Fq 'Question `2701` has now been promoted into facilitator pack `cka-046`.
 grep -Fq 'Question `2801` has now been promoted into facilitator pack `cka-047`.' "$TEMPLATE_README_NEXT1_RWOP"
 grep -Fq 'Question `4801` has now been promoted into facilitator pack `cka-048`.' "$TEMPLATE_README_NEXT1_DNSPOLICY"
 grep -Fq 'Question `4901` has now been promoted into facilitator pack `cka-049`.' "$TEMPLATE_README_NEXT1_LIFECYCLE"
+grep -Fq 'Question `5001` has now been promoted into facilitator pack `cka-050`.' "$TEMPLATE_README_NEXT1_DOWNWARDAPI"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'
