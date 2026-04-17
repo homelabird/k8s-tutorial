@@ -13,7 +13,7 @@ These drafts cover the next recommended storage-semantics pack from the `cka-047
 ## Current Template State
 
 - Question `2801` (`ReadWriteOncePod and PVC access mode diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
-- Question `2801` has not yet been promoted into a facilitator pack.
+- Question `2801` has now been promoted into facilitator pack `cka-047`.
 
 ## Important Constraints
 
@@ -23,7 +23,7 @@ These drafts cover the next recommended storage-semantics pack from the `cka-047
 
 ## Recommended Promotion Order
 
-1. Promote `q2801` into `facilitator/assets/exams/cka/047`
+1. No further promotion work remains in this template set.
 
 ## Planned Facilitator Mapping
 

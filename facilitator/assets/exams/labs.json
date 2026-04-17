@@ -516,6 +516,13 @@
       "description": "Standalone subPath diagnostics drill focused on ConfigMap-backed item paths, mount targets, subPath wiring, and safe manifest review.",
       "type": "cka-single-domain",
       "assetPath": "assets/exams/cka/046"
+    },
+    {
+      "id": "cka-047",
+      "name": "CKA 2026 Single Domain Drill - ReadWriteOncePod and PVC access mode diagnostics",
+      "description": "Standalone RWOP diagnostics drill focused on PVC access modes, consumer pod wiring, bound volume evidence, and safe manifest review.",
+      "type": "cka-single-domain",
+      "assetPath": "assets/exams/cka/047"
     }
   ]
 }

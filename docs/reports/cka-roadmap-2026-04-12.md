@@ -54,26 +54,23 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-046+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-046` are now promoted facilitator packs, and `cka-047+` remain roadmap-only candidates.
+`cka-011` through `cka-047` are now promoted facilitator packs, and `cka-048+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-047` | ReadWriteOncePod and PVC access mode diagnostics | Extends the storage wave into claim semantics and consumer visibility without repeating dynamic provisioning, reclaim, or resize coverage. | Low | Scaffold now |
+| `cka-048` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after RWOP coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
 
 ## Proposed Build Order
 
-1. Scaffold `cka-047` as the ReadWriteOncePod and PVC access mode diagnostics drill
+1. Define the next `cka-048` candidate from the remaining uncovered operator workflows after RWOP coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-047` ReadWriteOncePod and PVC access mode diagnostics
+### `cka-048` Next candidate to be defined
 
-- Scope the drill to one PVC, one bound PV, and one consumer pod so access-mode semantics stay deterministic.
-- Keep it in the `planning + evidence export` lane: repair a diagnostics brief, export a checklist, and save the repaired manifest without mutating the live PVC or Pods.
-- Validate exact access mode, StorageClass, bound volume, consumer pod claim wiring, mount path, and safe manifest guidance.
-- Avoid deleting claims or pods, and avoid live PVC patching so the drill stays reproducible in the local Podman/kind stack.
+- Choose the next candidate only after `cka-047` promotion is closed and the remaining uncovered workflows are re-ranked.
 
 ## Current Authoring State
 
@@ -108,7 +105,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - `cka-044` is now promoted as facilitator pack `cka-044`, sourced from template question `2501` in `docs/templates/cka-2026-next1-projectedvolume`.
 - `cka-045` is now promoted as facilitator pack `cka-045`, sourced from template question `2601` in `docs/templates/cka-2026-next1-envfrom`.
 - `cka-046` is now promoted as facilitator pack `cka-046`, sourced from template question `2701` in `docs/templates/cka-2026-next1-subpath`.
-- `cka-047` is currently scaffolded as template question `2801` in `docs/templates/cka-2026-next1-rwop` and has not yet been promoted.
+- `cka-047` is now promoted as facilitator pack `cka-047`, sourced from template question `2801` in `docs/templates/cka-2026-next1-rwop`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -151,7 +148,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-047+` drill should be considered ready only when all of the following are true:
+A `cka-048+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked

@@ -142,7 +142,7 @@ describe('app', () => {
     expect(response.status).toBe(200);
 
     const ids = response.body.map((lab) => lab.id);
-    expect(ids).toEqual(expect.arrayContaining(['cka-006', 'cka-007', 'cka-008', 'cka-009', 'cka-010', 'cka-011', 'cka-012', 'cka-013', 'cka-014', 'cka-015', 'cka-016', 'cka-017', 'cka-018', 'cka-019', 'cka-020', 'cka-021', 'cka-022', 'cka-023', 'cka-024', 'cka-025', 'cka-026', 'cka-027', 'cka-028', 'cka-029', 'cka-030', 'cka-031', 'cka-032', 'cka-033', 'cka-034', 'cka-035', 'cka-036', 'cka-037', 'cka-038', 'cka-039', 'cka-040', 'cka-041', 'cka-042', 'cka-043', 'cka-044', 'cka-045', 'cka-046']));
+    expect(ids).toEqual(expect.arrayContaining(['cka-006', 'cka-007', 'cka-008', 'cka-009', 'cka-010', 'cka-011', 'cka-012', 'cka-013', 'cka-014', 'cka-015', 'cka-016', 'cka-017', 'cka-018', 'cka-019', 'cka-020', 'cka-021', 'cka-022', 'cka-023', 'cka-024', 'cka-025', 'cka-026', 'cka-027', 'cka-028', 'cka-029', 'cka-030', 'cka-031', 'cka-032', 'cka-033', 'cka-034', 'cka-035', 'cka-036', 'cka-037', 'cka-038', 'cka-039', 'cka-040', 'cka-041', 'cka-042', 'cka-043', 'cka-044', 'cka-045', 'cka-046', 'cka-047']));
 
     expect(response.body.find((lab) => lab.id === 'cka-045')).toMatchObject({
       id: 'cka-045',

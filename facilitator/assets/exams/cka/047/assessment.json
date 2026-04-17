@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "rwop-lab",
+      "machineHostname": "ckad9999",
+      "question": "A PVC access-mode diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `rwop-diagnostics-brief` already exists in namespace `rwop-lab`. Repair it so that:\n- `targetClaim` is `data-claim`\n- `claimInventory` is `kubectl get pvc data-claim -n rwop-lab -o wide`\n- `accessModeCheck` is `kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.accessModes[0]}'`\n- `storageClassCheck` is `kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.storageClassName}'`\n- `volumeNameCheck` is `kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.volumeName}'`\n- `readerPodCheck` is `kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.volumes[0].persistentVolumeClaim.claimName}'`\n- `mountPathCheck` is `kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.containers[0].volumeMounts[0].mountPath}'`\n- `storageClassExpansionCheck` is `kubectl get storageclass rwop-hostpath -o jsonpath='{.allowVolumeExpansion}'`\n- `eventCheck` is `kubectl get events -n rwop-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm PVC access mode, claim consumer, and mount path before changing workload or storage manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/rwop-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/rwop-diagnostics-checklist.txt` with the sections `Claim Inventory`, `Access Mode Checks`, and `Safe Manifest Review`\n\nDo not delete the PVC, do not delete pods, and do not patch the live PVC or Pod during this drill.",
+      "concepts": [
+        "persistentVolumeClaim",
+        "ReadWriteOncePod",
+        "storageClass",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "The RWOP diagnostics brief ConfigMap uses the intended claim target, exact PVC and consumer inspection commands, event evidence, and safe manifest guidance",
+          "verificationScriptFile": "q1_s1_validate_rwop_brief_contract.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "The exported checklist contains the required sections and exact PVC access mode, consumer, and mount inspection commands",
+          "verificationScriptFile": "q1_s2_validate_rwop_checklist_export.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The repaired ConfigMap manifest is exported and stale unsafe PVC remediation guidance is removed",
+          "verificationScriptFile": "q1_s3_validate_rwop_manifest_export_and_safety.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}
