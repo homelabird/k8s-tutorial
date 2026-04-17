@@ -32,8 +32,9 @@ TEMPLATE_README_NEXT1_PROJECTEDVOLUME="$ROOT_DIR/docs/templates/cka-2026-next1-p
 TEMPLATE_README_NEXT1_ENVFROM="$ROOT_DIR/docs/templates/cka-2026-next1-envfrom/README.md"
 TEMPLATE_README_NEXT1_SUBPATH="$ROOT_DIR/docs/templates/cka-2026-next1-subpath/README.md"
 TEMPLATE_README_NEXT1_RWOP="$ROOT_DIR/docs/templates/cka-2026-next1-rwop/README.md"
+TEMPLATE_README_NEXT1_DNSPOLICY="$ROOT_DIR/docs/templates/cka-2026-next1-dnspolicy/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047)
+EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -109,6 +110,7 @@ grep -Fq 'Question `2501` has now been promoted into facilitator pack `cka-044`.
 grep -Fq 'Question `2601` has now been promoted into facilitator pack `cka-045`.' "$TEMPLATE_README_NEXT1_ENVFROM"
 grep -Fq 'Question `2701` has now been promoted into facilitator pack `cka-046`.' "$TEMPLATE_README_NEXT1_SUBPATH"
 grep -Fq 'Question `2801` has now been promoted into facilitator pack `cka-047`.' "$TEMPLATE_README_NEXT1_RWOP"
+grep -Fq 'Question `4801` has now been promoted into facilitator pack `cka-048`.' "$TEMPLATE_README_NEXT1_DNSPOLICY"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'
