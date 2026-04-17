@@ -523,6 +523,15 @@
       "description": "Standalone RWOP diagnostics drill focused on PVC access modes, consumer pod wiring, bound volume evidence, and safe manifest review.",
       "type": "cka-single-domain",
       "assetPath": "assets/exams/cka/047"
+    },
+    {
+      "id": "cka-048",
+      "name": "CKA 2026 Single Domain Drill - Pod DNS policy and dnsConfig diagnostics",
+      "description": "Standalone DNS diagnostics drill focused on dnsPolicy, dnsConfig nameservers and searches, resolver evidence, and safe manifest review.",
+      "category": "CKA",
+      "examDurationInMinutes": 20,
+      "assetPath": "assets/exams/cka/048",
+      "type": "cka-single-domain"
     }
   ]
 }

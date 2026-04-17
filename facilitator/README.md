@@ -243,6 +243,7 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-045` ConfigMap and Secret envFrom diagnostics
 - `cka-046` ConfigMap subPath mount diagnostics
 - `cka-047` ReadWriteOncePod and PVC access mode diagnostics
+- `cka-048` Pod DNS policy and dnsConfig diagnostics
 
 To check the runner wiring without starting the Podman stack:
 

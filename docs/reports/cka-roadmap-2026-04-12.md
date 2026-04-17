@@ -54,25 +54,23 @@ This closes the first high-value curriculum gaps identified in the April 2026 au
 
 Ship the next expansion wave as `cka-046+` drills that fill the remaining practical gaps in the public CKA curriculum while staying deterministic in local Podman/kind environments.
 
-`cka-011` through `cka-047` are now promoted facilitator packs, and `cka-048+` remain roadmap-only candidates.
+`cka-011` through `cka-048` are now promoted facilitator packs, and `cka-049+` remain roadmap-only candidates.
 
 ## Recommended Candidate Packs
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-048` | Pod DNS policy and dnsConfig diagnostics | Covers workload-level resolver configuration, `dnsPolicy`, `dnsConfig`, and `/etc/resolv.conf` evidence without mutating CoreDNS or node settings. | Low | Template scaffold next |
+| `cka-049` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after DNS policy coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
 
 ## Proposed Build Order
 
-1. Promote `cka-048` Pod DNS policy and dnsConfig diagnostics from template to facilitator pack
+1. Define the next `cka-049` candidate from the remaining uncovered operator workflows after DNS policy coverage is closed
 
 ## Suggested Problem Shapes
 
-### `cka-048` Pod DNS policy and dnsConfig diagnostics
+### `cka-049` Next candidate to be defined
 
-- Validate exact `dnsPolicy`, `dnsConfig.nameservers`, `dnsConfig.searches`, and `dnsConfig.options` fields for a single pod.
-- Export `/etc/resolv.conf` evidence and event history without mutating cluster DNS services.
-- Keep the drill planning-focused by forbidding pod deletion, workload restart, or direct CoreDNS/kube-dns edits.
+- Choose the next candidate only after `cka-048` promotion is closed and the remaining uncovered workflows are re-ranked.
 
 ## Current Authoring State
 
@@ -108,7 +106,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - `cka-045` is now promoted as facilitator pack `cka-045`, sourced from template question `2601` in `docs/templates/cka-2026-next1-envfrom`.
 - `cka-046` is now promoted as facilitator pack `cka-046`, sourced from template question `2701` in `docs/templates/cka-2026-next1-subpath`.
 - `cka-047` is now promoted as facilitator pack `cka-047`, sourced from template question `2801` in `docs/templates/cka-2026-next1-rwop`.
-- `cka-048` is now template-scaffolded as question `4801` in `docs/templates/cka-2026-next1-dnspolicy`.
+- `cka-048` is now promoted as facilitator pack `cka-048`, sourced from template question `4801` in `docs/templates/cka-2026-next1-dnspolicy`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
