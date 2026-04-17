@@ -15,7 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-048
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-049
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -62,6 +62,7 @@ Supported suites:
   cka-046  ConfigMap subPath mount diagnostics drill
   cka-047  ReadWriteOncePod and PVC access mode diagnostics drill
   cka-048  Pod DNS policy and dnsConfig diagnostics drill
+  cka-049  Lifecycle hooks and graceful termination diagnostics drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -262,6 +263,7 @@ resolve_suite_namespace() {
     cka-046) printf '%s\n' 'subpath-lab' ;;
     cka-047) printf '%s\n' 'rwop-lab' ;;
     cka-048) printf '%s\n' 'dnspolicy-lab' ;;
+    cka-049) printf '%s\n' 'lifecycle-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1988,6 +1990,47 @@ kubectl get configmap dns-diagnostics-brief -n dnspolicy-lab -o yaml > /tmp/exam
 [ -s /tmp/exam/q1/dns-diagnostics-checklist.txt ]
 COMMAND
       ;;
+    cka-049)
+      cat <<'COMMAND'
+cat <<'EOF_BRIEF' | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lifecycle-diagnostics-brief
+  namespace: lifecycle-lab
+data:
+  targetDeployment: lifecycle-api
+  deploymentInventory: kubectl get deployment lifecycle-api -n lifecycle-lab -o wide
+  terminationGraceCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'
+  preStopTypeCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]}'
+  preStopCommandCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}'
+  containerCommandCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].command[2]}'
+  imageCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+  eventCheck: kubectl get events -n lifecycle-lab --sort-by=.lastTimestamp
+  safeManifestNote: confirm lifecycle preStop commands and termination grace period before changing workload manifests or forcing pod deletion
+EOF_BRIEF
+mkdir -p /tmp/exam/q1
+cat <<'EOF_CHECKLIST' > /tmp/exam/q1/lifecycle-diagnostics-checklist.txt
+Deployment Inventory
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o wide
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'
+
+Lifecycle Hook Checks
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]}'
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}'
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].command[2]}'
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
+- kubectl get events -n lifecycle-lab --sort-by=.lastTimestamp
+
+Safe Manifest Review
+- kubectl get deployment lifecycle-api -n lifecycle-lab -o yaml
+- confirm lifecycle preStop commands and termination grace period before changing workload manifests or forcing pod deletion
+EOF_CHECKLIST
+kubectl get configmap lifecycle-diagnostics-brief -n lifecycle-lab -o yaml > /tmp/exam/q1/lifecycle-diagnostics-brief.yaml
+[ -s /tmp/exam/q1/lifecycle-diagnostics-brief.yaml ]
+[ -s /tmp/exam/q1/lifecycle-diagnostics-checklist.txt ]
+COMMAND
+      ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -2117,7 +2160,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048
+  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049
   exit 0
 fi
 
@@ -2128,7 +2171,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048)
+  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049)
 fi
 
 for suite in "${SUITES[@]}"; do
