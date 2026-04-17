@@ -532,6 +532,15 @@
       "examDurationInMinutes": 20,
       "assetPath": "assets/exams/cka/048",
       "type": "cka-single-domain"
+    },
+    {
+      "id": "cka-049",
+      "name": "CKA 2026 Single Domain Drill - Lifecycle hooks and graceful termination diagnostics",
+      "description": "Standalone lifecycle diagnostics drill focused on preStop hooks, termination grace periods, event evidence, and safe manifest review.",
+      "category": "CKA",
+      "examDurationInMinutes": 20,
+      "assetPath": "assets/exams/cka/049",
+      "type": "cka-single-domain"
     }
   ]
 }
