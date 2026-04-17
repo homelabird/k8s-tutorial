@@ -1,0 +1,19 @@
+{
+  "questions": [
+    {
+      "id": 5001,
+      "title": "Downward API env and metadata diagnostics",
+      "category": "Workloads and Scheduling",
+      "difficulty": "medium",
+      "namespace": "downwardapi-lab",
+      "question": "A metadata diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `meta-diagnostics-brief` already exists in namespace `downwardapi-lab`. Repair it so that:\n- `targetDeployment` is `meta-api`\n- `deploymentInventory` is `kubectl get deployment meta-api -n downwardapi-lab -o wide`\n- `envNameCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'`\n- `fieldPathCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'`\n- `namespaceFieldCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'`\n- `containerNameCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'`\n- `imageCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/meta-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/meta-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Downward API Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch the live Deployment during this drill.",
+      "skills": [
+        "downward api",
+        "fieldRef",
+        "jsonpath",
+        "events",
+        "manifest review"
+      ]
+    }
+  ]
+}

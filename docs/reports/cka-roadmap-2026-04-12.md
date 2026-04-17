@@ -60,17 +60,19 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-050` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after lifecycle-hook coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
+| `cka-050` | Downward API env and metadata diagnostics | Covers workload-level `fieldRef`, env wiring, and metadata evidence without relying on live pod recreation. | Low | Template scaffold next |
 
 ## Proposed Build Order
 
-1. Define the next `cka-050` candidate from the remaining uncovered operator workflows after lifecycle-hook coverage is closed
+1. Promote `cka-050` Downward API env and metadata diagnostics from template to facilitator pack
 
 ## Suggested Problem Shapes
 
-### `cka-050` Next candidate to be defined
+### `cka-050` Downward API env and metadata diagnostics
 
-- Choose the next candidate only after `cka-049` promotion is closed and the remaining uncovered workflows are re-ranked.
+- Validate exact env names, `fieldRef.fieldPath` values, and target container wiring for a single deployment.
+- Export event history and manifest evidence without relying on live pod recreation.
+- Keep the drill planning-focused by forbidding pod deletion, rollout restart, and ad hoc deployment patching.
 
 ## Current Authoring State
 
@@ -108,6 +110,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - `cka-047` is now promoted as facilitator pack `cka-047`, sourced from template question `2801` in `docs/templates/cka-2026-next1-rwop`.
 - `cka-048` is now promoted as facilitator pack `cka-048`, sourced from template question `4801` in `docs/templates/cka-2026-next1-dnspolicy`.
 - `cka-049` is now promoted as facilitator pack `cka-049`, sourced from template question `4901` in `docs/templates/cka-2026-next1-lifecycle`.
+- `cka-050` is now template-scaffolded as question `5001` in `docs/templates/cka-2026-next1-downwardapi`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -142,6 +145,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - The current `cka-047` contract stays planning-focused: it repairs exact PVC access-mode inventory, StorageClass and bound-volume evidence, consumer pod claim wiring, mount-path checks, and safe manifest guidance while exporting evidence without deleting claims, deleting pods, or patching the live PVC or Pod.
 - The current `cka-048` contract stays planning-focused: it repairs exact pod-level DNS inventory, `dnsPolicy`, `dnsConfig` nameserver/search/option evidence, resolver-file output, and safe manifest guidance while exporting evidence without deleting the Pod, restarting workloads, or patching cluster DNS services.
 - The current `cka-049` contract stays planning-focused: it repairs exact deployment lifecycle inventory, `preStop` hook evidence, termination-grace configuration, and safe manifest guidance while exporting evidence without deleting pods, restarting the workload, or patching the live Deployment.
+- The current `cka-050` contract stays planning-focused: it repairs exact Downward API env inventory, `fieldRef.fieldPath` evidence, container identity, and safe manifest guidance while exporting evidence without deleting pods, restarting the workload, or patching the live Deployment.
 
 ## Design Constraints
 
@@ -152,7 +156,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-050+` drill should be considered ready only when all of the following are true:
+A `cka-051+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
