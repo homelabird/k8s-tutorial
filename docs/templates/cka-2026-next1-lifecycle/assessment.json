@@ -1,0 +1,19 @@
+{
+  "questions": [
+    {
+      "id": 4901,
+      "title": "Lifecycle hooks and graceful termination diagnostics",
+      "category": "Workloads and Scheduling",
+      "difficulty": "medium",
+      "namespace": "lifecycle-lab",
+      "question": "A graceful-termination diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `lifecycle-diagnostics-brief` already exists in namespace `lifecycle-lab`. Repair it so that:\n- `targetDeployment` is `lifecycle-api`\n- `deploymentInventory` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o wide`\n- `terminationGraceCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'`\n- `preStopTypeCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]}'`\n- `preStopCommandCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}'`\n- `containerCommandCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].command[2]}'`\n- `imageCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n lifecycle-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm lifecycle preStop commands and termination grace period before changing workload manifests or forcing pod deletion`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/lifecycle-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/lifecycle-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Lifecycle Hook Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch the live Deployment during this drill.",
+      "skills": [
+        "lifecycle hooks",
+        "termination grace period",
+        "jsonpath",
+        "events",
+        "manifest review"
+      ]
+    }
+  ]
+}
