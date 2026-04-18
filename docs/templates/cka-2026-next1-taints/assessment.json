@@ -1,0 +1,19 @@
+{
+  "questions": [
+    {
+      "id": 5101,
+      "title": "Taints, tolerations, and NoExecute eviction diagnostics",
+      "category": "Workloads and Scheduling",
+      "difficulty": "medium",
+      "namespace": "taints-lab",
+      "question": "A taint and toleration diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `taint-diagnostics-brief` already exists in namespace `taints-lab`. Repair it so that:\n- `targetDeployment` is `taint-api`\n- `deploymentInventory` is `kubectl get deployment taint-api -n taints-lab -o wide`\n- `tolerationKeyCheck` is `kubectl get deployment taint-api -n taints-lab -o jsonpath='{.spec.template.spec.tolerations[0].key}'`\n- `tolerationEffectCheck` is `kubectl get deployment taint-api -n taints-lab -o jsonpath='{.spec.template.spec.tolerations[0].effect}'`\n- `tolerationOperatorCheck` is `kubectl get deployment taint-api -n taints-lab -o jsonpath='{.spec.template.spec.tolerations[0].operator}'`\n- `tolerationSecondsCheck` is `kubectl get deployment taint-api -n taints-lab -o jsonpath='{.spec.template.spec.tolerations[0].tolerationSeconds}'`\n- `nodeSelectorCheck` is `kubectl get deployment taint-api -n taints-lab -o jsonpath='{.spec.template.spec.nodeSelector.workload}'`\n- `eventCheck` is `kubectl get events -n taints-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm taint effect, toleration seconds, and node selector before changing workload manifests or mutating node taints`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/taint-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/taint-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Toleration Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch live node taints during this drill.",
+      "skills": [
+        "taints",
+        "tolerations",
+        "NoExecute",
+        "jsonpath",
+        "manifest review"
+      ]
+    }
+  ]
+}

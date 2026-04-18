@@ -60,17 +60,19 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 
 | Proposed pack | Focus | Why it matters | Runtime risk | Recommendation |
 |---|---|---|---|---|
-| `cka-051` | Next candidate to be defined | Re-rank the remaining uncovered operator workflows after Downward API coverage is closed and pick the next deterministic single-domain drill. | TBC | Backlog |
+| `cka-051` | Taints, tolerations, and NoExecute eviction diagnostics | Covers workload-level NoExecute tolerations, selector wiring, and taint evidence without relying on live eviction timing. | Low | Template scaffold next |
 
 ## Proposed Build Order
 
-1. Define the next `cka-051` candidate from the remaining uncovered operator workflows after Downward API coverage is closed
+1. Promote `cka-051` taints, tolerations, and NoExecute eviction diagnostics from template to facilitator pack
 
 ## Suggested Problem Shapes
 
-### `cka-051` Next candidate to be defined
+### `cka-051` Taints, tolerations, and NoExecute eviction diagnostics
 
-- Choose the next candidate only after `cka-050` promotion is closed and the remaining uncovered workflows are re-ranked.
+- Validate exact toleration key, effect, operator, seconds, and workload selector wiring for a single deployment.
+- Export event history and manifest evidence without relying on live eviction timing.
+- Keep the drill planning-focused by forbidding pod deletion, rollout restart, drain, and ad hoc node-taint mutation.
 
 ## Current Authoring State
 
@@ -109,6 +111,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - `cka-048` is now promoted as facilitator pack `cka-048`, sourced from template question `4801` in `docs/templates/cka-2026-next1-dnspolicy`.
 - `cka-049` is now promoted as facilitator pack `cka-049`, sourced from template question `4901` in `docs/templates/cka-2026-next1-lifecycle`.
 - `cka-050` is now promoted as facilitator pack `cka-050`, sourced from template question `5001` in `docs/templates/cka-2026-next1-downwardapi`.
+- `cka-051` is now template-scaffolded as question `5101` in `docs/templates/cka-2026-next1-taints`.
 - The current `cka-030` contract stays planning-focused: it repairs exact CronJob inventory, schedule, suspend state, concurrency policy, history limits, and job template review while exporting evidence without deleting the CronJob or forcing an immediate run.
 - The current `cka-016` contract remains intentionally planning-focused: it repairs a kubeadm upgrade brief and exports evidence files instead of performing a live kubeadm upgrade.
 - The current `cka-017` contract stays deterministic by validating a repaired `CRD + operator Deployment + custom resource` bundle without OLM.
@@ -144,6 +147,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 - The current `cka-048` contract stays planning-focused: it repairs exact pod-level DNS inventory, `dnsPolicy`, `dnsConfig` nameserver/search/option evidence, resolver-file output, and safe manifest guidance while exporting evidence without deleting the Pod, restarting workloads, or patching cluster DNS services.
 - The current `cka-049` contract stays planning-focused: it repairs exact deployment lifecycle inventory, `preStop` hook evidence, termination-grace configuration, and safe manifest guidance while exporting evidence without deleting pods, restarting the workload, or patching the live Deployment.
 - The current `cka-050` contract stays planning-focused: it repairs exact Downward API env inventory, `fieldRef.fieldPath` evidence, container identity, and safe manifest guidance while exporting evidence without deleting pods, restarting the workload, or patching the live Deployment.
+- The current `cka-051` contract stays planning-focused: it repairs exact toleration inventory, NoExecute effect evidence, selector wiring, and safe manifest guidance while exporting evidence without deleting pods, restarting the workload, draining nodes, or mutating live node taints.
 
 ## Design Constraints
 
@@ -154,7 +158,7 @@ Ship the next expansion wave as `cka-046+` drills that fill the remaining practi
 
 ## Exit Criteria
 
-A `cka-051+` drill should be considered ready only when all of the following are true:
+A `cka-052+` drill should be considered ready only when all of the following are true:
 
 - facilitator pack exists and is registered in `labs.json`
 - setup and validation scripts are syntax-checked
