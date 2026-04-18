@@ -512,23 +512,33 @@
     },
     {
       "id": "cka-046",
+      "assetPath": "assets/exams/cka/046",
       "name": "CKA 2026 Single Domain Drill - ConfigMap subPath mount diagnostics",
+      "category": "CKA",
       "description": "Standalone subPath diagnostics drill focused on ConfigMap-backed item paths, mount targets, subPath wiring, and safe manifest review.",
-      "type": "cka-single-domain",
-      "assetPath": "assets/exams/cka/046"
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20,
+      "type": "cka-single-domain"
     },
     {
       "id": "cka-047",
+      "assetPath": "assets/exams/cka/047",
       "name": "CKA 2026 Single Domain Drill - ReadWriteOncePod and PVC access mode diagnostics",
+      "category": "CKA",
       "description": "Standalone RWOP diagnostics drill focused on PVC access modes, consumer pod wiring, bound volume evidence, and safe manifest review.",
-      "type": "cka-single-domain",
-      "assetPath": "assets/exams/cka/047"
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
+      "examDurationInMinutes": 20,
+      "type": "cka-single-domain"
     },
     {
       "id": "cka-048",
       "name": "CKA 2026 Single Domain Drill - Pod DNS policy and dnsConfig diagnostics",
       "description": "Standalone DNS diagnostics drill focused on dnsPolicy, dnsConfig nameservers and searches, resolver evidence, and safe manifest review.",
       "category": "CKA",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
       "examDurationInMinutes": 20,
       "assetPath": "assets/exams/cka/048",
       "type": "cka-single-domain"
@@ -538,6 +548,8 @@
       "name": "CKA 2026 Single Domain Drill - Lifecycle hooks and graceful termination diagnostics",
       "description": "Standalone lifecycle diagnostics drill focused on preStop hooks, termination grace periods, event evidence, and safe manifest review.",
       "category": "CKA",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
       "examDurationInMinutes": 20,
       "assetPath": "assets/exams/cka/049",
       "type": "cka-single-domain"
@@ -547,6 +559,8 @@
       "name": "CKA 2026 Single Domain Drill - Downward API env and metadata diagnostics",
       "description": "Standalone Downward API diagnostics drill focused on fieldRef env wiring, metadata evidence, and safe manifest review.",
       "category": "CKA",
+      "warmUpTimeInSeconds": 90,
+      "difficulty": "Medium",
       "examDurationInMinutes": 20,
       "assetPath": "assets/exams/cka/050",
       "type": "cka-single-domain"

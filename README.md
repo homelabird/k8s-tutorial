@@ -91,6 +91,14 @@ To capture a local diagnostics bundle with facilitator logs and current exam met
 
 The real automated CKA 2026 regression job lives in `.github/workflows/cka-2026-regressions.yml` and is intended for a Linux self-hosted GitHub Actions runner with Podman available.
 
+For a smaller nightly sample across the promoted single-domain drills, inspect the lane inventory with:
+
+```bash
+./scripts/verify/cka-2026-single-domain-inventory.sh --nightly-describe
+```
+
+The matching self-hosted workflow is `.github/workflows/cka-2026-single-domain-nightly.yml`. It runs a balanced lane matrix from `cka-006` through `cka-050` with `max-parallel: 1` so fixed-port Podman resources do not overlap on the same runner host.
+
 ## Community & Support
 
 - Join our [Discord Community](https://discord.gg/6FPQMXNgG9) for discussions and support

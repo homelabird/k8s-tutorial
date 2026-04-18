@@ -188,6 +188,14 @@ If you need a local failure bundle with Podman state, facilitator logs, and exam
 
 For scheduled or manual remote execution, use the GitHub Actions workflow at `.github/workflows/cka-2026-regressions.yml`. It expects a Linux self-hosted runner with Podman available.
 
+For a smaller nightly sample across the promoted single-domain drills, inspect the lane inventory with:
+
+```bash
+./scripts/verify/cka-2026-single-domain-inventory.sh --nightly-describe
+```
+
+The matching self-hosted workflow is `.github/workflows/cka-2026-single-domain-nightly.yml`. It runs a balanced lane matrix with `max-parallel: 1` so fixed-port Podman resources do not overlap on the same runner host.
+
 ## Uninstallation
 
 To completely remove CK-X Simulator:

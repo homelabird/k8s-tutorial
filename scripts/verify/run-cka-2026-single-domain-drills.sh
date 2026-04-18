@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+INVENTORY_SCRIPT="$ROOT_DIR/scripts/verify/cka-2026-single-domain-inventory.sh"
 BASE_URL="${BASE_URL:-http://127.0.0.1:30080}"
 CURRENT_EXAM=""
 HTTP_WAIT_ATTEMPTS="${HTTP_WAIT_ATTEMPTS:-90}"
@@ -2155,7 +2156,7 @@ run_suite_with_timeout() {
   started_at="$(date +%s)"
   set +e
   if [ "$SUITE_TIMEOUT_SECONDS" -gt 0 ] && command -v timeout >/dev/null 2>&1; then
-    function_defs="$(declare -f log require_command compose_cmd cleanup wait_for_http wait_for_health wait_for_exam_status wait_for_evaluated wait_for_no_current_exam wait_for_no_inner_clusters shared_exec post_solve_check run_suite)"
+    function_defs="$(declare -f log require_command compose_cmd cleanup wait_for_http wait_for_health wait_for_exam_status wait_for_evaluated wait_for_no_current_exam wait_for_no_inner_clusters shared_exec wait_for_validation_script post_solve_check run_suite)"
     printf -v timeout_script '%s\nCURRENT_EXAM=%q\nROOT_DIR=%q\nBASE_URL=%q\nHTTP_WAIT_ATTEMPTS=%q\nHEALTH_WAIT_ATTEMPTS=%q\nEXAM_STATUS_WAIT_ATTEMPTS=%q\nEVALUATED_WAIT_ATTEMPTS=%q\nCLEANUP_WAIT_ATTEMPTS=%q\ntrap cleanup EXIT\nrun_suite %q %q %q\n' \
       "$function_defs" \
       "" \
@@ -2203,7 +2204,7 @@ if ! [[ "$SUITE_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 if [ "${1:-}" = "--list" ]; then
-  printf '%s\n' cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050
+  bash "$INVENTORY_SCRIPT" --all
   exit 0
 fi
 
@@ -2214,7 +2215,7 @@ require_command podman
 
 SUITES=("$@")
 if [ "${#SUITES[@]}" -eq 0 ]; then
-  SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050)
+  mapfile -t SUITES < <(bash "$INVENTORY_SCRIPT" --all)
 fi
 
 for suite in "${SUITES[@]}"; do

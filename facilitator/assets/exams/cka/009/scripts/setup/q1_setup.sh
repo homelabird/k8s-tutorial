@@ -33,6 +33,7 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     app: api
+    role: workload
 spec:
   containers:
   - name: api
@@ -48,6 +49,7 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     app: db
+    role: workload
 spec:
   containers:
   - name: db
@@ -64,6 +66,7 @@ metadata:
 spec:
   selector:
     app: api
+    role: workload
   ports:
   - port: 8080
     targetPort: 8080
@@ -78,6 +81,7 @@ metadata:
 spec:
   selector:
     app: db
+    role: workload
   ports:
   - port: 5432
     targetPort: 5432

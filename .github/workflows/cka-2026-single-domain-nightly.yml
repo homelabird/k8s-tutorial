@@ -1,0 +1,148 @@
+name: CKA 2026 Single-Domain Nightly
+
+on:
+  workflow_dispatch:
+    inputs:
+      lanes:
+        description: "Space-separated nightly sample lanes to run. Leave empty for the balanced sample."
+        required: false
+        default: ""
+        type: string
+      suite_timeout_seconds:
+        description: "Per-suite timeout passed to the single-domain runner."
+        required: false
+        default: "1800"
+        type: string
+      pack_success_diagnostics:
+        description: "Pack diagnostics on success too. Failure runs always pack."
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "30 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cka-2026-single-domain-nightly
+  cancel-in-progress: false
+
+jobs:
+  plan-single-domain-lanes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      lanes_text: ${{ steps.plan.outputs.lanes_text }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build single-domain nightly matrix
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          LANE_INPUT="${{ inputs.lanes }}" \
+            bash scripts/verify/cka-2026-single-domain-inventory.sh --nightly-matrix-json >> "${GITHUB_OUTPUT}"
+
+      - name: Publish single-domain nightly selection
+        run: |
+          echo "## CKA 2026 Single-Domain Nightly" >> "${GITHUB_STEP_SUMMARY}"
+          echo >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Selected lanes: ${{ steps.plan.outputs.lanes_text }}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Per-suite timeout: ${{ inputs.suite_timeout_seconds }}s" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Pack diagnostics on success: ${{ inputs.pack_success_diagnostics }}" >> "${GITHUB_STEP_SUMMARY}"
+
+  run-single-domain-lanes:
+    needs: plan-single-domain-lanes
+    runs-on:
+      - self-hosted
+      - linux
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.plan-single-domain-lanes.outputs.matrix) }}
+    env:
+      SUITE_TIMEOUT_SECONDS: ${{ github.event_name == 'workflow_dispatch' && inputs.suite_timeout_seconds || '1800' }}
+      PACK_SUCCESS_DIAGNOSTICS: ${{ github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics || false }}
+      ARTIFACT_DIR: .artifacts/cka-2026-single-domain/${{ matrix.lane }}
+      ARTIFACT_ARCHIVE: .artifacts/cka-2026-single-domain/${{ matrix.lane }}.tar.gz
+      SUMMARY_PATH: .artifacts/cka-2026-single-domain/${{ matrix.lane }}/summary.txt
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare lane artifact directory
+        run: mkdir -p "${ARTIFACT_DIR}"
+
+      - name: Show selected nightly lane
+        run: |
+          echo "Lane: ${{ matrix.lane }}"
+          echo "Suites: ${{ matrix.suites }}"
+          echo "Coverage: ${{ matrix.coverage }}"
+          echo "Per-suite timeout: ${SUITE_TIMEOUT_SECONDS}s"
+          echo "Pack diagnostics on success: ${PACK_SUCCESS_DIAGNOSTICS}"
+
+      - name: Verify Podman availability
+        run: |
+          sudo systemctl start podman.socket
+          sudo podman info >/dev/null
+
+      - name: Run selected nightly sample lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "${SUITE_TIMEOUT_SECONDS}" =~ ^[0-9]+$ ]]; then
+            echo "suite_timeout_seconds must be a non-negative integer: ${SUITE_TIMEOUT_SECONDS}" >&2
+            exit 1
+          fi
+
+          read -r -a suite_args <<< "${{ matrix.suites }}"
+          SUITE_TIMEOUT_SECONDS="${SUITE_TIMEOUT_SECONDS}" \
+            bash scripts/verify/run-cka-2026-single-domain-drills.sh "${suite_args[@]}" \
+            2>&1 | tee "${ARTIFACT_DIR}/run.log"
+
+      - name: Pack nightly lane diagnostics
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        run: |
+          chmod +x scripts/verify/pack-cka-2026-diagnostics.sh
+          BASE_URL="http://127.0.0.1:30080" \
+            SKIP_COLLECT=0 \
+            ./scripts/verify/pack-cka-2026-diagnostics.sh "${ARTIFACT_DIR}" "${ARTIFACT_ARCHIVE}"
+
+      - name: Publish nightly lane summary to workflow UI
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        shell: bash
+        run: |
+          chmod +x scripts/verify/render-cka-2026-summary-markdown.sh
+          if [ -f "${SUMMARY_PATH}" ]; then
+            scripts/verify/render-cka-2026-summary-markdown.sh "${SUMMARY_PATH}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "## CKA 2026 Single-Domain Nightly Summary" >> "${GITHUB_STEP_SUMMARY}"
+            echo >> "${GITHUB_STEP_SUMMARY}"
+            echo "Summary file not found: ${SUMMARY_PATH}" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload nightly lane summary
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cka-2026-single-domain-summary-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.SUMMARY_PATH }}
+          if-no-files-found: warn
+
+      - name: Upload nightly lane run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cka-2026-single-domain-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.ARTIFACT_DIR }}/run.log
+          if-no-files-found: warn
+
+      - name: Upload nightly lane diagnostics archive
+        if: ${{ failure() || (github.event_name == 'workflow_dispatch' && inputs.pack_success_diagnostics) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cka-2026-single-domain-diagnostics-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.ARTIFACT_ARCHIVE }}
+          if-no-files-found: warn

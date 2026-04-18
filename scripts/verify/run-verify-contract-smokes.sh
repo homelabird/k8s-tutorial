@@ -9,7 +9,7 @@ usage() {
 Usage:
   ./scripts/verify/run-verify-contract-smokes.sh
   ./scripts/verify/run-verify-contract-smokes.sh diagnostics-collector diagnostics-pack single-domain-contract
-  ./scripts/verify/run-verify-contract-smokes.sh browser-scenarios workflow-contract review-batch-workflow review-handoff-pack
+  ./scripts/verify/run-verify-contract-smokes.sh browser-scenarios workflow-contract single-domain-nightly review-batch-workflow review-handoff-pack
   ./scripts/verify/run-verify-contract-smokes.sh --list
   ./scripts/verify/run-verify-contract-smokes.sh --describe
 
@@ -19,6 +19,7 @@ Supported contract smokes:
   single-domain-contract Promoted single-domain drill registry contract
   summary-renderer       Synthetic markdown summary rendering
   workflow-contract      Self-hosted workflow wiring contract
+  single-domain-nightly  Nightly single-domain sample workflow contract
   review-batch-workflow  Review-batch workflow wiring contract
   review-handoff-pack    Review handoff export and archive contract
   browser-scenarios      Browser smoke scenario inventory contract
@@ -41,6 +42,7 @@ resolve_smoke_script() {
     single-domain-contract) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-single-domain-contract-smoke.sh" ;;
     summary-renderer) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-summary-renderer-smoke.sh" ;;
     workflow-contract) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-workflow-contract-smoke.sh" ;;
+    single-domain-nightly) printf '%s\n' "$ROOT_DIR/scripts/verify/cka-2026-single-domain-nightly-workflow-contract-smoke.sh" ;;
     review-batch-workflow) printf '%s\n' "$ROOT_DIR/scripts/verify/review-batch-workflow-contract-smoke.sh" ;;
     review-handoff-pack) printf '%s\n' "$ROOT_DIR/scripts/verify/review-batch-handoff-pack-smoke.sh" ;;
     browser-scenarios) printf '%s\n' "$ROOT_DIR/scripts/verify/browser-ui-scenario-contract-smoke.sh" ;;
@@ -61,13 +63,16 @@ describe_smoke() {
       printf '%s\n' 'diagnostics-pack | cka-2026-diagnostics-pack-smoke.sh | tarball packaging and extracted summary round-trip'
       ;;
     single-domain-contract)
-      printf '%s\n' 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-010 registry, runner inventory, facilitator listing, template promotion'
+      printf '%s\n' 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-050 inventory, metadata completeness, facilitator listing, template promotion'
       ;;
     summary-renderer)
       printf '%s\n' 'summary-renderer | cka-2026-summary-renderer-smoke.sh | markdown rendering, host ordering, verdict-aware summary sections'
       ;;
     workflow-contract)
       printf '%s\n' 'workflow-contract | cka-2026-workflow-contract-smoke.sh | self-hosted workflow inputs, guards, artifact and summary publication'
+      ;;
+    single-domain-nightly)
+      printf '%s\n' 'single-domain-nightly | cka-2026-single-domain-nightly-workflow-contract-smoke.sh | nightly sample matrix planning, self-hosted lane serialization, diagnostics artifact gates'
       ;;
     review-batch-workflow)
       printf '%s\n' 'review-batch-workflow | review-batch-workflow-contract-smoke.sh | manual review batch workflow inputs, matrix planning, dependency gates'
@@ -134,6 +139,7 @@ if [ "${1:-}" = "--list" ]; then
     single-domain-contract \
     summary-renderer \
     workflow-contract \
+    single-domain-nightly \
     review-batch-workflow \
     review-handoff-pack \
     browser-scenarios
@@ -147,6 +153,7 @@ if [ "${1:-}" = "--describe" ]; then
     single-domain-contract \
     summary-renderer \
     workflow-contract \
+    single-domain-nightly \
     review-batch-workflow \
     review-handoff-pack \
     browser-scenarios; do
@@ -163,6 +170,7 @@ if [ "${#SMOKES[@]}" -eq 0 ]; then
     single-domain-contract
     summary-renderer
     workflow-contract
+    single-domain-nightly
     review-batch-workflow
     review-handoff-pack
     browser-scenarios

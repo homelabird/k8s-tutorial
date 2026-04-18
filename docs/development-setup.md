@@ -259,6 +259,14 @@ If a local regression fails and you need the same evidence bundle as CI:
 
 The corresponding GitHub Actions workflow is `.github/workflows/cka-2026-regressions.yml`. It targets a Linux self-hosted runner because the full suites need Podman plus privileged nested-container support.
 
+For a smaller nightly sample across the promoted single-domain drills, inspect the lane inventory with:
+
+```bash
+./scripts/verify/cka-2026-single-domain-inventory.sh --nightly-describe
+```
+
+The matching self-hosted workflow is `.github/workflows/cka-2026-single-domain-nightly.yml`. It runs a balanced lane matrix with `max-parallel: 1` so fixed-port Podman resources do not overlap on the same runner host.
+
 ## Troubleshooting
 
 ### 1. Container Startup Issues

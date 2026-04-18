@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RUNNER="$ROOT_DIR/scripts/verify/run-cka-2026-single-domain-drills.sh"
+INVENTORY="$ROOT_DIR/scripts/verify/cka-2026-single-domain-inventory.sh"
 LABS_JSON="$ROOT_DIR/facilitator/assets/exams/labs.json"
 FACILITATOR_README="$ROOT_DIR/facilitator/README.md"
 TEMPLATE_README_NEXT5="$ROOT_DIR/docs/templates/cka-2026-next5/README.md"
@@ -36,7 +37,7 @@ TEMPLATE_README_NEXT1_DNSPOLICY="$ROOT_DIR/docs/templates/cka-2026-next1-dnspoli
 TEMPLATE_README_NEXT1_LIFECYCLE="$ROOT_DIR/docs/templates/cka-2026-next1-lifecycle/README.md"
 TEMPLATE_README_NEXT1_DOWNWARDAPI="$ROOT_DIR/docs/templates/cka-2026-next1-downwardapi/README.md"
 
-EXPECTED_SUITES=(cka-006 cka-007 cka-008 cka-009 cka-010 cka-011 cka-012 cka-013 cka-014 cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050)
+mapfile -t EXPECTED_SUITES < <(bash "$INVENTORY" --all)
 
 mapfile -t actual_suites < <(bash "$RUNNER" --list)
 printf '%s\n' "${actual_suites[@]}"
@@ -63,6 +64,26 @@ ids = {item["id"] for item in entries if isinstance(item, dict) and "id" in item
 missing = [lab_id for lab_id in expected if lab_id not in ids]
 if missing:
     raise SystemExit(f"missing promoted labs in labs.json: {', '.join(missing)}")
+
+required = ("assetPath", "category", "description", "difficulty", "examDurationInMinutes", "name", "warmUpTimeInSeconds")
+by_id = {item["id"]: item for item in entries if isinstance(item, dict) and "id" in item}
+for lab_id in expected:
+    entry = by_id[lab_id]
+    missing_fields = [field for field in required if field not in entry]
+    if missing_fields:
+        raise SystemExit(f"{lab_id} missing required metadata fields: {', '.join(missing_fields)}")
+    if entry["assetPath"] != f"assets/exams/cka/{lab_id.split('-', 1)[1]}":
+        raise SystemExit(f"{lab_id} has unexpected assetPath: {entry['assetPath']}")
+    if entry["category"] != "CKA":
+        raise SystemExit(f"{lab_id} has unexpected category: {entry['category']}")
+    if entry["difficulty"] != "Medium":
+        raise SystemExit(f"{lab_id} has unexpected difficulty: {entry['difficulty']}")
+    if entry["examDurationInMinutes"] != 20:
+        raise SystemExit(f"{lab_id} has unexpected examDurationInMinutes: {entry['examDurationInMinutes']}")
+    if entry["warmUpTimeInSeconds"] != 90:
+        raise SystemExit(f"{lab_id} has unexpected warmUpTimeInSeconds: {entry['warmUpTimeInSeconds']}")
+    if not isinstance(entry["description"], str) or not entry["description"].strip():
+        raise SystemExit(f"{lab_id} must include a non-empty description")
 PY
 
 for suite in "${EXPECTED_SUITES[@]}"; do
