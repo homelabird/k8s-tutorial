@@ -145,6 +145,7 @@ The `index.html` file serves as the main landing page for the CK-X Simulator. He
 ```
 - **Form Elements**: Dynamic exam selection options
 - **CKA Track Filter**: Shows `hands-on`, `planning-focused`, and `ops-diagnostics` only when the selected category is `CKA`
+- **Default Lane**: `CKA` defaults to the `hands-on` lane and exposes per-track counts in the selector
 - **Track Badge**: Selected CKA labs render a track badge in the description panel
 - **Validation**: Start button enabled only when valid selection made
 
@@ -223,6 +224,7 @@ The `index.html` file serves as the main entry point for the CK-X Simulator, pro
    - `/facilitator/api/v1/assessments/`
    - Fetches available labs
    - Updates exam options and optional `track` filters for CKA labs
+   - Orders `CKA` free drills by `hands-on`, then `ops-diagnostics`, then `planning-focused`
 
 3. **Exam Creation**
    - `/facilitator/api/v1/exams`

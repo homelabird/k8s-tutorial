@@ -27,6 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
         'ops-diagnostics': 'Ops diagnostics'
     };
 
+    const trackPriority = {
+        'hands-on': 0,
+        'ops-diagnostics': 1,
+        'planning-focused': 2
+    };
+
     const trackBadgeClasses = {
         'hands-on': 'text-bg-success',
         'planning-focused': 'text-bg-warning',
@@ -316,11 +322,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateTrackOptions(category, preferredTrack = examTrackSelect.value || 'all') {
-        const categoryTracks = [...new Set(
-            labs
-                .filter(lab => lab.category === category && typeof lab.track === 'string' && lab.track.trim())
-                .map(lab => lab.track)
-        )];
+        const categoryLabs = labs.filter(lab => lab.category === category);
+        const trackCounts = categoryLabs.reduce((counts, lab) => {
+            if (typeof lab.track === 'string' && lab.track.trim()) {
+                counts[lab.track] = (counts[lab.track] || 0) + 1;
+            }
+            return counts;
+        }, {});
+        const categoryTracks = Object.keys(trackCounts);
 
         if (category !== 'CKA' || categoryTracks.length === 0) {
             examTrackGroup.style.display = 'none';
@@ -330,19 +339,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         examTrackGroup.style.display = 'block';
-        examTrackSelect.innerHTML = '<option value="all">All tracks</option>';
+        examTrackSelect.innerHTML = `<option value="all">All tracks (${categoryLabs.length})</option>`;
 
-        categoryTracks.sort((left, right) => getTrackLabel(left).localeCompare(getTrackLabel(right)));
+        categoryTracks.sort((left, right) => {
+            const priorityDelta = (trackPriority[left] ?? Number.MAX_SAFE_INTEGER) - (trackPriority[right] ?? Number.MAX_SAFE_INTEGER);
+            if (priorityDelta !== 0) {
+                return priorityDelta;
+            }
+            return getTrackLabel(left).localeCompare(getTrackLabel(right));
+        });
         categoryTracks.forEach(track => {
             const option = document.createElement('option');
             option.value = track;
-            option.textContent = getTrackLabel(track);
+            option.textContent = `${getTrackLabel(track)} (${trackCounts[track]})`;
             examTrackSelect.appendChild(option);
         });
 
-        examTrackSelect.value = [...examTrackSelect.options].some(option => option.value === preferredTrack)
+        const defaultTrack = category === 'CKA' ? 'hands-on' : 'all';
+        const resolvedTrack = [...examTrackSelect.options].some(option => option.value === preferredTrack)
             ? preferredTrack
-            : 'all';
+            : defaultTrack;
+        examTrackSelect.value = resolvedTrack;
+    }
+
+    function compareLabs(left, right) {
+        const leftPriority = trackPriority[left.track] ?? Number.MAX_SAFE_INTEGER;
+        const rightPriority = trackPriority[right.track] ?? Number.MAX_SAFE_INTEGER;
+        if (leftPriority !== rightPriority) {
+            return leftPriority - rightPriority;
+        }
+
+        const leftId = Number.parseInt(String(left.id || '').split('-')[1], 10);
+        const rightId = Number.parseInt(String(right.id || '').split('-')[1], 10);
+        if (!Number.isNaN(leftId) && !Number.isNaN(rightId) && leftId !== rightId) {
+            return leftId - rightId;
+        }
+
+        return String(left.name || '').localeCompare(String(right.name || ''));
     }
     
     // Premium exam configuration
@@ -370,8 +403,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Filter labs by category and populate the labs dropdown
-    function filterLabsByCategory(category) {
-        const requestedTrack = examTrackSelect.value || 'all';
+    function filterLabsByCategory(category, preferredTrack = examTrackSelect.value || 'all') {
+        const requestedTrack = preferredTrack;
         populateTrackOptions(category, requestedTrack);
 
         let filteredLabs = labs.filter(lab => lab.category === category);
@@ -380,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (category === 'CKA' && selectedTrack !== 'all') {
             filteredLabs = filteredLabs.filter(lab => lab.track === selectedTrack);
         }
+        filteredLabs.sort(compareLabs);
         
         // Clear existing options
         examNameSelect.innerHTML = '<option value="">Select a lab</option>';
@@ -484,7 +518,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Event listener for the exam category select
     examCategorySelect.addEventListener('change', function() {
-        filterLabsByCategory(this.value);
+        const preferredTrack = this.value === 'CKA' ? 'hands-on' : 'all';
+        filterLabsByCategory(this.value, preferredTrack);
     });
 
     examTrackSelect.addEventListener('change', function() {

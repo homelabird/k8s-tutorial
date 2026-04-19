@@ -786,7 +786,18 @@ async function runIndexSmoke(page, baseUrl, state) {
   const trackOptions = await page.$$eval('#examTrack option', (options) =>
     options.map((option) => option.textContent?.trim() ?? '')
   );
-  assert.deepEqual(trackOptions, ['All tracks', 'Hands-on', 'Ops diagnostics', 'Planning-focused']);
+  assert.deepEqual(trackOptions, ['All tracks (3)', 'Hands-on (1)', 'Ops diagnostics (1)', 'Planning-focused (1)']);
+  assert.equal(await page.locator('#examTrack').inputValue(), 'hands-on');
+
+  await page.waitForFunction(() => {
+    const examName = document.getElementById('examName');
+    if (!examName) return false;
+    const values = Array.from(examName.options).map((option) => option.value);
+    return values.includes('premium_CKA') &&
+      values.includes('cka-020') &&
+      !values.includes('cka-016') &&
+      !values.includes('cka-024');
+  });
 
   await page.selectOption('#examTrack', 'planning-focused');
   await page.waitForFunction(() => {
