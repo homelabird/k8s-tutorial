@@ -4,27 +4,22 @@ These drafts cover the next recommended DaemonSet-focused operations pack from t
 
 1. DaemonSet rollout and node coverage diagnostics
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `1001` DaemonSet rollout and Linux node coverage repair
 
-- Question `1001` (`DaemonSet rollout and node coverage diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `1001` (DaemonSet rollout and Linux node coverage repair) now mirrors the promoted hands-on facilitator pack `cka-029`.
 - Question `1001` has now been promoted into facilitator pack `cka-029`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `1001` should stay in the `planning + evidence export` lane. It should validate exact DaemonSet inventory, rollout status, node coverage, and safe manifest review without deleting the DaemonSet or cordoning nodes.
-- Question `1001` should export exact evidence files instead of deleting DaemonSet pods, converting the workload into a Deployment, or scaling nodes to simulate coverage.
-- Question `1001` should avoid `kubectl delete daemonset`, `kubectl scale daemonset`, and `kubectl cordon` as corrective actions in the expected answer.
+- Keep the runtime deterministic by validating the Linux node selector, RollingUpdate strategy, rollout readiness, and desired pod coverage instead of mutating nodes.
+- Question `1001` should avoid deleting the DaemonSet, cordoning nodes, or converting the workload into a Deployment in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q1001` -> `facilitator/assets/exams/cka/029`
+1. Question `1001` is already promoted; the next work is keeping runtime smoke and contract coverage green.

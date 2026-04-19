@@ -50,96 +50,76 @@ Expected checks:
 - `/tmp/exam/q501/component-repair-brief.yaml` exports the repaired manifest
 - stale unsafe actions such as deleting static pod manifests or restarting the kubelet are removed
 
-## Question 502: service and pod connectivity diagnostics
+## Question 502: service and pod connectivity repair
 
-Repair the connectivity diagnostics brief and export both the repaired manifest and a plain-text connectivity matrix.
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n connectivity-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: connectivity-brief
-  namespace: connectivity-lab
-data:
-  debugPod: net-debug
-  serviceName: echo-api
-  servicePort: "8080"
-  headlessServiceName: echo-api-headless
-  podDnsName: echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local
-  serviceProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-  podProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
-  dnsProbe: kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
-EOF_BRIEF
+  name: echo-api
+spec:
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_SERVICE
 
-mkdir -p /tmp/exam/q502
-cat <<'EOF_MATRIX' > /tmp/exam/q502/connectivity-matrix.txt
-Service Path
-- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+kubectl apply -n connectivity-lab -f - <<'EOF_HEADLESS'
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-api-headless
+spec:
+  clusterIP: None
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_HEADLESS
 
-Pod Path
-- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
-
-DNS Checks
-- kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
-- kubectl get svc echo-api -n connectivity-lab
-- kubectl get svc echo-api-headless -n connectivity-lab
-EOF_MATRIX
-
-kubectl get configmap connectivity-brief -n connectivity-lab -o yaml > /tmp/exam/q502/connectivity-brief.yaml
+kubectl rollout status statefulset/echo-api -n connectivity-lab
+kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
 ```
 
 Expected checks:
 
-- `connectivity-brief` contains the intended debug Pod, Service names, headless DNS name, and exact probe commands
-- `/tmp/exam/q502/connectivity-matrix.txt` contains the required sections and exact service, pod, and DNS checks
-- `/tmp/exam/q502/connectivity-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as deleting Services or restarting workloads are removed
+- Services `echo-api` and `echo-api-headless` use the intended selectors and ports
+- StatefulSet `echo-api` stays Ready with `serviceName: echo-api-headless`
+- `net-debug` resolves the Service name and fetches `ok` through both the ClusterIP and headless ordinal DNS paths
 
-## Question 503: service exposure and endpoint debugging
+## Question 503: service exposure and endpoint repair
 
-Repair the service exposure debugging brief and export both the repaired manifest and a plain-text checklist.
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n service-debug-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: service-exposure-brief
-  namespace: service-debug-lab
-data:
-  serviceName: echo-api
-  serviceType: ClusterIP
-  selectorKey: app
-  selectorValue: echo-api
-  servicePort: "8080"
-  targetPort: "8080"
-  endpointCheck: kubectl get endpoints echo-api -n service-debug-lab -o wide
-  selectorCheck: kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'
-  reachabilityCheck: kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-EOF_BRIEF
+  name: echo-api
+spec:
+  type: ClusterIP
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_SERVICE
 
-mkdir -p /tmp/exam/q503
-cat <<'EOF_CHECKLIST' > /tmp/exam/q503/service-exposure-checklist.txt
-Selector Audit
-- kubectl get svc echo-api -n service-debug-lab -o yaml
-- kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'
-
-Endpoint Audit
-- kubectl get endpoints echo-api -n service-debug-lab -o wide
-- kubectl get endpointslices -n service-debug-lab -l kubernetes.io/service-name=echo-api
-
-Reachability
-- kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-- kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.ports[0].targetPort}'
-EOF_CHECKLIST
-
-kubectl get configmap service-exposure-brief -n service-debug-lab -o yaml > /tmp/exam/q503/service-exposure-brief.yaml
+kubectl rollout status deployment/echo-api -n service-debug-lab
+kubectl get endpoints echo-api -n service-debug-lab -o wide
+kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
 ```
 
 Expected checks:
 
-- `service-exposure-brief` contains the intended Service name, selector contract, ports, and exact endpoint and reachability checks
-- `/tmp/exam/q503/service-exposure-checklist.txt` contains the required sections and exact selector, endpoint, and reachability commands
-- `/tmp/exam/q503/service-exposure-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as deleting Services, patching Deployments, or creating Ingress resources are removed
+- Service `echo-api` uses the intended type, selector, and port wiring
+- Deployment `echo-api` stays Available and Service `echo-api` publishes two ready endpoints
+- `net-debug` fetches `ok` through `http://echo-api:8080/healthz`

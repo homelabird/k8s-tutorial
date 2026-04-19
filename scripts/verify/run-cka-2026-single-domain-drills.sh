@@ -846,76 +846,61 @@ COMMAND
       ;;
     cka-020)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n connectivity-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: connectivity-brief
-  namespace: connectivity-lab
-data:
-  debugPod: net-debug
-  serviceName: echo-api
-  servicePort: "8080"
-  headlessServiceName: echo-api-headless
-  podDnsName: echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local
-  serviceProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-  podProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
-  dnsProbe: kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_MATRIX' > /tmp/exam/q1/connectivity-matrix.txt
-Service Path
-- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-
-Pod Path
-- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
-
-DNS Checks
-- kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
-- kubectl get svc echo-api -n connectivity-lab
-- kubectl get svc echo-api-headless -n connectivity-lab
-EOF_MATRIX
-kubectl get configmap connectivity-brief -n connectivity-lab -o yaml > /tmp/exam/q1/connectivity-brief.yaml
-[ -s /tmp/exam/q1/connectivity-brief.yaml ]
-[ -s /tmp/exam/q1/connectivity-matrix.txt ]
+  name: echo-api
+spec:
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_SERVICE
+kubectl apply -n connectivity-lab -f - <<'EOF_HEADLESS'
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-api-headless
+spec:
+  clusterIP: None
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_HEADLESS
+kubectl rollout status statefulset/echo-api -n connectivity-lab
+kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+test "$(kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz)" = "ok"
+test "$(kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz)" = "ok"
 COMMAND
       ;;
     cka-021)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n service-debug-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: service-exposure-brief
-  namespace: service-debug-lab
-data:
-  serviceName: echo-api
-  serviceType: ClusterIP
-  selectorKey: app
-  selectorValue: echo-api
-  servicePort: "8080"
-  targetPort: "8080"
-  endpointCheck: kubectl get endpoints echo-api -n service-debug-lab -o wide
-  selectorCheck: kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'
-  reachabilityCheck: kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/service-exposure-checklist.txt
-Selector Audit
-- kubectl get svc echo-api -n service-debug-lab -o yaml
-- kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'
-
-Endpoint Audit
-- kubectl get endpoints echo-api -n service-debug-lab -o wide
-- kubectl get endpointslices -n service-debug-lab -l kubernetes.io/service-name=echo-api
-
-Reachability
-- kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-- kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.ports[0].targetPort}'
-EOF_CHECKLIST
-kubectl get configmap service-exposure-brief -n service-debug-lab -o yaml > /tmp/exam/q1/service-exposure-brief.yaml
-[ -s /tmp/exam/q1/service-exposure-brief.yaml ]
-[ -s /tmp/exam/q1/service-exposure-checklist.txt ]
+  name: echo-api
+spec:
+  type: ClusterIP
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_SERVICE
+kubectl rollout status deployment/echo-api -n service-debug-lab
+for _ in $(seq 1 30); do
+  endpoints="$(kubectl get endpoints echo-api -n service-debug-lab -o jsonpath='{.subsets[*].addresses[*].ip}')"
+  count="$(printf '%s\n' "$endpoints" | wc -w | tr -d ' ')"
+  [ "$count" -eq 2 ] && break
+  sleep 2
+done
+[ "$count" -eq 2 ]
+test "$(kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz)" = "ok"
 COMMAND
       ;;
     cka-022)

@@ -4,7 +4,7 @@
       "id": "2201",
       "namespace": "pv-resize-lab",
       "machineHostname": "ckad9999",
-      "question": "A PVC expansion diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `resize-diagnostics-brief` already exists in namespace `pv-resize-lab`. Repair it so that:\n- `targetPvc` is `analytics-data`\n- `pvcInventory` is `kubectl get pvc analytics-data -n pv-resize-lab -o wide`\n- `requestedSizeCheck` is `kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.resources.requests.storage}'`\n- `currentCapacityCheck` is `kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.capacity.storage}'`\n- `storageClassCheck` is `kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.storageClassName}'`\n- `allowExpansionCheck` is `kubectl get storageclass expandable-reports -o jsonpath='{.allowVolumeExpansion}'`\n- `conditionCheck` is `kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.conditions[*].type}'`\n- `mountPathCheck` is `kubectl get deployment analytics-api -n pv-resize-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `eventCheck` is `kubectl get events -n pv-resize-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm requested size, current capacity, resize support, PVC conditions, and mount path before changing storage manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q2201/resize-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q2201/resize-diagnostics-checklist.txt` with the sections `PVC Inventory`, `Resize Checks`, and `Safe Manifest Review`\n\nDo not edit or delete the PVC, do not restart the Deployment, and do not patch the live StorageClass during this drill.",
+      "question": "A resize-capable PVC and Deployment in namespace `pv-resize-lab` are not wired for the intended storage contract.\n\nFix the workload so that:\n- PVC `analytics-data` stays bound to PV `analytics-pv`\n- StorageClass `expandable-reports` keeps `allowVolumeExpansion: true`\n- PVC `analytics-data` requests `2Gi`\n- Deployment `analytics-api` uses claim `analytics-data`\n- the volume mounts at `/var/lib/analytics`\n- the Deployment becomes Available\n- the running container writes `resize-ready` to `/var/lib/analytics/resize-ready.txt`\n\nDo not delete the PVC or PV, and do not replace the existing StorageClass.",
       "concepts": [
         "persistentvolumeclaim",
         "volumeExpansion",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The PVC resize diagnostics brief ConfigMap uses the intended PVC target, exact resize inspection commands, StorageClass expansion evidence, condition checks, and safe manifest guidance",
-          "verificationScriptFile": "q2201_s1_validate_resize_brief_contract.sh",
+          "description": "The resize-capable PVC contract stays intact and analytics-api uses the intended claim, request size, and mount path",
+          "verificationScriptFile": "2201_s1_validate_resize_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact PVC inventory, resize, StorageClass, and workload mount inspection commands",
-          "verificationScriptFile": "q2201_s2_validate_resize_checklist_export.sh",
+          "description": "Deployment analytics-api becomes Available after the resize storage repair",
+          "verificationScriptFile": "2201_s2_validate_resize_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe resize remediation guidance is removed",
-          "verificationScriptFile": "q2201_s3_validate_resize_manifest_export_and_safety.sh",
+          "description": "The running container writes resize-ready to the mounted analytics path",
+          "verificationScriptFile": "2201_s3_validate_resize_file.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

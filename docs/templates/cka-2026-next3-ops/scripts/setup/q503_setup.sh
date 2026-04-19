@@ -1,38 +1,67 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 NAMESPACE="service-debug-lab"
-CONFIGMAP="service-exposure-brief"
-OUTPUT_DIR="/tmp/exam/q503"
 
-kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-mkdir -p "$OUTPUT_DIR"
-rm -f "$OUTPUT_DIR/service-exposure-brief.yaml" "$OUTPUT_DIR/service-exposure-checklist.txt"
+kubectl delete pod net-debug -n "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
+kubectl delete deployment echo-api -n "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
+kubectl delete service echo-api -n "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 
-cat <<'EOF_BRIEF' | kubectl apply -f - >/dev/null
-apiVersion: v1
-kind: ConfigMap
+cat <<'EOF_DEPLOYMENT' | kubectl apply -f - >/dev/null
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: service-exposure-brief
+  name: echo-api
   namespace: service-debug-lab
-data:
-  serviceName: web-svc
-  serviceType: NodePort
-  selectorKey: component
-  selectorValue: web
-  servicePort: "9090"
-  targetPort: "9090"
-  endpointCheck: kubectl get endpoints web-svc -n service-debug-lab
-  selectorCheck: kubectl get svc web-svc -n service-debug-lab -o jsonpath='{.spec.selector.component}'
-  reachabilityCheck: kubectl exec -n service-debug-lab curlpod -- curl -sS http://web-svc:9090/status
-EOF_BRIEF
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-api
+  template:
+    metadata:
+      labels:
+        app: echo-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - mkdir -p /www && echo ok > /www/healthz && httpd -f -p 8080 -h /www
+          ports:
+            - containerPort: 8080
+EOF_DEPLOYMENT
 
-cat <<'EOF_STALE' > "$OUTPUT_DIR/service-exposure-checklist.txt"
-Selector Audit
-- kubectl patch deployment echo-api -n service-debug-lab --type merge -p '{"spec":{"template":{"metadata":{"labels":{"app":"echo-api"}}}}}'
+cat <<'EOF_SERVICE' | kubectl apply -f - >/dev/null
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-api
+  namespace: service-debug-lab
+spec:
+  type: NodePort
+  selector:
+    app: legacy-api
+  ports:
+    - port: 8080
+      targetPort: 9090
+EOF_SERVICE
 
-Reachability
-- kubectl delete svc echo-api -n service-debug-lab
-EOF_STALE
-
-exit 0
+cat <<'EOF_DEBUG' | kubectl apply -f - >/dev/null
+apiVersion: v1
+kind: Pod
+metadata:
+  name: net-debug
+  namespace: service-debug-lab
+spec:
+  containers:
+    - name: net-debug
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - sleep 3600
+EOF_DEBUG

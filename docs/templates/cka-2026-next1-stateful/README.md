@@ -4,27 +4,22 @@ These drafts cover the next recommended stateful workload pack from the `cka-028
 
 1. StatefulSet identity and headless service diagnostics
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `901` StatefulSet identity and headless service repair
 
-- Question `901` (`StatefulSet identity and headless service diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `901` (StatefulSet identity and headless service repair) now mirrors the promoted hands-on facilitator pack `cka-028`.
 - Question `901` has now been promoted into facilitator pack `cka-028`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `901` should stay in the `planning + evidence export` lane. It should validate exact StatefulSet inventory, headless Service inspection, ordinal DNS guidance, and safe manifest review without deleting stateful workloads.
-- Question `901` should export exact evidence files instead of deleting PVCs, deleting the StatefulSet, or changing the Service type away from `ClusterIP`/headless semantics.
-- Question `901` should avoid `kubectl delete statefulset`, `kubectl delete pvc`, and `kubectl patch svc web-svc -p '{"spec":{"type":"NodePort"}}'` as corrective actions in the expected answer.
+- Keep the runtime deterministic by validating the exact headless Service contract, StatefulSet readiness, ordinal DNS lookup, and bound PVC state instead of deleting stateful objects.
+- Question `901` should avoid deleting the StatefulSet, deleting PVCs, or converting the headless Service into a normal Service type in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q901` -> `facilitator/assets/exams/cka/028`
+1. Question `901` is already promoted; the next work is keeping runtime smoke and contract coverage green.

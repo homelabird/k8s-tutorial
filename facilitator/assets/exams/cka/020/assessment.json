@@ -4,33 +4,34 @@
       "id": "1",
       "namespace": "connectivity-lab",
       "machineHostname": "ckad9999",
-      "question": "A service and pod connectivity diagnostics brief is incomplete and contains stale reachability guidance.\n\nA ConfigMap named `connectivity-brief` already exists in namespace `connectivity-lab`. Repair it so that:\n- `debugPod` is `net-debug`\n- `serviceName` is `echo-api`\n- `servicePort` is `8080`\n- `headlessServiceName` is `echo-api-headless`\n- `podDnsName` is `echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local`\n- `serviceProbe` is `kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz`\n- `podProbe` is `kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz`\n- `dnsProbe` is `kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/connectivity-brief.yaml`\n- save a plain-text connectivity matrix to `/tmp/exam/q1/connectivity-matrix.txt` with the sections `Service Path`, `Pod Path`, and `DNS Checks`\n\nDo not change Service selectors, do not patch workloads, and do not create new Pods during this drill.",
+      "question": "A StatefulSet named `echo-api` and Services `echo-api` and `echo-api-headless` in namespace `connectivity-lab` are not providing the intended in-cluster connectivity.\n\nFix the workload so that:\n- Service `echo-api` stays `ClusterIP`\n- Service `echo-api` selects pods with label `app=echo-api`\n- Service `echo-api` exposes port `8080` and targets port `8080`\n- Service `echo-api-headless` stays headless (`clusterIP: None`)\n- Service `echo-api-headless` selects pods with label `app=echo-api`\n- StatefulSet `echo-api` keeps `serviceName: echo-api-headless`\n- StatefulSet `echo-api` keeps `replicas: 1`\n- the StatefulSet becomes Ready\n- `net-debug` can fetch `ok` from `http://echo-api:8080/healthz`\n- `net-debug` can fetch `ok` from `http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz`\n- `net-debug` can resolve `echo-api.connectivity-lab.svc.cluster.local`\n\nDo not delete the StatefulSet, do not create new Pods, and do not convert either Service into a NodePort or LoadBalancer.",
       "concepts": [
         "services",
+        "headless-service",
         "networking",
         "dns",
-        "troubleshooting",
-        "connectivity"
+        "statefulset",
+        "troubleshooting"
       ],
       "verification": [
         {
           "id": "1",
-          "description": "The connectivity brief ConfigMap uses the intended debug Pod, Service names, headless DNS name, and exact probe commands",
-          "verificationScriptFile": "q1_s1_validate_connectivity_brief_contract.sh",
+          "description": "Services echo-api and echo-api-headless keep the intended selectors and ports while StatefulSet echo-api keeps the expected serviceName and replica count",
+          "verificationScriptFile": "q1_s1_validate_connectivity_services.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported connectivity matrix contains the required sections and exact service, pod, and DNS checks",
-          "verificationScriptFile": "q1_s2_validate_connectivity_matrix_export.sh",
+          "description": "StatefulSet echo-api becomes Ready and net-debug can resolve the Service name and fetch ok through Service echo-api",
+          "verificationScriptFile": "q1_s2_validate_connectivity_service_path.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe connectivity guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_connectivity_manifest_export_and_safety.sh",
+          "description": "net-debug can fetch ok through the headless ordinal DNS name after the connectivity repair",
+          "verificationScriptFile": "q1_s3_validate_connectivity_pod_path.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

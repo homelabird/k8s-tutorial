@@ -4,7 +4,7 @@
       "id": "2301",
       "namespace": "debug-lab",
       "machineHostname": "ckad9999",
-      "question": "A pod debug diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `debug-diagnostics-brief` already exists in namespace `debug-lab`. Repair it so that:\n- `targetPod` is `orders-api`\n- `podInventory` is `kubectl get pod orders-api -n debug-lab -o wide`\n- `containerInventory` is `kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.containers[*].name}'`\n- `logsCheck` is `kubectl logs orders-api -n debug-lab -c api --tail=50`\n- `nodeCheck` is `kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.nodeName}'`\n- `debugCommand` is `kubectl debug pod/orders-api -n debug-lab -it --image=busybox:1.36 --target=api`\n- `ephemeralContainerCheck` is `kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}'`\n- `eventCheck` is `kubectl get events -n debug-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm target pod, target container, debug image, and ephemeral container evidence before changing workload manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q2301/debug-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q2301/debug-diagnostics-checklist.txt` with the sections `Pod Inventory`, `Debug Path`, and `Safe Manifest Review`\n\nDo not delete the Pod, do not restart the workload, and do not patch the live Pod spec during this drill.",
+      "question": "A Pod named `orders-api` in namespace `debug-lab` needs a non-disruptive ephemeral debug path.\n\nFix the debugging workflow so that:\n- the Pod keeps name `orders-api`\n- the target container remains `api`\n- an ephemeral container named `debugger` is added\n- the ephemeral container uses image `busybox:1.36`\n- the ephemeral container targets container `api`\n- the ephemeral container prints `debug-ready` and then sleeps\n- the Pod remains Running\n- logs for container `debugger` contain `debug-ready`\n\nDo not delete or restart the Pod, and do not replace `kubectl debug` with direct Pod-spec patching.",
       "concepts": [
         "ephemeralcontainers",
         "kubectl-debug",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The debug diagnostics brief ConfigMap uses the intended pod target, exact pod inspection commands, kubectl debug invocation, ephemeral container evidence, and safe manifest guidance",
-          "verificationScriptFile": "q2301_s1_validate_debug_brief_contract.sh",
+          "description": "Pod orders-api contains the intended ephemeral container name, image, and target container wiring",
+          "verificationScriptFile": "2301_s1_validate_debug_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact pod inventory, debug, logs, events, and safe review commands",
-          "verificationScriptFile": "q2301_s2_validate_debug_checklist_export.sh",
+          "description": "Pod orders-api stays Running and reports the debugger ephemeral container in status",
+          "verificationScriptFile": "2301_s2_validate_debug_running.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe pod-debug remediation guidance is removed",
-          "verificationScriptFile": "q2301_s3_validate_debug_manifest_export_and_safety.sh",
+          "description": "The debugger ephemeral container logs debug-ready",
+          "verificationScriptFile": "2301_s3_validate_debug_logs.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

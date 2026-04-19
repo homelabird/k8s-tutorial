@@ -1,47 +1,45 @@
-# CKA 2026 Single Domain Drill - Service and Pod Connectivity Diagnostics
+# CKA 2026 Single Domain Drill 020 Answers
 
-## Question 1: repair the connectivity diagnostics brief and export the evidence
+## Question 1
 
-Repair the connectivity diagnostics brief and export both the repaired manifest and a plain-text connectivity matrix.
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n connectivity-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: connectivity-brief
-  namespace: connectivity-lab
-data:
-  debugPod: net-debug
-  serviceName: echo-api
-  servicePort: "8080"
-  headlessServiceName: echo-api-headless
-  podDnsName: echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local
-  serviceProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
-  podProbe: kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
-  dnsProbe: kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
-EOF_BRIEF
+  name: echo-api
+spec:
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_SERVICE
 
-mkdir -p /tmp/exam/q1
-cat <<'EOF_MATRIX' > /tmp/exam/q1/connectivity-matrix.txt
-Service Path
-- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+kubectl apply -n connectivity-lab -f - <<'EOF_HEADLESS'
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-api-headless
+spec:
+  clusterIP: None
+  selector:
+    app: echo-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+EOF_HEADLESS
 
-Pod Path
-- kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
-
-DNS Checks
-- kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
-- kubectl get svc echo-api -n connectivity-lab
-- kubectl get svc echo-api-headless -n connectivity-lab
-EOF_MATRIX
-
-kubectl get configmap connectivity-brief -n connectivity-lab -o yaml > /tmp/exam/q1/connectivity-brief.yaml
+kubectl rollout status statefulset/echo-api -n connectivity-lab
+kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local
+kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz
+kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz
 ```
 
 Expected checks:
 
-- `connectivity-brief` contains the intended debug Pod, Service names, headless DNS name, and exact probe commands
-- `/tmp/exam/q1/connectivity-matrix.txt` contains the required sections and exact service, pod, and DNS checks
-- `/tmp/exam/q1/connectivity-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as deleting Services or restarting workloads are removed
+- Services `echo-api` and `echo-api-headless` use the intended selectors and ports
+- StatefulSet `echo-api` stays Ready with `serviceName: echo-api-headless`
+- `net-debug` resolves the Service name and fetches `ok` through both the ClusterIP and headless ordinal DNS paths

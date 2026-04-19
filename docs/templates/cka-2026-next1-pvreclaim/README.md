@@ -4,27 +4,22 @@ These drafts cover the next recommended storage-ops pack from the `cka-040+` roa
 
 1. PersistentVolume reclaim policy and claimRef diagnostics
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `2101` PersistentVolume reclaim policy and claim wiring repair
 
-- Question `2101` (`PersistentVolume reclaim policy and claimRef diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `2101` (PersistentVolume reclaim policy and claim wiring repair) now mirrors the promoted hands-on facilitator pack `cka-040`.
 - Question `2101` has now been promoted into facilitator pack `cka-040`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `2101` should stay in the `planning + evidence export` lane. It should validate exact PVC inventory, PV reclaim-policy inspection, claimRef evidence, workload mount-path checks, and safe manifest review without patching the live PV, PVC, or Deployment.
-- Question `2101` should export exact evidence files instead of deleting storage objects, scaling the Deployment, or force-patching the live claimRef and reclaim policy as a workaround.
-- Question `2101` should avoid `kubectl delete pvc`, `kubectl delete pv`, `kubectl scale deployment`, and ad hoc `kubectl patch pv ...` remediation commands in the expected answer.
+- Keep the runtime deterministic by validating the existing bound PV/PVC contract, Deployment availability, and file creation on mounted storage instead of deleting storage objects.
+- Question `2101` should avoid deleting the PVC or PV, or replacing the existing reclaim-policy and claimRef contract in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q2101` -> `facilitator/assets/exams/cka/040`
+1. Question `2101` is already promoted; the next work is keeping runtime smoke and contract coverage green.

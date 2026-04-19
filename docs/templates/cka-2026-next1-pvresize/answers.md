@@ -1,53 +1,43 @@
-## Question 2201: PersistentVolumeClaim expansion and resize diagnostics
+# CKA 2026 Next PV Resize Wave Answers
 
-Repair the resize diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 2201
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl patch pvc analytics-data -n pv-resize-lab --type merge -p '{"spec":{"resources":{"requests":{"storage":"2Gi"}}}}'
+
+kubectl apply -n pv-resize-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: resize-diagnostics-brief
-  namespace: pv-resize-lab
-data:
-  targetPvc: analytics-data
-  pvcInventory: kubectl get pvc analytics-data -n pv-resize-lab -o wide
-  requestedSizeCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.resources.requests.storage}'
-  currentCapacityCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.capacity.storage}'
-  storageClassCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.storageClassName}'
-  allowExpansionCheck: kubectl get storageclass expandable-reports -o jsonpath='{.allowVolumeExpansion}'
-  conditionCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.conditions[*].type}'
-  mountPathCheck: kubectl get deployment analytics-api -n pv-resize-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n pv-resize-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm requested size, current capacity, resize support, PVC conditions, and mount path before changing storage manifests
-EOF_BRIEF
+  name: analytics-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-api
+  template:
+    metadata:
+      labels:
+        app: analytics-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - echo resize-ready > /var/lib/analytics/resize-ready.txt && sleep 3600
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/analytics
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: analytics-data
+EOF
 
-mkdir -p /tmp/exam/q2201
-cat <<'EOF_CHECKLIST' > /tmp/exam/q2201/resize-diagnostics-checklist.txt
-PVC Inventory
-- kubectl get pvc analytics-data -n pv-resize-lab -o wide
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.resources.requests.storage}'
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.capacity.storage}'
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.storageClassName}'
-
-Resize Checks
-- kubectl get storageclass expandable-reports -o jsonpath='{.allowVolumeExpansion}'
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.conditions[*].type}'
-- kubectl get deployment analytics-api -n pv-resize-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n pv-resize-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment analytics-api -n pv-resize-lab -o yaml
-- kubectl get pvc analytics-data -n pv-resize-lab -o yaml
-- confirm requested size, current capacity, resize support, PVC conditions, and mount path before changing storage manifests
-EOF_CHECKLIST
-
-kubectl get configmap resize-diagnostics-brief -n pv-resize-lab -o yaml > /tmp/exam/q2201/resize-diagnostics-brief.yaml
+kubectl rollout status deployment/analytics-api -n pv-resize-lab
+kubectl exec -n pv-resize-lab deploy/analytics-api -- cat /var/lib/analytics/resize-ready.txt
 ```
-
-Expected checks:
-
-- `resize-diagnostics-brief` contains the intended PVC target, exact resize inspection commands, StorageClass expansion evidence, PVC condition checks, event visibility, and safe manifest guidance
-- `/tmp/exam/q2201/resize-diagnostics-checklist.txt` contains the required sections and exact resize troubleshooting commands
-- `/tmp/exam/q2201/resize-diagnostics-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as editing or deleting the PVC, restarting the workload, or patching the StorageClass are removed

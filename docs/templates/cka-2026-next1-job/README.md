@@ -4,27 +4,22 @@ These drafts cover the next recommended batch workload controller pack from the 
 
 1. Job completions, parallelism, and backoff diagnostics
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `1201` Job completions, parallelism, and backoff repair
 
-- Question `1201` (`Job completions, parallelism, and backoff diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `1201` (Job completions, parallelism, and backoff repair) now mirrors the promoted hands-on facilitator pack `cka-031`.
 - Question `1201` has now been promoted into facilitator pack `cka-031`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `1201` should stay in the `planning + evidence export` lane. It should validate exact Job inventory, completions, parallelism, backoff limit, pod evidence, and safe manifest review without deleting the Job.
-- Question `1201` should export exact evidence files instead of creating replacement Jobs, deleting pods as a workaround, or patching status fields.
-- Question `1201` should avoid `kubectl delete job`, `kubectl create job ...`, `kubectl replace --force`, and status mutation commands in the expected answer.
+- Keep the runtime deterministic by validating the exact Job spec, successful completion, and completed pod logs instead of deleting and recreating the workload.
+- Question `1201` should avoid deleting the Job, creating a replacement Job, or mutating status fields in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q1201` -> `facilitator/assets/exams/cka/031`
+1. Question `1201` is already promoted; the next work is keeping runtime smoke and contract coverage green.

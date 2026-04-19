@@ -4,27 +4,22 @@ These drafts cover the next recommended troubleshooting pack from the `cka-042+`
 
 1. Ephemeral containers and kubectl debug diagnostics
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `2301` Ephemeral container and kubectl debug repair
 
-- Question `2301` (`Ephemeral containers and kubectl debug diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `2301` (Ephemeral container and kubectl debug repair) now mirrors the promoted hands-on facilitator pack `cka-042`.
 - Question `2301` has now been promoted into facilitator pack `cka-042`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `2301` should stay in the `planning + evidence export` lane. It should validate exact pod inventory, target-container evidence, `kubectl debug` invocation, ephemeral-container visibility, logs and events, and safe manifest review without mutating the live Pod or Deployment.
-- Question `2301` should export exact evidence files instead of deleting the Pod, restarting the workload, or force-patching the Pod spec as a workaround.
-- Question `2301` should avoid `kubectl delete pod`, `kubectl rollout restart`, `kubectl patch pod`, and ad hoc `kubectl exec` remediation commands in the expected answer.
+- Keep the runtime deterministic by validating the exact ephemeral container name, image, target-container wiring, Running pod state, and debug logs instead of patching the Pod directly.
+- Question `2301` should avoid deleting or restarting the Pod, or replacing `kubectl debug` with direct Pod-spec patching in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q2301` -> `facilitator/assets/exams/cka/042`
+1. Question `2301` is already promoted; the next work is keeping runtime smoke and contract coverage green.

@@ -40,33 +40,34 @@
       "id": "502",
       "namespace": "connectivity-lab",
       "machineHostname": "ckad9999",
-      "question": "A service and pod connectivity diagnostics brief is incomplete and contains stale reachability guidance.\n\nA ConfigMap named `connectivity-brief` already exists in namespace `connectivity-lab`. Repair it so that:\n- `debugPod` is `net-debug`\n- `serviceName` is `echo-api`\n- `servicePort` is `8080`\n- `headlessServiceName` is `echo-api-headless`\n- `podDnsName` is `echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local`\n- `serviceProbe` is `kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api:8080/healthz`\n- `podProbe` is `kubectl exec -n connectivity-lab net-debug -- wget -qO- http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz`\n- `dnsProbe` is `kubectl exec -n connectivity-lab net-debug -- nslookup echo-api.connectivity-lab.svc.cluster.local`\n- save the repaired ConfigMap manifest to `/tmp/exam/q502/connectivity-brief.yaml`\n- save a plain-text connectivity matrix to `/tmp/exam/q502/connectivity-matrix.txt` with the sections `Service Path`, `Pod Path`, and `DNS Checks`\n\nDo not change Service selectors, do not patch workloads, and do not create new Pods during this drill.",
+      "question": "A StatefulSet named `echo-api` and Services `echo-api` and `echo-api-headless` in namespace `connectivity-lab` are not providing the intended in-cluster connectivity.\n\nFix the workload so that:\n- Service `echo-api` stays `ClusterIP`\n- Service `echo-api` selects pods with label `app=echo-api`\n- Service `echo-api` exposes port `8080` and targets port `8080`\n- Service `echo-api-headless` stays headless (`clusterIP: None`)\n- Service `echo-api-headless` selects pods with label `app=echo-api`\n- StatefulSet `echo-api` keeps `serviceName: echo-api-headless`\n- StatefulSet `echo-api` keeps `replicas: 1`\n- the StatefulSet becomes Ready\n- `net-debug` can fetch `ok` from `http://echo-api:8080/healthz`\n- `net-debug` can fetch `ok` from `http://echo-api-0.echo-api-headless.connectivity-lab.svc.cluster.local:8080/healthz`\n- `net-debug` can resolve `echo-api.connectivity-lab.svc.cluster.local`\n\nDo not delete the StatefulSet, do not create new Pods, and do not convert either Service into a NodePort or LoadBalancer.",
       "concepts": [
         "services",
+        "headless-service",
         "networking",
         "dns",
-        "troubleshooting",
-        "connectivity"
+        "statefulset",
+        "troubleshooting"
       ],
       "verification": [
         {
           "id": "1",
-          "description": "The connectivity brief ConfigMap uses the intended debug Pod, Service names, headless DNS name, and exact probe commands",
-          "verificationScriptFile": "q502_s1_validate_connectivity_brief_contract.sh",
+          "description": "Services echo-api and echo-api-headless keep the intended selectors and ports while StatefulSet echo-api keeps the expected serviceName and replica count",
+          "verificationScriptFile": "q502_s1_validate_connectivity_services.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported connectivity matrix contains the required sections and exact service, pod, and DNS checks",
-          "verificationScriptFile": "q502_s2_validate_connectivity_matrix_export.sh",
+          "description": "StatefulSet echo-api becomes Ready and net-debug can resolve the Service name and fetch ok through Service echo-api",
+          "verificationScriptFile": "q502_s2_validate_connectivity_service_path.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe connectivity guidance is removed",
-          "verificationScriptFile": "q502_s3_validate_connectivity_manifest_export_and_safety.sh",
+          "description": "net-debug can fetch ok through the headless ordinal DNS name after the connectivity repair",
+          "verificationScriptFile": "q502_s3_validate_connectivity_pod_path.sh",
           "expectedOutput": "0",
           "weightage": 2
         }
@@ -76,7 +77,7 @@
       "id": "503",
       "namespace": "service-debug-lab",
       "machineHostname": "ckad9999",
-      "question": "A Service exposure debugging brief is incomplete and contains stale selector and endpoint guidance.\n\nA ConfigMap named `service-exposure-brief` already exists in namespace `service-debug-lab`. Repair it so that:\n- `serviceName` is `echo-api`\n- `serviceType` is `ClusterIP`\n- `selectorKey` is `app`\n- `selectorValue` is `echo-api`\n- `servicePort` is `8080`\n- `targetPort` is `8080`\n- `endpointCheck` is `kubectl get endpoints echo-api -n service-debug-lab -o wide`\n- `selectorCheck` is `kubectl get svc echo-api -n service-debug-lab -o jsonpath='{.spec.selector.app}'`\n- `reachabilityCheck` is `kubectl exec -n service-debug-lab net-debug -- wget -qO- http://echo-api:8080/healthz`\n- save the repaired ConfigMap manifest to `/tmp/exam/q503/service-exposure-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q503/service-exposure-checklist.txt` with the sections `Selector Audit`, `Endpoint Audit`, and `Reachability`\n\nDo not patch Deployments, do not create Ingress or Gateway API resources, and do not delete Services during this drill.",
+      "question": "A Service named `echo-api` in namespace `service-debug-lab` is not exposing the intended backend pods.\n\nFix the Service so that:\n- the Service keeps name `echo-api`\n- the Service stays `ClusterIP`\n- the selector is `app=echo-api`\n- the Service exposes port `8080`\n- the Service targets port `8080`\n- Deployment `echo-api` remains at `replicas: 2`\n- Deployment `echo-api` becomes Available\n- Service `echo-api` publishes `2` ready endpoints\n- `net-debug` can fetch `ok` from `http://echo-api:8080/healthz`\n\nDo not patch the Deployment, do not create Ingress or Gateway API resources, and do not delete the Service.",
       "concepts": [
         "services",
         "networking",
@@ -87,22 +88,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The service exposure brief ConfigMap uses the intended Service name, selector contract, ports, and exact endpoint and reachability checks",
-          "verificationScriptFile": "q503_s1_validate_service_exposure_brief_contract.sh",
+          "description": "Service echo-api uses the intended type, selector, port, and targetPort contract",
+          "verificationScriptFile": "q503_s1_validate_service_exposure_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact selector, endpoint, and reachability commands",
-          "verificationScriptFile": "q503_s2_validate_service_exposure_checklist_export.sh",
+          "description": "Deployment echo-api becomes Available and Service echo-api publishes 2 ready endpoints",
+          "verificationScriptFile": "q503_s2_validate_service_exposure_endpoints.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe service debugging guidance is removed",
-          "verificationScriptFile": "q503_s3_validate_service_exposure_manifest_export_and_safety.sh",
+          "description": "net-debug can fetch ok through Service echo-api after the exposure repair",
+          "verificationScriptFile": "q503_s3_validate_service_exposure_reachability.sh",
           "expectedOutput": "0",
           "weightage": 2
         }
