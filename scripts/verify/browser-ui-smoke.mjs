@@ -811,8 +811,31 @@ async function runIndexSmoke(page, baseUrl, state) {
       description.textContent?.includes('Start here') &&
       description.textContent?.includes('Next lane: Ops diagnostics');
   });
+  await page.getByRole('button', { name: 'Switch to ops diagnostics' }).click();
+  await page.waitForFunction(() => {
+    const track = document.getElementById('examTrack');
+    const examName = document.getElementById('examName');
+    return track &&
+      examName &&
+      track.value === 'ops-diagnostics' &&
+      examName.value === 'cka-024';
+  });
+  await page.waitForFunction(() => {
+    const description = document.getElementById('examDescription');
+    return description &&
+      description.textContent?.includes('Second lane') &&
+      description.textContent?.includes('Next lane: Planning-focused');
+  });
+  await page.getByRole('button', { name: 'Switch to planning-focused' }).click();
+  await page.waitForFunction(() => {
+    const track = document.getElementById('examTrack');
+    const examName = document.getElementById('examName');
+    return track &&
+      examName &&
+      track.value === 'planning-focused' &&
+      examName.value === 'cka-016';
+  });
 
-  await page.selectOption('#examTrack', 'planning-focused');
   await page.waitForFunction(() => {
     const examName = document.getElementById('examName');
     if (!examName) return false;

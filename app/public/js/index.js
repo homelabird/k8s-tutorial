@@ -51,12 +51,16 @@ document.addEventListener('DOMContentLoaded', function() {
         'hands-on': {
             title: 'Start here',
             detail: 'Build repair fluency first, then move to ops diagnostics for safer evidence collection.',
-            next: 'Next lane: Ops diagnostics'
+            next: 'Next lane: Ops diagnostics',
+            nextTrack: 'ops-diagnostics',
+            actionLabel: 'Switch to ops diagnostics'
         },
         'ops-diagnostics': {
             title: 'Second lane',
             detail: 'Practice collecting evidence and isolating faults before moving into higher-risk recovery planning.',
-            next: 'Next lane: Planning-focused'
+            next: 'Next lane: Planning-focused',
+            nextTrack: 'planning-focused',
+            actionLabel: 'Switch to planning-focused'
         },
         'planning-focused': {
             title: 'Final lane',
@@ -541,6 +545,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="fw-semibold">${recommendation.title}</div>
                 <div class="small">${recommendation.detail}</div>
                 <div class="small text-body-secondary mt-1">${recommendation.next}</div>
+                ${recommendation.nextTrack ? `
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary mt-3"
+                        data-track-switch="${recommendation.nextTrack}">
+                        ${recommendation.actionLabel}
+                    </button>
+                ` : ''}
             </div>
         ` : '';
         
@@ -585,6 +597,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     examTrackSelect.addEventListener('change', function() {
         filterLabsByCategory(examCategorySelect.value);
+    });
+
+    examDescription.addEventListener('click', function(event) {
+        const switchButton = event.target.closest('[data-track-switch]');
+        if (!switchButton) {
+            return;
+        }
+
+        const nextTrack = switchButton.getAttribute('data-track-switch');
+        if (!nextTrack || examCategorySelect.value !== 'CKA') {
+            return;
+        }
+
+        examTrackSelect.value = nextTrack;
+        filterLabsByCategory('CKA', nextTrack);
     });
     
     // Helper function to show premium description
