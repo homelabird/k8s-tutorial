@@ -17,7 +17,7 @@ These drafts cover the next recommended storage-oriented pack from the `cka-026+
 
 ## Important Constraints
 
-- Question `701` should stay in the `planning + evidence export` lane. It should validate exact StorageClass inventory commands, default-class inspection, PVC analysis, and safe manifest guidance without deleting live PVCs or mutating cluster-scoped provisioners.
+- Question `701` now stays in the `ops-diagnostics` lane rather than the next hands-on wave. It should validate exact StorageClass inventory commands, default-class inspection, PVC analysis, and safe manifest guidance without deleting live PVCs or mutating cluster-scoped provisioners.
 - Question `701` should export exact evidence files instead of deleting StorageClass objects or patching live cluster-scoped storage configuration inside the drill.
 - Question `701` should avoid `kubectl delete storageclass`, `kubectl patch storageclass`, and `kubectl delete pvc reports-pvc -n storageclass-lab` as corrective actions in the expected answer.
 

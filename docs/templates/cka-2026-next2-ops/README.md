@@ -32,7 +32,7 @@ These drafts cover the next recommended ops-oriented packs from the `cka-022+` r
 - Question `602` should stay in the `planning + evidence export` lane. It should validate certificate inspection, kubeadm expiry checks, renewal planning, and readiness verification without running live certificate renewal.
 - Question `602` should export exact evidence files instead of rotating certificates or rewriting static pod manifests inside the drill.
 - Question `602` should avoid `kubeadm reset`, `systemctl restart kubelet`, and deleting manifests as corrective actions in the expected answer.
-- Question `603` should stay in the `planning + evidence export` lane. It should validate exact resource quota, LimitRange, workload sizing, and safe remediation guidance without deleting guardrail objects or mutating live workload replicas.
+- Question `603` now stays in the `ops-diagnostics` lane rather than the next hands-on wave. It should validate exact resource quota, LimitRange, workload sizing, and safe remediation guidance without deleting guardrail objects or mutating live workload replicas until a tighter live-repair contract exists.
 - Question `603` should export exact evidence files instead of deleting quota objects or stripping requests and limits from workloads inside the drill.
 - Question `603` should avoid `kubectl delete resourcequota`, `kubectl delete limitrange`, and `kubectl scale deployment api -n quota-lab --replicas=0` as corrective actions in the expected answer.
 - Question `604` should stay in the `planning + evidence export` lane. It should validate exact kubelet runtime-endpoint inspection, CRI socket checks, `crictl` usage, and safe runtime-service guidance without editing kubelet configuration or restarting services.

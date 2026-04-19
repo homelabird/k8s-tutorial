@@ -248,6 +248,13 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-050` Downward API env wiring repair
 - `cka-051` Taints, tolerations, and NoExecute scheduling repair
 
+Track notes:
+
+- `cka-016`, `cka-018`, `cka-019`, `cka-022`, `cka-023`, `cka-025`, and `cka-027` are intentionally `planning-focused` drills. They validate evidence export and safe command sequencing without live control-plane, kubelet, PKI, runtime, or drain mutations.
+- `cka-020` and `cka-021` are the next hands-on conversion candidates. The current promoted packs remain evidence-export based until that workload-repair wave lands.
+- `cka-024` and `cka-026` remain in the `ops-diagnostics` lane for now because quota and StorageClass remediation still touches namespace or cluster guardrails in ways that are less deterministic to grade live.
+- The remaining promoted single-domain packs are now hands-on repair drills.
+
 To check the runner wiring without starting the Podman stack:
 
 ```bash
