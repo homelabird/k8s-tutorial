@@ -805,6 +805,12 @@ async function runIndexSmoke(page, baseUrl, state) {
       !values.includes('cka-024');
   });
   assert.equal(await page.locator('#examName').inputValue(), 'cka-020');
+  await page.waitForFunction(() => {
+    const description = document.getElementById('examDescription');
+    return description &&
+      description.textContent?.includes('Start here') &&
+      description.textContent?.includes('Next lane: Ops diagnostics');
+  });
 
   await page.selectOption('#examTrack', 'planning-focused');
   await page.waitForFunction(() => {
@@ -830,7 +836,9 @@ async function runIndexSmoke(page, baseUrl, state) {
     return description &&
       badge &&
       window.getComputedStyle(description).display === 'block' &&
-      badge.textContent?.includes('Planning-focused');
+      badge.textContent?.includes('Planning-focused') &&
+      description.textContent?.includes('Final lane') &&
+      description.textContent?.includes('Control-plane and node procedure planning');
   });
 }
 

@@ -46,6 +46,24 @@ document.addEventListener('DOMContentLoaded', function() {
         'ops-diagnostics': 'Use after hands-on. Focuses on safe troubleshooting and evidence-driven diagnosis.',
         'planning-focused': 'Use after hands-on and diagnostics. Focuses on procedure planning for higher-risk operations.'
     };
+
+    const trackRecommendation = {
+        'hands-on': {
+            title: 'Start here',
+            detail: 'Build repair fluency first, then move to ops diagnostics for safer evidence collection.',
+            next: 'Next lane: Ops diagnostics'
+        },
+        'ops-diagnostics': {
+            title: 'Second lane',
+            detail: 'Practice collecting evidence and isolating faults before moving into higher-risk recovery planning.',
+            next: 'Next lane: Planning-focused'
+        },
+        'planning-focused': {
+            title: 'Final lane',
+            detail: 'Use this lane after repair and diagnostics drills to rehearse sequencing for sensitive procedures.',
+            next: 'Focus: Control-plane and node procedure planning'
+        }
+    };
     
     // Check for current exam status on page load
     checkCurrentExamStatus();
@@ -329,6 +347,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return trackBadgeClasses[track] || 'text-bg-light';
     }
 
+    function getTrackRecommendation(track) {
+        return trackRecommendation[track] || null;
+    }
+
     function updateTrackHint(category, track) {
         if (!examTrackHint) {
             return;
@@ -508,15 +530,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create a nicely formatted description
         const difficultyText = lab.difficulty || 'Medium';
         const examTimeText = lab.examDurationInMinutes || lab.estimatedTime || '30';
+        const recommendation = getTrackRecommendation(lab.track);
         const trackMarkup = lab.track ? `
             <span class="badge ${getTrackBadgeClass(lab.track)} rounded-pill px-3 py-2">
                 ${getTrackLabel(lab.track)}
             </span>
         ` : '';
+        const recommendationMarkup = recommendation ? `
+            <div class="alert alert-light border mt-3 mb-0">
+                <div class="fw-semibold">${recommendation.title}</div>
+                <div class="small">${recommendation.detail}</div>
+                <div class="small text-body-secondary mt-1">${recommendation.next}</div>
+            </div>
+        ` : '';
         
         const descriptionHTML = `
             <div class="exam-details">
                 <p class="mb-0">${lab.description || 'No description available.'}</p>
+                ${recommendationMarkup}
             </div>
             <div class="exam-meta-container mt-3 pt-2 border-top">
                 <div class="d-flex justify-content-start align-items-center flex-wrap gap-3">
