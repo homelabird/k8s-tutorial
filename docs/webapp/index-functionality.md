@@ -130,7 +130,9 @@ The `index.html` file serves as the main landing page for the CK-X Simulator. He
             </div>
             <div class="modal-body">
                 <form id="examSelectionForm">
-                    <!-- Exam Selection Form -->
+                    <!-- Category selector -->
+                    <!-- Optional CKA track selector -->
+                    <!-- Exam selector -->
                 </form>
             </div>
             <div class="modal-footer">
@@ -142,6 +144,8 @@ The `index.html` file serves as the main landing page for the CK-X Simulator. He
 </div>
 ```
 - **Form Elements**: Dynamic exam selection options
+- **CKA Track Filter**: Shows `hands-on`, `planning-focused`, and `ops-diagnostics` only when the selected category is `CKA`
+- **Track Badge**: Selected CKA labs render a track badge in the description panel
 - **Validation**: Start button enabled only when valid selection made
 
 ## Functionality Overview
@@ -218,7 +222,7 @@ The `index.html` file serves as the main entry point for the CK-X Simulator, pro
 2. **Labs Data**
    - `/facilitator/api/v1/assessments/`
    - Fetches available labs
-   - Updates exam options
+   - Updates exam options and optional `track` filters for CKA labs
 
 3. **Exam Creation**
    - `/facilitator/api/v1/exams`

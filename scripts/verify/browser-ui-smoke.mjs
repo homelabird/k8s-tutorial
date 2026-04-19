@@ -218,6 +218,44 @@ function writeJson(res, statusCode, payload) {
 }
 
 function buildFixtureServer() {
+  const fixtureLabs = [
+    {
+      id: 'ckad-003',
+      category: 'CKAD',
+      name: 'CKAD Quick Drill - Deployment Basics',
+      description: 'Fixture CKAD drill.',
+      difficulty: 'Easy',
+      examDurationInMinutes: 15
+    },
+    {
+      id: 'cka-016',
+      category: 'CKA',
+      track: 'planning-focused',
+      name: 'CKA 2026 Single Domain Drill - Kubeadm Lifecycle Planning',
+      description: 'Fixture planning-focused drill.',
+      difficulty: 'Medium',
+      examDurationInMinutes: 20
+    },
+    {
+      id: 'cka-020',
+      category: 'CKA',
+      track: 'hands-on',
+      name: 'CKA 2026 Single Domain Drill - Service and Pod Connectivity Diagnostics',
+      description: 'Fixture hands-on drill.',
+      difficulty: 'Medium',
+      examDurationInMinutes: 20
+    },
+    {
+      id: 'cka-024',
+      category: 'CKA',
+      track: 'ops-diagnostics',
+      name: 'CKA 2026 Single Domain Drill - Resource quota and LimitRange troubleshooting',
+      description: 'Fixture ops diagnostics drill.',
+      difficulty: 'Medium',
+      examDurationInMinutes: 20
+    }
+  ];
+
   const initialResults = buildExamResult({
     examId: 'fixture-results',
     totalScore: 1,
@@ -346,7 +384,7 @@ function buildFixtureServer() {
     }
 
     if (pathname === '/facilitator/api/v1/assessments/' || pathname === '/facilitator/api/v1/assessments') {
-      writeJson(res, 200, []);
+      writeJson(res, 200, fixtureLabs);
       return;
     }
 
@@ -470,6 +508,11 @@ function buildFixtureServer() {
 
     if (pathname === '/facilitator/api/v1/exams/fixture-exam/terminate') {
       writeJson(res, 200, { success: true, message: 'Fixture exam terminated' });
+      return;
+    }
+
+    if (/^\/facilitator\/api\/v1\/exams\/fixture-index-\d+\/terminate$/.test(pathname)) {
+      writeJson(res, 200, { success: true, message: 'Fixture index exam terminated' });
       return;
     }
 
@@ -719,6 +762,52 @@ async function runIndexSmoke(page, baseUrl, state) {
   const secondModalText = await page.locator('#activeExamWarningModal #activeExamName').textContent();
   assert.match(secondModalText ?? '', /CKA Beta/);
   assert.equal(await page.locator('#activeExamWarningModal').count(), 1);
+
+  await page.locator('#terminateAndProceedBtn').click();
+  await waitForModalState(page, '#examSelectionModal', 'block');
+
+  await page.waitForFunction(() => {
+    const trackGroup = document.getElementById('examTrackGroup');
+    return trackGroup && window.getComputedStyle(trackGroup).display === 'none';
+  });
+
+  await page.selectOption('#examCategory', 'CKA');
+  await page.waitForFunction(() => {
+    const trackGroup = document.getElementById('examTrackGroup');
+    const trackSelect = document.getElementById('examTrack');
+    return trackGroup &&
+      trackSelect &&
+      window.getComputedStyle(trackGroup).display === 'block' &&
+      Array.from(trackSelect.options).some((option) => option.value === 'planning-focused') &&
+      Array.from(trackSelect.options).some((option) => option.value === 'ops-diagnostics') &&
+      Array.from(trackSelect.options).some((option) => option.value === 'hands-on');
+  });
+
+  const trackOptions = await page.$$eval('#examTrack option', (options) =>
+    options.map((option) => option.textContent?.trim() ?? '')
+  );
+  assert.deepEqual(trackOptions, ['All tracks', 'Hands-on', 'Ops diagnostics', 'Planning-focused']);
+
+  await page.selectOption('#examTrack', 'planning-focused');
+  await page.waitForFunction(() => {
+    const examName = document.getElementById('examName');
+    if (!examName) return false;
+    const values = Array.from(examName.options).map((option) => option.value);
+    return values.includes('premium_CKA') &&
+      values.includes('cka-016') &&
+      !values.includes('cka-020') &&
+      !values.includes('cka-024');
+  });
+
+  await page.selectOption('#examName', 'cka-016');
+  await page.waitForFunction(() => {
+    const description = document.getElementById('examDescription');
+    const badge = description?.querySelector('.badge');
+    return description &&
+      badge &&
+      window.getComputedStyle(description).display === 'block' &&
+      badge.textContent?.includes('Planning-focused');
+  });
 }
 
 async function runIndexViewResultsSmoke(page, baseUrl, state) {

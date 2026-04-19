@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return trackBadgeClasses[track] || 'text-bg-light';
     }
 
-    function populateTrackOptions(category) {
+    function populateTrackOptions(category, preferredTrack = examTrackSelect.value || 'all') {
         const categoryTracks = [...new Set(
             labs
                 .filter(lab => lab.category === category && typeof lab.track === 'string' && lab.track.trim())
@@ -340,9 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
             examTrackSelect.appendChild(option);
         });
 
-        if (![...examTrackSelect.options].some(option => option.value === examTrackSelect.value)) {
-            examTrackSelect.value = 'all';
-        }
+        examTrackSelect.value = [...examTrackSelect.options].some(option => option.value === preferredTrack)
+            ? preferredTrack
+            : 'all';
     }
     
     // Premium exam configuration
@@ -371,7 +371,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Filter labs by category and populate the labs dropdown
     function filterLabsByCategory(category) {
-        populateTrackOptions(category);
+        const requestedTrack = examTrackSelect.value || 'all';
+        populateTrackOptions(category, requestedTrack);
 
         let filteredLabs = labs.filter(lab => lab.category === category);
         const selectedTrack = examTrackSelect.value || 'all';
