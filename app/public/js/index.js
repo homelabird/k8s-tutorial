@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const examCategorySelect = document.getElementById('examCategory');
     const examTrackGroup = document.getElementById('examTrackGroup');
     const examTrackSelect = document.getElementById('examTrack');
+    const examTrackHint = document.getElementById('examTrackHint');
     const examNameSelect = document.getElementById('examName');
     const examDescription = document.getElementById('examDescription');
     const startSelectedExamBtn = document.getElementById('startSelectedExam');
@@ -37,6 +38,13 @@ document.addEventListener('DOMContentLoaded', function() {
         'hands-on': 'text-bg-success',
         'planning-focused': 'text-bg-warning',
         'ops-diagnostics': 'text-bg-secondary'
+    };
+
+    const trackGuidance = {
+        'all': 'CKA drills are grouped into hands-on, ops diagnostics, and planning-focused lanes.',
+        'hands-on': 'Recommended starting lane. Focuses on direct workload and cluster repair drills.',
+        'ops-diagnostics': 'Use after hands-on. Focuses on safe troubleshooting and evidence-driven diagnosis.',
+        'planning-focused': 'Use after hands-on and diagnostics. Focuses on procedure planning for higher-risk operations.'
     };
     
     // Check for current exam status on page load
@@ -321,6 +329,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return trackBadgeClasses[track] || 'text-bg-light';
     }
 
+    function updateTrackHint(category, track) {
+        if (!examTrackHint) {
+            return;
+        }
+
+        if (category !== 'CKA') {
+            examTrackHint.style.display = 'none';
+            examTrackHint.textContent = '';
+            return;
+        }
+
+        examTrackHint.textContent = trackGuidance[track] || trackGuidance.all;
+        examTrackHint.style.display = 'block';
+    }
+
     function populateTrackOptions(category, preferredTrack = examTrackSelect.value || 'all') {
         const categoryLabs = labs.filter(lab => lab.category === category);
         const trackCounts = categoryLabs.reduce((counts, lab) => {
@@ -335,6 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
             examTrackGroup.style.display = 'none';
             examTrackSelect.innerHTML = '<option value="all">All tracks</option>';
             examTrackSelect.value = 'all';
+            updateTrackHint(category, 'all');
             return;
         }
 
@@ -360,6 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ? preferredTrack
             : defaultTrack;
         examTrackSelect.value = resolvedTrack;
+        updateTrackHint(category, resolvedTrack);
     }
 
     function compareLabs(left, right) {

@@ -147,6 +147,7 @@ The `index.html` file serves as the main landing page for the CK-X Simulator. He
 - **CKA Track Filter**: Shows `hands-on`, `planning-focused`, and `ops-diagnostics` only when the selected category is `CKA`
 - **Default Lane**: `CKA` defaults to the `hands-on` lane and exposes per-track counts in the selector
 - **Default Recommendation**: `CKA` preselects the first free drill in the active track instead of auto-jumping to the premium bundle
+- **Track Guidance**: The track selector explains when to start with `hands-on` and when to move to `ops-diagnostics` or `planning-focused`
 - **Track Badge**: Selected CKA labs render a track badge in the description panel
 - **Validation**: Start button enabled only when valid selection made
 

@@ -788,6 +788,12 @@ async function runIndexSmoke(page, baseUrl, state) {
   );
   assert.deepEqual(trackOptions, ['All tracks (3)', 'Hands-on (1)', 'Ops diagnostics (1)', 'Planning-focused (1)']);
   assert.equal(await page.locator('#examTrack').inputValue(), 'hands-on');
+  await page.waitForFunction(() => {
+    const hint = document.getElementById('examTrackHint');
+    return hint &&
+      window.getComputedStyle(hint).display !== 'none' &&
+      hint.textContent?.includes('Recommended starting lane');
+  });
 
   await page.waitForFunction(() => {
     const examName = document.getElementById('examName');
@@ -811,6 +817,11 @@ async function runIndexSmoke(page, baseUrl, state) {
       !values.includes('cka-024');
   });
   assert.equal(await page.locator('#examName').inputValue(), 'cka-016');
+  await page.waitForFunction(() => {
+    const hint = document.getElementById('examTrackHint');
+    return hint &&
+      hint.textContent?.includes('Use after hands-on and diagnostics');
+  });
 
   await page.selectOption('#examName', 'cka-016');
   await page.waitForFunction(() => {
