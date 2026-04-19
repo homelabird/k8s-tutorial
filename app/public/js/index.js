@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Form elements
     const examCategorySelect = document.getElementById('examCategory');
+    const examTrackGroup = document.getElementById('examTrackGroup');
+    const examTrackSelect = document.getElementById('examTrack');
     const examNameSelect = document.getElementById('examName');
     const examDescription = document.getElementById('examDescription');
     const startSelectedExamBtn = document.getElementById('startSelectedExam');
@@ -18,6 +20,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let labs = []; // Will store all labs fetched from the API
     let selectedLab = null; // Will store the currently selected lab
+
+    const trackLabels = {
+        'hands-on': 'Hands-on',
+        'planning-focused': 'Planning-focused',
+        'ops-diagnostics': 'Ops diagnostics'
+    };
+
+    const trackBadgeClasses = {
+        'hands-on': 'text-bg-success',
+        'planning-focused': 'text-bg-warning',
+        'ops-diagnostics': 'text-bg-secondary'
+    };
     
     // Check for current exam status on page load
     checkCurrentExamStatus();
@@ -292,6 +306,44 @@ document.addEventListener('DOMContentLoaded', function() {
             filterLabsByCategory(categories[0]);
         }
     }
+
+    function getTrackLabel(track) {
+        return trackLabels[track] || 'Unclassified';
+    }
+
+    function getTrackBadgeClass(track) {
+        return trackBadgeClasses[track] || 'text-bg-light';
+    }
+
+    function populateTrackOptions(category) {
+        const categoryTracks = [...new Set(
+            labs
+                .filter(lab => lab.category === category && typeof lab.track === 'string' && lab.track.trim())
+                .map(lab => lab.track)
+        )];
+
+        if (category !== 'CKA' || categoryTracks.length === 0) {
+            examTrackGroup.style.display = 'none';
+            examTrackSelect.innerHTML = '<option value="all">All tracks</option>';
+            examTrackSelect.value = 'all';
+            return;
+        }
+
+        examTrackGroup.style.display = 'block';
+        examTrackSelect.innerHTML = '<option value="all">All tracks</option>';
+
+        categoryTracks.sort((left, right) => getTrackLabel(left).localeCompare(getTrackLabel(right)));
+        categoryTracks.forEach(track => {
+            const option = document.createElement('option');
+            option.value = track;
+            option.textContent = getTrackLabel(track);
+            examTrackSelect.appendChild(option);
+        });
+
+        if (![...examTrackSelect.options].some(option => option.value === examTrackSelect.value)) {
+            examTrackSelect.value = 'all';
+        }
+    }
     
     // Premium exam configuration
     const premiumExams = {
@@ -319,7 +371,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Filter labs by category and populate the labs dropdown
     function filterLabsByCategory(category) {
-        const filteredLabs = labs.filter(lab => lab.category === category);
+        populateTrackOptions(category);
+
+        let filteredLabs = labs.filter(lab => lab.category === category);
+        const selectedTrack = examTrackSelect.value || 'all';
+
+        if (category === 'CKA' && selectedTrack !== 'all') {
+            filteredLabs = filteredLabs.filter(lab => lab.track === selectedTrack);
+        }
         
         // Clear existing options
         examNameSelect.innerHTML = '<option value="">Select a lab</option>';
@@ -341,7 +400,8 @@ document.addEventListener('DOMContentLoaded', function() {
         filteredLabs.forEach(lab => {
             const option = document.createElement('option');
             option.value = lab.id;
-            option.textContent = `🆓 ${lab.name}`;
+            const trackSuffix = lab.track ? ` · ${getTrackLabel(lab.track)}` : '';
+            option.textContent = `🆓 ${lab.name}${trackSuffix}`;
             option.setAttribute('data-premium', 'false');
             examNameSelect.appendChild(option);
         });
@@ -383,13 +443,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create a nicely formatted description
         const difficultyText = lab.difficulty || 'Medium';
         const examTimeText = lab.examDurationInMinutes || lab.estimatedTime || '30';
+        const trackMarkup = lab.track ? `
+            <span class="badge ${getTrackBadgeClass(lab.track)} rounded-pill px-3 py-2">
+                ${getTrackLabel(lab.track)}
+            </span>
+        ` : '';
         
         const descriptionHTML = `
             <div class="exam-details">
                 <p class="mb-0">${lab.description || 'No description available.'}</p>
             </div>
             <div class="exam-meta-container mt-3 pt-2 border-top">
-                <div class="d-flex justify-content-start align-items-center">
+                <div class="d-flex justify-content-start align-items-center flex-wrap gap-3">
+                    ${trackMarkup}
                     <div class="exam-meta me-4">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-fill me-1" viewBox="0 0 16 16">
                             <path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/>
@@ -418,6 +484,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener for the exam category select
     examCategorySelect.addEventListener('change', function() {
         filterLabsByCategory(this.value);
+    });
+
+    examTrackSelect.addEventListener('change', function() {
+        filterLabsByCategory(examCategorySelect.value);
     });
     
     // Helper function to show premium description

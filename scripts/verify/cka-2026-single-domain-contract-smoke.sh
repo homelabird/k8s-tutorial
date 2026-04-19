@@ -66,8 +66,10 @@ missing = [lab_id for lab_id in expected if lab_id not in ids]
 if missing:
     raise SystemExit(f"missing promoted labs in labs.json: {', '.join(missing)}")
 
-required = ("assetPath", "category", "description", "difficulty", "examDurationInMinutes", "name", "warmUpTimeInSeconds")
+required = ("assetPath", "category", "description", "difficulty", "examDurationInMinutes", "name", "track", "warmUpTimeInSeconds")
 by_id = {item["id"]: item for item in entries if isinstance(item, dict) and "id" in item}
+planning_focused = {"cka-016", "cka-018", "cka-019", "cka-022", "cka-023", "cka-025", "cka-027"}
+ops_diagnostics = {"cka-024", "cka-026"}
 for lab_id in expected:
     entry = by_id[lab_id]
     missing_fields = [field for field in required if field not in entry]
@@ -85,6 +87,14 @@ for lab_id in expected:
         raise SystemExit(f"{lab_id} has unexpected warmUpTimeInSeconds: {entry['warmUpTimeInSeconds']}")
     if not isinstance(entry["description"], str) or not entry["description"].strip():
         raise SystemExit(f"{lab_id} must include a non-empty description")
+    if lab_id in planning_focused:
+        expected_track = "planning-focused"
+    elif lab_id in ops_diagnostics:
+        expected_track = "ops-diagnostics"
+    else:
+        expected_track = "hands-on"
+    if entry["track"] != expected_track:
+        raise SystemExit(f"{lab_id} has unexpected track: {entry['track']}")
 PY
 
 for suite in "${EXPECTED_SUITES[@]}"; do
