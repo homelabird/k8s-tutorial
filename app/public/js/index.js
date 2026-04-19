@@ -444,8 +444,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Enable the lab name select
         examNameSelect.disabled = false;
         
-        // Select premium exam by default if available, otherwise select first free lab
-        if (hasPremium) {
+        const preferFirstFreeLab = category === 'CKA' && filteredLabs.length > 0;
+
+        // Prefer the first recommended free CKA drill, otherwise fall back to premium/default behavior.
+        if (preferFirstFreeLab) {
+            examNameSelect.value = filteredLabs[0].id;
+            updateLabDescription(filteredLabs[0]);
+        } else if (hasPremium) {
             examNameSelect.value = `premium_${category}`;
             // Trigger the change event to show premium description
             const selectedOption = examNameSelect.options[examNameSelect.selectedIndex];

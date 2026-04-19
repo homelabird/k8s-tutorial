@@ -798,6 +798,7 @@ async function runIndexSmoke(page, baseUrl, state) {
       !values.includes('cka-016') &&
       !values.includes('cka-024');
   });
+  assert.equal(await page.locator('#examName').inputValue(), 'cka-020');
 
   await page.selectOption('#examTrack', 'planning-focused');
   await page.waitForFunction(() => {
@@ -809,6 +810,7 @@ async function runIndexSmoke(page, baseUrl, state) {
       !values.includes('cka-020') &&
       !values.includes('cka-024');
   });
+  assert.equal(await page.locator('#examName').inputValue(), 'cka-016');
 
   await page.selectOption('#examName', 'cka-016');
   await page.waitForFunction(() => {
