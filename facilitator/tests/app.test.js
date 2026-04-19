@@ -150,6 +150,21 @@ describe('app', () => {
       category: 'CKA',
       examDurationInMinutes: 20
     });
+
+    expect(response.body.find((lab) => lab.id === 'cka-016')).toMatchObject({
+      id: 'cka-016',
+      track: 'planning-focused'
+    });
+
+    expect(response.body.find((lab) => lab.id === 'cka-024')).toMatchObject({
+      id: 'cka-024',
+      track: 'ops-diagnostics'
+    });
+
+    expect(response.body.find((lab) => lab.id === 'cka-020')).toMatchObject({
+      id: 'cka-020',
+      track: 'hands-on'
+    });
   });
 
   it('returns the raw exam result payload from the result endpoint', async () => {
