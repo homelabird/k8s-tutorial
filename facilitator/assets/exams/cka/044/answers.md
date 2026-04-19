@@ -1,52 +1,52 @@
-## Question 1: Projected ConfigMap and Secret volume diagnostics
+# CKA 2026 Single Domain Drill 044 Answers
 
-Repair the projected volume diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 1
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n projectedvolume-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: projected-volume-brief
-  namespace: projectedvolume-lab
-data:
-  targetDeployment: bundle-api
-  deploymentInventory: kubectl get deployment bundle-api -n projectedvolume-lab -o wide
-  configMapNameCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.name}'
-  configMapItemPathCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.items[0].path}'
-  secretNameCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.name}'
-  secretItemPathCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.items[0].path}'
-  mountPathCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  readOnlyCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
-  eventCheck: kubectl get events -n projectedvolume-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm projected sources, item paths, and readOnly mount before changing the Deployment manifest
-EOF_BRIEF
+  name: bundle-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bundle-api
+  template:
+    metadata:
+      labels:
+        app: bundle-api
+    spec:
+      volumes:
+        - name: bundle-data
+          projected:
+            sources:
+              - configMap:
+                  name: bundle-config
+                  items:
+                    - key: app.conf
+                      path: config/app.conf
+              - secret:
+                  name: bundle-secret
+                  items:
+                    - key: token
+                      path: secret/token
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -Fx 'mode=production' /etc/bundle/config/app.conf && grep -Fx 'token=stable' /etc/bundle/secret/token && sleep 3600
+          volumeMounts:
+            - name: bundle-data
+              mountPath: /etc/bundle
+              readOnly: true
+EOF
 
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/projected-volume-checklist.txt
-Deployment Inventory
-- kubectl get deployment bundle-api -n projectedvolume-lab -o wide
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.name}'
-
-Projected Volume Checks
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.items[0].path}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.name}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.items[0].path}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
-- kubectl get events -n projectedvolume-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment bundle-api -n projectedvolume-lab -o yaml
-- confirm projected sources, item paths, and readOnly mount before changing the Deployment manifest
-EOF_CHECKLIST
-
-kubectl get configmap projected-volume-brief -n projectedvolume-lab -o yaml > /tmp/exam/q1/projected-volume-brief.yaml
+kubectl rollout status deployment/bundle-api -n projectedvolume-lab
+kubectl exec -n projectedvolume-lab deploy/bundle-api -- sh -c 'cat /etc/bundle/config/app.conf && cat /etc/bundle/secret/token'
 ```
-
-Expected checks:
-
-- `projected-volume-brief` contains the intended Deployment target, exact projected ConfigMap and Secret source inspection commands, event evidence, and safe manifest guidance
-- `/tmp/exam/q1/projected-volume-checklist.txt` contains the required sections and exact projected-volume troubleshooting commands
-- `/tmp/exam/q1/projected-volume-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as restarting the Deployment, deleting pods, or patching the live ConfigMap, Secret, or Deployment are removed

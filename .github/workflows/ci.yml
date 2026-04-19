@@ -66,7 +66,7 @@ jobs:
           [ "${smokes[8]}" = "browser-scenarios" ]
           describe_output="$(bash scripts/verify/run-verify-contract-smokes.sh --describe)"
           grep -Fq 'diagnostics-collector | cka-2026-diagnostics-collector-smoke.sh | raw diagnostics bundle generation, host discovery, summary.txt' <<<"${describe_output}"
-          grep -Fq 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-050 inventory, metadata completeness, facilitator listing, template promotion' <<<"${describe_output}"
+          grep -Fq 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-051 inventory, metadata completeness, facilitator listing, template promotion' <<<"${describe_output}"
           grep -Fq 'single-domain-nightly | cka-2026-single-domain-nightly-workflow-contract-smoke.sh | nightly sample matrix planning, self-hosted lane serialization, diagnostics artifact gates' <<<"${describe_output}"
           grep -Fq 'review-batch-workflow | review-batch-workflow-contract-smoke.sh | manual review batch workflow inputs, matrix planning, dependency gates' <<<"${describe_output}"
           grep -Fq 'review-handoff-pack | review-batch-handoff-pack-smoke.sh | review note/memo manifest export, landing summary, landing drafts, handoff index, and archive contents' <<<"${describe_output}"

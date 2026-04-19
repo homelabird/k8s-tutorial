@@ -238,14 +238,15 @@ The current single-domain CKA 2026 drills exposed by the facilitator are:
 - `cka-040` PersistentVolume reclaim policy and claimRef diagnostics
 - `cka-041` PersistentVolumeClaim expansion and resize diagnostics
 - `cka-042` Ephemeral containers and kubectl debug diagnostics
-- `cka-043` Static pod manifest and mirror pod diagnostics
+- `cka-043` Static pod manifest repair
 - `cka-044` Projected ConfigMap and Secret volume diagnostics
 - `cka-045` ConfigMap and Secret envFrom diagnostics
-- `cka-046` ConfigMap subPath mount diagnostics
-- `cka-047` ReadWriteOncePod and PVC access mode diagnostics
-- `cka-048` Pod DNS policy and dnsConfig diagnostics
-- `cka-049` Lifecycle hooks and graceful termination diagnostics
-- `cka-050` Downward API env and metadata diagnostics
+- `cka-046` ConfigMap subPath mount troubleshooting
+- `cka-047` ReadWriteOncePod workload repair
+- `cka-048` Pod DNS policy repair
+- `cka-049` Lifecycle hooks and graceful termination repair
+- `cka-050` Downward API env wiring repair
+- `cka-051` Taints, tolerations, and NoExecute scheduling repair
 
 To check the runner wiring without starting the Podman stack:
 

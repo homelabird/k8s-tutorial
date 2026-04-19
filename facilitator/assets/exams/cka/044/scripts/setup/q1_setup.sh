@@ -2,34 +2,32 @@
 set -euo pipefail
 
 NAMESPACE="projectedvolume-lab"
-OUTPUT_DIR="/tmp/exam/q1"
 
-kubectl delete namespace "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
-kubectl create namespace "${NAMESPACE}" >/dev/null
-mkdir -p "${OUTPUT_DIR}"
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+kubectl delete deployment bundle-api -n "${NAMESPACE}" --ignore-not-found >/dev/null
+kubectl delete configmap bundle-config -n "${NAMESPACE}" --ignore-not-found >/dev/null
+kubectl delete secret bundle-secret -n "${NAMESPACE}" --ignore-not-found >/dev/null
 
-cat <<'EOF_CONFIGMAP' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_CONFIGMAP' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: app-config
+  name: bundle-config
 data:
-  app.yaml: |
-    mode: safe
-    featureFlag: enabled
+  app.conf: |
+    mode=production
 EOF_CONFIGMAP
 
-cat <<'EOF_SECRET' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_SECRET' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: v1
 kind: Secret
 metadata:
-  name: api-credentials
-type: Opaque
+  name: bundle-secret
 stringData:
-  token: super-secret-token
+  token: token=stable
 EOF_SECRET
 
-cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,45 +43,28 @@ spec:
         app: bundle-api
     spec:
       volumes:
-        - name: projected-config
+        - name: bundle-data
           projected:
             sources:
               - configMap:
-                  name: app-config
+                  name: bundle-config
                   items:
-                    - key: app.yaml
-                      path: config/app.yaml
+                    - key: app.conf
+                      path: broken/app.conf
               - secret:
-                  name: api-credentials
+                  name: bundle-secret
                   items:
                     - key: token
-                      path: credentials/token
+                      path: auth/token
       containers:
         - name: api
-          image: nginx:1.25.3
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -Fx 'mode=production' /etc/bundle/config/app.conf && grep -Fx 'token=stable' /etc/bundle/secret/token && sleep 3600
           volumeMounts:
-            - name: projected-config
-              mountPath: /etc/bundle-config
-              readOnly: true
+            - name: bundle-data
+              mountPath: /bundle
+              readOnly: false
 EOF_DEPLOYMENT
-
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: projected-volume-brief
-  namespace: projectedvolume-lab
-data:
-  targetDeployment: bundle-worker
-  deploymentInventory: kubectl get pods -n projectedvolume-lab
-  configMapNameCheck: kubectl patch configmap app-config -n projectedvolume-lab --type merge -p '{"data":{"mode":"fast"}}'
-  configMapItemPathCheck: kubectl rollout restart deployment/bundle-api -n projectedvolume-lab
-  secretNameCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  secretItemPathCheck: kubectl delete pod -n projectedvolume-lab -l app=bundle-api
-  mountPathCheck: kubectl patch deployment bundle-api -n projectedvolume-lab --type merge -p '{"spec":{"template":{"spec":{"containers":[{"name":"api","volumeMounts":[{"name":"projected-config","mountPath":"/srv/config"}]}]}}}}'
-  readOnlyCheck: kubectl get secret api-credentials -n projectedvolume-lab -o yaml
-  eventCheck: kubectl get configmap -n projectedvolume-lab
-  safeManifestNote: restart the deployment and patch live source objects until the projected volume looks right
-EOF_BRIEF
-
-rm -f "${OUTPUT_DIR}/projected-volume-brief.yaml" "${OUTPUT_DIR}/projected-volume-checklist.txt"

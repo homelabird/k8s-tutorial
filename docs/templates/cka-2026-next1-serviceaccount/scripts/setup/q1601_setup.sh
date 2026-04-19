@@ -2,20 +2,19 @@
 set -euo pipefail
 
 NAMESPACE="identity-lab"
-OUTPUT_DIR="/tmp/exam/q1601"
 
-kubectl delete namespace "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
-kubectl create namespace "${NAMESPACE}" >/dev/null
-mkdir -p "${OUTPUT_DIR}"
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+kubectl delete deployment metrics-api -n "${NAMESPACE}" --ignore-not-found >/dev/null
+kubectl delete serviceaccount metrics-sa -n "${NAMESPACE}" --ignore-not-found >/dev/null
 
-cat <<'EOF_SERVICEACCOUNT' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_SERVICEACCOUNT' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: metrics-reader
+  name: metrics-sa
 EOF_SERVICEACCOUNT
 
-cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,40 +29,25 @@ spec:
       labels:
         app: metrics-api
     spec:
-      serviceAccountName: metrics-reader
-      automountServiceAccountToken: false
+      serviceAccountName: default
+      automountServiceAccountToken: true
       volumes:
         - name: identity-token
           projected:
             sources:
               - serviceAccountToken:
-                  path: identity-token
-                  audience: metrics-api
+                  path: wrong-token
+                  audience: legacy-api
+                  expirationSeconds: 3600
       containers:
         - name: api
-          image: nginx:1.25.3
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - test -s /var/run/metrics/token && sleep 3600
           volumeMounts:
             - name: identity-token
               mountPath: /var/run/identity
               readOnly: true
 EOF_DEPLOYMENT
-
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: identity-diagnostics-brief
-  namespace: identity-lab
-data:
-  targetDeployment: metrics-worker
-  deploymentInventory: kubectl get pods -n identity-lab
-  serviceAccountCheck: kubectl get serviceaccount -n identity-lab
-  automountCheck: kubectl patch deployment metrics-api -n identity-lab --type merge -p '{"spec":{"template":{"spec":{"automountServiceAccountToken":true}}}}'
-  projectedTokenPathCheck: kubectl rollout restart deployment/metrics-api -n identity-lab
-  projectedAudienceCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  mountPathCheck: kubectl delete pod -n identity-lab -l app=metrics-api
-  eventCheck: kubectl get pods -n identity-lab
-  safeManifestNote: restart the deployment and patch service account settings until the token mount looks correct
-EOF_BRIEF
-
-rm -f "${OUTPUT_DIR}/identity-diagnostics-brief.yaml" "${OUTPUT_DIR}/identity-diagnostics-checklist.txt"

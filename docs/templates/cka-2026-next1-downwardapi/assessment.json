@@ -1,18 +1,38 @@
 {
   "questions": [
     {
-      "id": 5001,
-      "title": "Downward API env and metadata diagnostics",
-      "category": "Workloads and Scheduling",
-      "difficulty": "medium",
+      "id": "5001",
       "namespace": "downwardapi-lab",
-      "question": "A metadata diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `meta-diagnostics-brief` already exists in namespace `downwardapi-lab`. Repair it so that:\n- `targetDeployment` is `meta-api`\n- `deploymentInventory` is `kubectl get deployment meta-api -n downwardapi-lab -o wide`\n- `envNameCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'`\n- `fieldPathCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'`\n- `namespaceFieldCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'`\n- `containerNameCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'`\n- `imageCheck` is `kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/meta-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/meta-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Downward API Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch the live Deployment during this drill.",
-      "skills": [
-        "downward api",
+      "machineHostname": "ckad9999",
+      "question": "A Deployment named `meta-api` in namespace `downwardapi-lab` is not starting with the intended Downward API environment wiring.\n\nFix the Deployment so that:\n- the first environment variable is named `POD_NAME` and uses `metadata.name`\n- the second environment variable is named `POD_NAMESPACE` and uses `metadata.namespace`\n- the container image remains `busybox:1.36`\n- the Deployment becomes Available\n- the running container can print both corrected environment values\n\nDo not replace the workload with a one-off Pod. Fix the Deployment manifest.",
+      "concepts": [
+        "downwardAPI",
         "fieldRef",
-        "jsonpath",
-        "events",
-        "manifest review"
+        "env",
+        "troubleshooting"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Deployment meta-api uses the intended Downward API env names and fieldRef paths",
+          "verificationScriptFile": "q5001_s1_validate_downwardapi_spec.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "Deployment meta-api becomes Available after the env wiring is repaired",
+          "verificationScriptFile": "q5001_s2_validate_downwardapi_rollout.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "The running container prints the expected POD_NAME and POD_NAMESPACE values",
+          "verificationScriptFile": "q5001_s3_validate_downwardapi_env.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
       ]
     }
   ]

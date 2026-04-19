@@ -2,7 +2,7 @@
 
 These drafts cover the next recommended cluster-architecture pack from the `cka-043+` roadmap:
 
-1. Static pod manifest and mirror pod diagnostics
+1. Static pod manifest repair
 
 ## Intended Use
 
@@ -12,14 +12,14 @@ These drafts cover the next recommended cluster-architecture pack from the `cka-
 
 ## Current Template State
 
-- Question `2401` (`Static pod manifest and mirror pod diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `2401` (`Static pod manifest repair`) now mirrors the promoted hands-on facilitator pack `cka-043`.
 - Question `2401` has now been promoted into facilitator pack `cka-043`.
 
 ## Important Constraints
 
-- Question `2401` should stay in the `planning + evidence export` lane. It should validate exact static-pod inventory, mirror-pod evidence, manifest-path inspection, hostNetwork review, and safe manifest guidance without mutating the live manifest path or restarting kubelet.
-- Question `2401` should export exact evidence files instead of deleting the mirror pod, editing `/etc/kubernetes/manifests`, or force-restarting kubelet as a workaround.
-- Question `2401` should avoid `kubectl delete pod`, `sudo systemctl restart kubelet`, `sudo mv /etc/kubernetes/manifests/*`, and ad hoc manifest rewrites in the expected answer.
+- Question `2401` should require editing `/etc/kubernetes/manifests/audit-agent.yaml` in place instead of replacing the workload with a normal Pod or Deployment.
+- Question `2401` should keep the Pod identity (`audit-agent`), namespace (`staticpod-lab`), and image (`busybox:1.36`) while repairing `hostNetwork` and the command loop.
+- The local drill runtime uses a sync helper to mirror manifest edits into the inner cluster, so validators should assert the corrected manifest, Running mirror Pod, and emitted log line rather than kubelet restart behavior.
 
 ## Recommended Promotion Order
 

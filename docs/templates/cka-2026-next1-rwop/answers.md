@@ -2,42 +2,40 @@
 
 ## Question 2801
 
-Repair `rwop-diagnostics-brief` in namespace `rwop-lab` so it documents the exact `ReadWriteOncePod` PVC wiring used by claim `data-claim` and pod `rwop-reader`, then export the repaired ConfigMap manifest and a plain-text checklist.
+One valid repair flow is:
 
-### Expected brief data
+```bash
+kubectl apply -n rwop-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rwop-reader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rwop-reader
+  template:
+    metadata:
+      labels:
+        app: rwop-reader
+    spec:
+      containers:
+        - name: reader
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - echo reader-ready > /data/app/reader.txt && sleep 3600
+          volumeMounts:
+            - name: data
+              mountPath: /data/app
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-claim
+EOF
 
-- `targetClaim: data-claim`
-- `claimInventory: kubectl get pvc data-claim -n rwop-lab -o wide`
-- `accessModeCheck: kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.accessModes[0]}'`
-- `storageClassCheck: kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.storageClassName}'`
-- `volumeNameCheck: kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.volumeName}'`
-- `readerPodCheck: kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.volumes[0].persistentVolumeClaim.claimName}'`
-- `mountPathCheck: kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.containers[0].volumeMounts[0].mountPath}'`
-- `storageClassExpansionCheck: kubectl get storageclass rwop-hostpath -o jsonpath='{.allowVolumeExpansion}'`
-- `eventCheck: kubectl get events -n rwop-lab --sort-by=.lastTimestamp`
-- `safeManifestNote: confirm PVC access mode, claim consumer, and mount path before changing workload or storage manifests`
-
-### Expected checklist sections
-
-1. `Claim Inventory`
-2. `Access Mode Checks`
-3. `Safe Manifest Review`
-
-### Expected checklist commands
-
-- `kubectl get pvc data-claim -n rwop-lab -o wide`
-- `kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.accessModes[0]}'`
-- `kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.storageClassName}'`
-- `kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.volumeName}'`
-- `kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.volumes[0].persistentVolumeClaim.claimName}'`
-- `kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.containers[0].volumeMounts[0].mountPath}'`
-- `kubectl get storageclass rwop-hostpath -o jsonpath='{.allowVolumeExpansion}'`
-- `kubectl get events -n rwop-lab --sort-by=.lastTimestamp`
-- `kubectl get pvc data-claim -n rwop-lab -o yaml`
-- `confirm PVC access mode, claim consumer, and mount path before changing workload or storage manifests`
-
-### Notes
-
-- Keep the drill in the `planning + evidence export` lane.
-- Do not delete the PVC or Pods.
-- Do not patch the live PVC or Pod to shortcut the exercise.
+kubectl rollout status deployment/rwop-reader -n rwop-lab
+kubectl exec -n rwop-lab deploy/rwop-reader -- cat /data/app/reader.txt
+```

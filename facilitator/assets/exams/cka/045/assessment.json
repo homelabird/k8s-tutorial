@@ -4,27 +4,32 @@
       "id": "1",
       "namespace": "envfrom-lab",
       "machineHostname": "ckad9999",
-      "question": "An envFrom diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `envfrom-diagnostics-brief` already exists in namespace `envfrom-lab`. Repair it so that:\n- `targetDeployment` is `env-bundle`\n- `deploymentInventory` is `kubectl get deployment env-bundle -n envfrom-lab -o wide`\n- `configMapEnvFromCheck` is `kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].configMapRef.name}'`\n- `secretEnvFromCheck` is `kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].secretRef.name}'`\n- `prefixCheck` is `kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].prefix}'`\n- `containerNameCheck` is `kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].name}'`\n- `imageCheck` is `kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n envfrom-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm envFrom source order, secret prefix, and container name before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/envfrom-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/envfrom-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `EnvFrom Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live ConfigMap, Secret, or Deployment during this drill.",
-      "concepts": ["configMap", "secret", "envFrom", "troubleshooting"],
+      "question": "A Deployment named `env-bundle` in namespace `envfrom-lab` is failing because its envFrom wiring is wrong.\n\nFix the workload so that:\n- the container remains named `api`\n- the image remains `busybox:1.36`\n- the ConfigMap envFrom source is `app-env`\n- the Secret envFrom source is `app-secret`\n- the Secret envFrom prefix is `SECRET_`\n- the Deployment becomes Available\n- the running container sees `MODE=production` and `SECRET_API_KEY=stable-key`\n\nDo not inline the environment values directly into `env:` entries. Repair the envFrom sources in place.",
+      "concepts": [
+        "configMap",
+        "secret",
+        "envFrom",
+        "troubleshooting"
+      ],
       "verification": [
         {
           "id": "1",
-          "description": "The envFrom diagnostics brief ConfigMap uses the intended workload target, exact envFrom inspection commands, event evidence, and safe manifest guidance",
-          "verificationScriptFile": "q1_s1_validate_envfrom_brief_contract.sh",
+          "description": "Deployment env-bundle uses the intended container name, image, envFrom sources, and Secret prefix",
+          "verificationScriptFile": "q1_s1_validate_envfrom_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact envFrom ConfigMap, Secret, prefix, and safe review commands",
-          "verificationScriptFile": "q1_s2_validate_envfrom_checklist_export.sh",
+          "description": "Deployment env-bundle becomes Available after the envFrom wiring is repaired",
+          "verificationScriptFile": "q1_s2_validate_envfrom_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe envFrom remediation guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_envfrom_manifest_export_and_safety.sh",
+          "description": "The running container reads the expected ConfigMap and Secret-backed environment variables",
+          "verificationScriptFile": "q1_s3_validate_envfrom_env.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

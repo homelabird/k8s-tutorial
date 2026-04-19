@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "1",
+      "namespace": "taints-lab",
+      "machineHostname": "ckad9999",
+      "question": "A Deployment named `taint-api` in namespace `taints-lab` is not scheduling onto the intended tainted node pool.\n\nFix the workload so that:\n- it targets nodes labeled `workload=ops`\n- it tolerates the taint `dedicated=ops:NoExecute`\n- the toleration keeps `tolerationSeconds: 60`\n- the Deployment becomes Available on an `ops` node\n\nDo not remove or change the taint on the node. Fix the workload scheduling configuration instead.",
+      "concepts": [
+        "taints",
+        "tolerations",
+        "NoExecute",
+        "scheduling",
+        "workloads"
+      ],
+      "verification": [
+        {
+          "id": "1",
+          "description": "Deployment taint-api includes the required NoExecute toleration and node selection rules",
+          "verificationScriptFile": "q1_s1_validate_taint_workload_spec.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        },
+        {
+          "id": "2",
+          "description": "taint-api Pod is Running on a node labeled workload=ops",
+          "verificationScriptFile": "q1_s2_validate_taint_scheduled_node.sh",
+          "expectedOutput": "0",
+          "weightage": 3
+        },
+        {
+          "id": "3",
+          "description": "Scheduling fix keeps the workload constrained to the intended NoExecute-tainted ops node pool",
+          "verificationScriptFile": "q1_s3_validate_taint_scope.sh",
+          "expectedOutput": "0",
+          "weightage": 2
+        }
+      ]
+    }
+  ]
+}

@@ -16,7 +16,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./scripts/verify/run-cka-2026-single-domain-drills.sh
-  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-050
+  ./scripts/verify/run-cka-2026-single-domain-drills.sh cka-006 cka-051
   ./scripts/verify/run-cka-2026-single-domain-drills.sh --list
 
 Supported suites:
@@ -57,14 +57,15 @@ Supported suites:
   cka-040  PersistentVolume reclaim policy and claimRef diagnostics drill
   cka-041  PersistentVolumeClaim expansion and resize diagnostics drill
   cka-042  Ephemeral containers and kubectl debug diagnostics drill
-  cka-043  Static pod manifest and mirror pod diagnostics drill
+  cka-043  Static pod manifest repair drill
   cka-044  Projected ConfigMap and Secret volume diagnostics drill
   cka-045  ConfigMap and Secret envFrom diagnostics drill
-  cka-046  ConfigMap subPath mount diagnostics drill
-  cka-047  ReadWriteOncePod and PVC access mode diagnostics drill
-  cka-048  Pod DNS policy and dnsConfig diagnostics drill
-  cka-049  Lifecycle hooks and graceful termination diagnostics drill
-  cka-050  Downward API env and metadata diagnostics drill
+  cka-046  ConfigMap subPath mount troubleshooting drill
+  cka-047  ReadWriteOncePod workload repair drill
+  cka-048  Pod DNS policy repair drill
+  cka-049  Lifecycle hooks and graceful termination repair drill
+  cka-050  Downward API env wiring repair drill
+  cka-051  Taints, tolerations, and NoExecute scheduling repair drill
 
 Notes:
   - The runner executes the selected suites sequentially.
@@ -145,9 +146,14 @@ wait_for_exam_status() {
 wait_for_evaluated() {
   local attempt
   local observed_status=""
+  local result_ready=""
   for attempt in $(seq 1 "$EVALUATED_WAIT_ATTEMPTS"); do
     observed_status="$(curl -s "$BASE_URL/facilitator/api/v1/exams/current" | jq -r '.status // empty')"
     if [ "$observed_status" = "EVALUATED" ]; then
+      return 0
+    fi
+    result_ready="$(curl -s "$BASE_URL/facilitator/api/v1/exams/$CURRENT_EXAM/result" | jq -r '(.data // .) as $result | if ($result | type) == "object" and ($result.evaluationResults != null) then "READY" else empty end' 2>/dev/null || true)"
+    if [ "$result_ready" = "READY" ]; then
       return 0
     fi
     sleep 2
@@ -267,6 +273,7 @@ resolve_suite_namespace() {
     cka-048) printf '%s\n' 'dnspolicy-lab' ;;
     cka-049) printf '%s\n' 'lifecycle-lab' ;;
     cka-050) printf '%s\n' 'downwardapi-lab' ;;
+    cka-051) printf '%s\n' 'taints-lab' ;;
     *)
       echo "Unknown suite: $1" >&2
       usage >&2
@@ -1133,946 +1140,875 @@ COMMAND
       ;;
     cka-028)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n stateful-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: stateful-identity-brief
-  namespace: stateful-lab
-data:
-  targetStatefulSet: web
-  headlessService: web-svc
-  statefulSetInventory: kubectl get statefulset web -n stateful-lab -o wide
-  serviceInspection: kubectl get svc web-svc -n stateful-lab -o yaml
-  podInventory: kubectl get pods -n stateful-lab -l app=web -o wide
-  ordinalDnsCheck: kubectl exec -n stateful-lab dns-debug -- nslookup web-0.web-svc.stateful-lab.svc.cluster.local
-  pvcInventory: kubectl get pvc -n stateful-lab
-  safeManifestNote: "confirm serviceName: web-svc and stable pod ordinals before changing manifests"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/stateful-identity-checklist.txt
-StatefulSet Inventory
-- kubectl get statefulset web -n stateful-lab -o wide
-- kubectl get pods -n stateful-lab -l app=web -o wide
-
-Stable Network Identity
-- kubectl get svc web-svc -n stateful-lab -o yaml
-- kubectl exec -n stateful-lab dns-debug -- nslookup web-0.web-svc.stateful-lab.svc.cluster.local
-
-Safe Manifest Review
-- kubectl get pvc -n stateful-lab
-- confirm serviceName: web-svc and stable pod ordinals before changing manifests
-EOF_CHECKLIST
-kubectl get configmap stateful-identity-brief -n stateful-lab -o yaml > /tmp/exam/q1/stateful-identity-brief.yaml
-[ -s /tmp/exam/q1/stateful-identity-brief.yaml ]
-[ -s /tmp/exam/q1/stateful-identity-checklist.txt ]
+  name: web-svc
+spec:
+  clusterIP: None
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+EOF_SERVICE
+kubectl rollout status statefulset/web -n stateful-lab
+kubectl exec -n stateful-lab dns-debug -- nslookup web-0.web-svc.stateful-lab.svc.cluster.local | grep -Eq 'Name:|Address:'
+kubectl get pvc -n stateful-lab | grep -Eq 'www-data-web-0|www-data-web-1'
 COMMAND
       ;;
     cka-029)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n daemonset-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
-  name: daemonset-rollout-brief
-  namespace: daemonset-lab
-data:
-  targetDaemonSet: log-agent
-  daemonSetInventory: kubectl get daemonset log-agent -n daemonset-lab -o wide
-  rolloutStatusCheck: kubectl rollout status daemonset/log-agent -n daemonset-lab --timeout=180s
-  nodeInventory: kubectl get nodes -o wide
-  nodeCoverageCheck: kubectl get pods -n daemonset-lab -l app=log-agent -o wide
-  updateStrategyCheck: kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.spec.updateStrategy.type}'
-  safeManifestNote: "confirm desiredNumberScheduled matches running pods before changing DaemonSet manifests"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/daemonset-rollout-checklist.txt
-DaemonSet Inventory
-- kubectl get daemonset log-agent -n daemonset-lab -o wide
-- kubectl rollout status daemonset/log-agent -n daemonset-lab --timeout=180s
-
-Node Coverage
-- kubectl get nodes -o wide
-- kubectl get pods -n daemonset-lab -l app=log-agent -o wide
-
-Safe Rollout Review
-- kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.spec.updateStrategy.type}'
-- confirm desiredNumberScheduled matches running pods before changing DaemonSet manifests
-EOF_CHECKLIST
-kubectl get configmap daemonset-rollout-brief -n daemonset-lab -o yaml > /tmp/exam/q1/daemonset-rollout-brief.yaml
-[ -s /tmp/exam/q1/daemonset-rollout-brief.yaml ]
-[ -s /tmp/exam/q1/daemonset-rollout-checklist.txt ]
+  name: log-agent
+spec:
+  selector:
+    matchLabels:
+      app: log-agent
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: log-agent
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: agent
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - sleep 3600
+EOF
+kubectl rollout status daemonset/log-agent -n daemonset-lab
+DESIRED="$(kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.status.desiredNumberScheduled}')"
+READY="$(kubectl get daemonset log-agent -n daemonset-lab -o jsonpath='{.status.numberReady}')"
+[ "$DESIRED" -ge 1 ]
+[ "$READY" = "$DESIRED" ]
 COMMAND
       ;;
     cka-030)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n cronjob-lab -f - <<'EOF'
+apiVersion: batch/v1
+kind: CronJob
 metadata:
-  name: cronjob-diagnostics-brief
-  namespace: cronjob-lab
-data:
-  targetCronJob: log-pruner
-  cronJobInventory: kubectl get cronjob log-pruner -n cronjob-lab -o wide
-  scheduleCheck: kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.schedule}'
-  suspendCheck: kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.suspend}'
-  concurrencyPolicyCheck: kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.concurrencyPolicy}'
-  historyLimitsCheck: kubectl get cronjob log-pruner -n cronjob-lab -o custom-columns=SUCCESS:.spec.successfulJobsHistoryLimit,FAILED:.spec.failedJobsHistoryLimit
-  jobTemplateCheck: kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.jobTemplate.spec.template.spec.restartPolicy}'
-  safeManifestNote: "confirm schedule, suspend=false, and history limits before changing the CronJob manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/cronjob-diagnostics-checklist.txt
-CronJob Inventory
-- kubectl get cronjob log-pruner -n cronjob-lab -o wide
-
-Scheduling Checks
-- kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.schedule}'
-- kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.suspend}'
-- kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.concurrencyPolicy}'
-- kubectl get cronjob log-pruner -n cronjob-lab -o custom-columns=SUCCESS:.spec.successfulJobsHistoryLimit,FAILED:.spec.failedJobsHistoryLimit
-- kubectl get cronjob log-pruner -n cronjob-lab -o jsonpath='{.spec.jobTemplate.spec.template.spec.restartPolicy}'
-
-Safe Manifest Review
-- confirm schedule, suspend=false, and history limits before changing the CronJob manifest
-EOF_CHECKLIST
-kubectl get configmap cronjob-diagnostics-brief -n cronjob-lab -o yaml > /tmp/exam/q1/cronjob-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/cronjob-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/cronjob-diagnostics-checklist.txt ]
+  name: log-pruner
+spec:
+  schedule: '*/15 * * * *'
+  suspend: false
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pruner
+              image: busybox:1.36
+              command:
+                - sh
+                - -c
+                - echo prune && sleep 5
+EOF
+kubectl create job --from=cronjob/log-pruner log-pruner-smoke -n cronjob-lab >/dev/null 2>&1 || true
+kubectl wait --for=condition=complete job/log-pruner-smoke -n cronjob-lab --timeout=180s
 COMMAND
       ;;
     cka-031)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n job-lab -f - <<'EOF'
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: job-diagnostics-brief
-  namespace: job-lab
-data:
-  targetJob: report-batch
-  jobInventory: kubectl get job report-batch -n job-lab -o wide
-  completionsCheck: kubectl get job report-batch -n job-lab -o jsonpath='{.spec.completions}'
-  parallelismCheck: kubectl get job report-batch -n job-lab -o jsonpath='{.spec.parallelism}'
-  backoffLimitCheck: kubectl get job report-batch -n job-lab -o jsonpath='{.spec.backoffLimit}'
-  podEvidenceCheck: kubectl get pods -n job-lab -l job-name=report-batch -o wide
-  jobDescribeCheck: kubectl describe job report-batch -n job-lab
-  safeManifestNote: "confirm completions, parallelism, backoffLimit, and pod template command before changing the Job manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/job-diagnostics-checklist.txt
-Job Inventory
-- kubectl get job report-batch -n job-lab -o wide
-- kubectl get job report-batch -n job-lab -o jsonpath='{.spec.completions}'
-- kubectl get job report-batch -n job-lab -o jsonpath='{.spec.parallelism}'
-- kubectl get job report-batch -n job-lab -o jsonpath='{.spec.backoffLimit}'
-
-Pod Evidence
-- kubectl get pods -n job-lab -l job-name=report-batch -o wide
-- kubectl describe job report-batch -n job-lab
-
-Safe Manifest Review
-- confirm completions, parallelism, backoffLimit, and pod template command before changing the Job manifest
-EOF_CHECKLIST
-kubectl get configmap job-diagnostics-brief -n job-lab -o yaml > /tmp/exam/q1/job-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/job-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/job-diagnostics-checklist.txt ]
+  name: report-batch
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: 1
+  suspend: false
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - echo batch-ready && exit 0
+EOF
+kubectl wait --for=condition=complete job/report-batch -n job-lab --timeout=180s
+kubectl logs -n job-lab -l job-name=report-batch | grep -Fx 'batch-ready' >/dev/null
 COMMAND
       ;;
     cka-032)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n probe-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: probe-diagnostics-brief
-  namespace: probe-lab
-data:
-  targetDeployment: health-api
-  deploymentInventory: kubectl get deployment health-api -n probe-lab -o wide
-  startupProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'
-  livenessProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'
-  readinessProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'
-  portCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'
-  eventCheck: kubectl get events -n probe-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/probe-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment health-api -n probe-lab -o wide
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'
-
-Probe Checks
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'
-- kubectl get events -n probe-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap probe-diagnostics-brief -n probe-lab -o yaml > /tmp/exam/q1/probe-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/probe-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/probe-diagnostics-checklist.txt ]
+  name: health-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-api
+  template:
+    metadata:
+      labels:
+        app: health-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - mkdir -p /www && echo ok > /www/healthz && echo probe > /www/index.html && httpd -f -p 8080 -h /www
+          ports:
+            - containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+EOF
+kubectl rollout status deployment/health-api -n probe-lab
+kubectl exec -n probe-lab deploy/health-api -- wget -qO- http://127.0.0.1:8080/healthz | grep -Fx 'ok' >/dev/null
 COMMAND
       ;;
     cka-033)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n init-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: init-diagnostics-brief
-  namespace: init-lab
-data:
-  targetDeployment: report-api
-  deploymentInventory: kubectl get deployment report-api -n init-lab -o wide
-  initContainerInventory: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'
-  initCommandCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'
-  sharedVolumeCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'
-  initMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'
-  appMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n init-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm init container command, shared volume name, and mount paths before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/init-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment report-api -n init-lab -o wide
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'
-
-Init Container Checks
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n init-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment report-api -n init-lab -o yaml
-- confirm init container command, shared volume name, and mount paths before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap init-diagnostics-brief -n init-lab -o yaml > /tmp/exam/q1/init-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/init-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/init-diagnostics-checklist.txt ]
+  name: report-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: report-api
+  template:
+    metadata:
+      labels:
+        app: report-api
+    spec:
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+        - name: seed-data
+          emptyDir: {}
+      initContainers:
+        - name: bootstrap
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - mkdir -p /work && echo ready=1 > /work/report.txt
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -Fx 'ready=1' /work/report.txt && sleep 3600
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
+EOF
+kubectl rollout status deployment/report-api -n init-lab
+kubectl exec -n init-lab deploy/report-api -- cat /work/report.txt | grep -Fx 'ready=1' >/dev/null
 COMMAND
       ;;
     cka-034)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n affinity-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: placement-diagnostics-brief
-  namespace: affinity-lab
-data:
-  targetDeployment: api-fleet
-  deploymentInventory: kubectl get deployment api-fleet -n affinity-lab -o wide
-  replicaCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.replicas}'
-  antiAffinityTopologyCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey}'
-  antiAffinitySelectorCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchLabels.app}'
-  topologySpreadKeyCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].topologyKey}'
-  maxSkewCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].maxSkew}'
-  whenUnsatisfiableCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].whenUnsatisfiable}'
-  eventCheck: kubectl get events -n affinity-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm pod anti-affinity selectors and topology spread constraints before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/placement-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment api-fleet -n affinity-lab -o wide
-- kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.replicas}'
-
-Placement Checks
-- kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey}'
-- kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchLabels.app}'
-- kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].topologyKey}'
-- kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].maxSkew}'
-- kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].whenUnsatisfiable}'
-- kubectl get events -n affinity-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment api-fleet -n affinity-lab -o yaml
-- confirm pod anti-affinity selectors and topology spread constraints before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap placement-diagnostics-brief -n affinity-lab -o yaml > /tmp/exam/q1/placement-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/placement-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/placement-diagnostics-checklist.txt ]
+  name: api-fleet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-fleet
+  template:
+    metadata:
+      labels:
+        app: api-fleet
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: api-fleet
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: api-fleet
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - sleep 3600
+EOF
+kubectl rollout status deployment/api-fleet -n affinity-lab
+NODE_NAME="$(kubectl get pods -n affinity-lab -l app=api-fleet -o jsonpath='{.items[0].spec.nodeName}')"
+[ -n "$NODE_NAME" ]
+[ "$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.kubernetes\.io/os}')" = "linux" ]
 COMMAND
       ;;
     cka-035)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n identity-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: identity-diagnostics-brief
-  namespace: identity-lab
-data:
-  targetDeployment: metrics-api
-  deploymentInventory: kubectl get deployment metrics-api -n identity-lab -o wide
-  serviceAccountCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
-  automountCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'
-  projectedTokenPathCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'
-  projectedAudienceCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'
-  mountPathCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n identity-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/identity-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment metrics-api -n identity-lab -o wide
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
-
-Identity Checks
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n identity-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment metrics-api -n identity-lab -o yaml
-- confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap identity-diagnostics-brief -n identity-lab -o yaml > /tmp/exam/q1/identity-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/identity-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/identity-diagnostics-checklist.txt ]
+  name: metrics-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-api
+  template:
+    metadata:
+      labels:
+        app: metrics-api
+    spec:
+      serviceAccountName: metrics-sa
+      automountServiceAccountToken: false
+      volumes:
+        - name: identity-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  audience: metrics-api
+                  expirationSeconds: 3600
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - test -s /var/run/metrics/token && sleep 3600
+          volumeMounts:
+            - name: identity-token
+              mountPath: /var/run/metrics
+              readOnly: true
+EOF
+kubectl rollout status deployment/metrics-api -n identity-lab
+kubectl exec -n identity-lab deploy/metrics-api -- test -s /var/run/metrics/token
 COMMAND
       ;;
     cka-036)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n securitycontext-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: securitycontext-diagnostics-brief
-  namespace: securitycontext-lab
-data:
-  targetDeployment: secure-api
-  deploymentInventory: kubectl get deployment secure-api -n securitycontext-lab -o wide
-  runAsUserCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'
-  fsGroupCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'
-  seccompCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'
-  allowPrivilegeEscalationCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
-  capabilitiesDropCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'
-  mountPathCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/securitycontext-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment secure-api -n securitycontext-lab -o wide
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'
-
-Security Context Checks
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment secure-api -n securitycontext-lab -o yaml
-- confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap securitycontext-diagnostics-brief -n securitycontext-lab -o yaml > /tmp/exam/q1/securitycontext-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/securitycontext-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/securitycontext-diagnostics-checklist.txt ]
+  name: secure-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-api
+  template:
+    metadata:
+      labels:
+        app: secure-api
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 2000
+      volumes:
+        - name: data
+          emptyDir: {}
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - id -u | grep -Fx 1000 && echo secure > /data/secure.txt && sleep 3600
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /data
+EOF
+kubectl rollout status deployment/secure-api -n securitycontext-lab
+[ "$(kubectl exec -n securitycontext-lab deploy/secure-api -- id -u)" = "1000" ]
+kubectl exec -n securitycontext-lab deploy/secure-api -- cat /data/secure.txt | grep -Fx 'secure' >/dev/null
 COMMAND
       ;;
     cka-037)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n priority-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: priority-diagnostics-brief
-  namespace: priority-lab
-data:
-  targetDeployment: batch-api
-  targetPriorityClass: ops-critical
-  priorityClassInventory: kubectl get priorityclass ops-critical -o yaml
-  deploymentInventory: kubectl get deployment batch-api -n priority-lab -o wide
-  priorityClassNameCheck: kubectl get deployment batch-api -n priority-lab -o jsonpath='{.spec.template.spec.priorityClassName}'
-  priorityValueCheck: kubectl get priorityclass ops-critical -o jsonpath='{.value}'
-  preemptionPolicyCheck: kubectl get priorityclass ops-critical -o jsonpath='{.preemptionPolicy}'
-  globalDefaultCheck: kubectl get priorityclass ops-critical -o jsonpath='{.globalDefault}'
-  schedulerCheck: kubectl get pods -n priority-lab -o wide
-  eventCheck: kubectl get events -n priority-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm priorityClassName, priority value, preemption policy, and scheduler events before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/priority-diagnostics-checklist.txt
-PriorityClass Inventory
-- kubectl get priorityclass ops-critical -o yaml
-- kubectl get priorityclass ops-critical -o jsonpath='{.value}'
-- kubectl get priorityclass ops-critical -o jsonpath='{.preemptionPolicy}'
-- kubectl get priorityclass ops-critical -o jsonpath='{.globalDefault}'
-
-Workload Checks
-- kubectl get deployment batch-api -n priority-lab -o wide
-- kubectl get deployment batch-api -n priority-lab -o jsonpath='{.spec.template.spec.priorityClassName}'
-- kubectl get pods -n priority-lab -o wide
-- kubectl get events -n priority-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment batch-api -n priority-lab -o yaml
-- confirm priorityClassName, priority value, preemption policy, and scheduler events before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap priority-diagnostics-brief -n priority-lab -o yaml > /tmp/exam/q1/priority-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/priority-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/priority-diagnostics-checklist.txt ]
+  name: batch-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: batch-api
+  template:
+    metadata:
+      labels:
+        app: batch-api
+    spec:
+      priorityClassName: ops-critical
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - sleep 3600
+EOF
+kubectl rollout status deployment/batch-api -n priority-lab
+[ "$(kubectl get pods -n priority-lab -l app=batch-api -o jsonpath='{.items[0].spec.priorityClassName}')" = "ops-critical" ]
+[ "$(kubectl get pods -n priority-lab -l app=batch-api -o jsonpath='{.items[0].spec.priority}')" = "100000" ]
 COMMAND
       ;;
     cka-038)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n qos-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: qos-diagnostics-brief
-  namespace: qos-lab
-data:
-  targetDeployment: reporting-api
-  deploymentInventory: kubectl get deployment reporting-api -n qos-lab -o wide
-  requestsCpuCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}'
-  requestsMemoryCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}'
-  limitsCpuCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.cpu}'
-  limitsMemoryCheck: kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}'
-  qosClassCheck: kubectl get pods -n qos-lab -l app=reporting-api -o jsonpath='{.items[0].status.qosClass}'
-  eventCheck: kubectl get events -n qos-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm requests, limits, QoS class, and namespace events before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/qos-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment reporting-api -n qos-lab -o wide
-
-Resource Checks
-- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}'
-- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}'
-- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.cpu}'
-- kubectl get deployment reporting-api -n qos-lab -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}'
-- kubectl get pods -n qos-lab -l app=reporting-api -o jsonpath='{.items[0].status.qosClass}'
-- kubectl get events -n qos-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment reporting-api -n qos-lab -o yaml
-- confirm requests, limits, QoS class, and namespace events before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap qos-diagnostics-brief -n qos-lab -o yaml > /tmp/exam/q1/qos-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/qos-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/qos-diagnostics-checklist.txt ]
+  name: reporting-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reporting-api
+  template:
+    metadata:
+      labels:
+        app: reporting-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - sleep 3600
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+EOF
+kubectl rollout status deployment/reporting-api -n qos-lab
+[ "$(kubectl get pods -n qos-lab -l app=reporting-api -o jsonpath='{.items[0].status.qosClass}')" = "Guaranteed" ]
 COMMAND
       ;;
     cka-039)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n registry-auth-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: pull-auth-diagnostics-brief
-  namespace: registry-auth-lab
-data:
-  targetDeployment: private-api
-  deploymentInventory: kubectl get deployment private-api -n registry-auth-lab -o wide
-  serviceAccountCheck: kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
-  imagePullSecretsCheck: kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}'
-  imageReferenceCheck: kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  secretTypeCheck: kubectl get secret regcred -n registry-auth-lab -o jsonpath='{.type}'
-  serviceAccountSecretCheck: kubectl get serviceaccount puller -n registry-auth-lab -o jsonpath='{.imagePullSecrets[*].name}'
-  eventCheck: kubectl get events -n registry-auth-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm imagePullSecrets, ServiceAccount wiring, secret type, and image reference before changing the Deployment manifest"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/pull-auth-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment private-api -n registry-auth-lab -o wide
-
-Pull Secret Checks
-- kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
-- kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}'
-- kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-- kubectl get secret regcred -n registry-auth-lab -o jsonpath='{.type}'
-- kubectl get serviceaccount puller -n registry-auth-lab -o jsonpath='{.imagePullSecrets[*].name}'
-- kubectl get events -n registry-auth-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment private-api -n registry-auth-lab -o yaml
-- confirm imagePullSecrets, ServiceAccount wiring, secret type, and image reference before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap pull-auth-diagnostics-brief -n registry-auth-lab -o yaml > /tmp/exam/q1/pull-auth-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/pull-auth-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/pull-auth-diagnostics-checklist.txt ]
+  name: private-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: private-api
+  template:
+    metadata:
+      labels:
+        app: private-api
+    spec:
+      serviceAccountName: puller
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - sleep 3600
+EOF
+kubectl rollout status deployment/private-api -n registry-auth-lab
+[ "$(kubectl get pods -n registry-auth-lab -l app=private-api -o jsonpath='{.items[0].spec.serviceAccountName}')" = "puller" ]
+[ "$(kubectl get pods -n registry-auth-lab -l app=private-api -o jsonpath='{.items[0].spec.imagePullSecrets[0].name}')" = "regcred" ]
 COMMAND
       ;;
     cka-040)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n pv-reclaim-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: reclaim-diagnostics-brief
-  namespace: pv-reclaim-lab
-data:
-  targetPvc: reports-data
-  pvcInventory: kubectl get pvc reports-data -n pv-reclaim-lab -o wide
-  volumeNameCheck: kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.volumeName}'
-  storageClassCheck: kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.storageClassName}'
-  reclaimPolicyCheck: kubectl get pv reports-pv -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'
-  claimRefCheck: kubectl get pv reports-pv -o jsonpath='{.spec.claimRef.namespace}/{.spec.claimRef.name}'
-  mountPathCheck: kubectl get deployment reports-db -n pv-reclaim-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n pv-reclaim-lab --sort-by=.lastTimestamp
-  safeManifestNote: "confirm PVC binding, PV reclaim policy, claimRef, and workload mount path before changing storage manifests"
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/reclaim-diagnostics-checklist.txt
-PVC Inventory
-- kubectl get pvc reports-data -n pv-reclaim-lab -o wide
-- kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.volumeName}'
-- kubectl get pvc reports-data -n pv-reclaim-lab -o jsonpath='{.spec.storageClassName}'
-
-PV Checks
-- kubectl get pv reports-pv -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'
-- kubectl get pv reports-pv -o jsonpath='{.spec.claimRef.namespace}/{.spec.claimRef.name}'
-- kubectl get deployment reports-db -n pv-reclaim-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n pv-reclaim-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment reports-db -n pv-reclaim-lab -o yaml
-- kubectl get pv reports-pv -o yaml
-- confirm PVC binding, PV reclaim policy, claimRef, and workload mount path before changing storage manifests
-EOF_CHECKLIST
-kubectl get configmap reclaim-diagnostics-brief -n pv-reclaim-lab -o yaml > /tmp/exam/q1/reclaim-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/reclaim-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/reclaim-diagnostics-checklist.txt ]
+  name: reports-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reports-db
+  template:
+    metadata:
+      labels:
+        app: reports-db
+    spec:
+      containers:
+        - name: db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - echo reports-ready > /var/lib/reporting/ready.txt && sleep 3600
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/reporting
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: reports-data
+EOF
+kubectl rollout status deployment/reports-db -n pv-reclaim-lab
+kubectl exec -n pv-reclaim-lab deploy/reports-db -- cat /var/lib/reporting/ready.txt | grep -Fx 'reports-ready' >/dev/null
 COMMAND
       ;;
     cka-041)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl patch pvc analytics-data -n pv-resize-lab --type merge -p '{"spec":{"resources":{"requests":{"storage":"2Gi"}}}}'
+kubectl apply -n pv-resize-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: resize-diagnostics-brief
-  namespace: pv-resize-lab
-data:
-  targetPvc: analytics-data
-  pvcInventory: kubectl get pvc analytics-data -n pv-resize-lab -o wide
-  requestedSizeCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.resources.requests.storage}'
-  currentCapacityCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.capacity.storage}'
-  storageClassCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.storageClassName}'
-  allowExpansionCheck: kubectl get storageclass expandable-reports -o jsonpath='{.allowVolumeExpansion}'
-  conditionCheck: kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.conditions[*].type}'
-  mountPathCheck: kubectl get deployment analytics-api -n pv-resize-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n pv-resize-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm requested size, current capacity, resize support, PVC conditions, and mount path before changing storage manifests
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/resize-diagnostics-checklist.txt
-PVC Inventory
-- kubectl get pvc analytics-data -n pv-resize-lab -o wide
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.resources.requests.storage}'
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.capacity.storage}'
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.spec.storageClassName}'
-
-Resize Checks
-- kubectl get storageclass expandable-reports -o jsonpath='{.allowVolumeExpansion}'
-- kubectl get pvc analytics-data -n pv-resize-lab -o jsonpath='{.status.conditions[*].type}'
-- kubectl get deployment analytics-api -n pv-resize-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n pv-resize-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment analytics-api -n pv-resize-lab -o yaml
-- kubectl get pvc analytics-data -n pv-resize-lab -o yaml
-- confirm requested size, current capacity, resize support, PVC conditions, and mount path before changing storage manifests
-EOF_CHECKLIST
-kubectl get configmap resize-diagnostics-brief -n pv-resize-lab -o yaml > /tmp/exam/q1/resize-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/resize-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/resize-diagnostics-checklist.txt ]
+  name: analytics-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-api
+  template:
+    metadata:
+      labels:
+        app: analytics-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - echo resize-ready > /var/lib/analytics/resize-ready.txt && sleep 3600
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/analytics
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: analytics-data
+EOF
+kubectl rollout status deployment/analytics-api -n pv-resize-lab
+kubectl exec -n pv-resize-lab deploy/analytics-api -- cat /var/lib/analytics/resize-ready.txt | grep -Fx 'resize-ready' >/dev/null
 COMMAND
       ;;
     cka-042)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: debug-diagnostics-brief
-  namespace: debug-lab
-data:
-  targetPod: orders-api
-  podInventory: kubectl get pod orders-api -n debug-lab -o wide
-  containerInventory: kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.containers[*].name}'
-  logsCheck: kubectl logs orders-api -n debug-lab -c api --tail=50
-  nodeCheck: kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.nodeName}'
-  debugCommand: kubectl debug pod/orders-api -n debug-lab -it --image=busybox:1.36 --target=api
-  ephemeralContainerCheck: kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}'
-  eventCheck: kubectl get events -n debug-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm target pod, target container, debug image, and ephemeral container evidence before changing workload manifests
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/debug-diagnostics-checklist.txt
-Pod Inventory
-- kubectl get pod orders-api -n debug-lab -o wide
-- kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.containers[*].name}'
-- kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.nodeName}'
-
-Debug Path
-- kubectl logs orders-api -n debug-lab -c api --tail=50
-- kubectl debug pod/orders-api -n debug-lab -it --image=busybox:1.36 --target=api
-- kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}'
-- kubectl get events -n debug-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get pod orders-api -n debug-lab -o yaml
-- confirm target pod, target container, debug image, and ephemeral container evidence before changing workload manifests
-EOF_CHECKLIST
-kubectl get configmap debug-diagnostics-brief -n debug-lab -o yaml > /tmp/exam/q1/debug-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/debug-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/debug-diagnostics-checklist.txt ]
+kubectl get pod orders-api -n debug-lab >/dev/null
+if ! kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}' | grep -qw debugger; then
+  kubectl debug pod/orders-api -n debug-lab \
+    --image=busybox:1.36 \
+    --target=api \
+    --container=debugger \
+    --attach=false \
+    -- sh -c 'echo debug-ready && sleep 3600'
+fi
+until kubectl get pod orders-api -n debug-lab -o jsonpath='{.status.ephemeralContainerStatuses[*].name}' | grep -qw debugger; do
+  sleep 2
+done
+kubectl get pod orders-api -n debug-lab -o jsonpath='{.spec.ephemeralContainers[*].name}' | grep -qw debugger
+until kubectl logs -n debug-lab orders-api -c debugger 2>/dev/null | grep -Fx 'debug-ready' >/dev/null; do
+  sleep 2
+done
 COMMAND
       ;;
     cka-043)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
+cat <<'EOF_MANIFEST' > /etc/kubernetes/manifests/audit-agent.yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Pod
 metadata:
-  name: staticpod-diagnostics-brief
+  name: audit-agent
   namespace: staticpod-lab
-data:
-  targetMirrorPod: audit-agent-ckad9999
-  mirrorPodInventory: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o wide
-  staticPodPathCheck: sudo ls -l /etc/kubernetes/manifests/audit-agent.yaml
-  manifestPreviewCheck: sudo sed -n '1,160p' /etc/kubernetes/manifests/audit-agent.yaml
-  hostNetworkCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.hostNetwork}'
-  containerCommandCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.containers[0].command}'
-  nodeCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.nodeName}'
-  eventCheck: kubectl get events -n staticpod-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm manifest path, mirror pod inventory, hostNetwork setting, and container command before changing static pod manifests
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/staticpod-diagnostics-checklist.txt
-Mirror Pod Inventory
-- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o wide
-- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.nodeName}'
-
-Static Pod Checks
-- sudo ls -l /etc/kubernetes/manifests/audit-agent.yaml
-- sudo sed -n '1,160p' /etc/kubernetes/manifests/audit-agent.yaml
-- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.hostNetwork}'
-- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.containers[0].command}'
-- kubectl get events -n staticpod-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o yaml
-- confirm manifest path, mirror pod inventory, hostNetwork setting, and container command before changing static pod manifests
-EOF_CHECKLIST
-kubectl get configmap staticpod-diagnostics-brief -n staticpod-lab -o yaml > /tmp/exam/q1/staticpod-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/staticpod-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/staticpod-diagnostics-checklist.txt ]
+  labels:
+    app: audit-agent
+spec:
+  hostNetwork: true
+  containers:
+    - name: agent
+      image: busybox:1.36
+      command:
+        - /bin/sh
+        - -c
+        - while true; do echo static-pod-audit; sleep 30; done
+EOF_MANIFEST
+for _ in $(seq 1 90); do
+  POD_NAME="$(kubectl get pods -n staticpod-lab -l app=audit-agent -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+  if [ -n "$POD_NAME" ]; then
+    kubectl wait --for=condition=Ready "pod/$POD_NAME" -n staticpod-lab --timeout=5s >/dev/null 2>&1 || true
+    if [ "$(kubectl get pod "$POD_NAME" -n staticpod-lab -o jsonpath='{.spec.hostNetwork}' 2>/dev/null || true)" = "true" ]; then
+      exit 0
+    fi
+  fi
+  sleep 2
+done
+exit 1
 COMMAND
       ;;
     cka-044)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n projectedvolume-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: projected-volume-brief
-  namespace: projectedvolume-lab
-data:
-  targetDeployment: bundle-api
-  deploymentInventory: kubectl get deployment bundle-api -n projectedvolume-lab -o wide
-  configMapNameCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.name}'
-  configMapItemPathCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.items[0].path}'
-  secretNameCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.name}'
-  secretItemPathCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.items[0].path}'
-  mountPathCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  readOnlyCheck: kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
-  eventCheck: kubectl get events -n projectedvolume-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm projected sources, item paths, and readOnly mount before changing the Deployment manifest
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/projected-volume-checklist.txt
-Deployment Inventory
-- kubectl get deployment bundle-api -n projectedvolume-lab -o wide
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.name}'
-
-Projected Volume Checks
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.items[0].path}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.name}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.items[0].path}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
-- kubectl get events -n projectedvolume-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment bundle-api -n projectedvolume-lab -o yaml
-- confirm projected sources, item paths, and readOnly mount before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap projected-volume-brief -n projectedvolume-lab -o yaml > /tmp/exam/q1/projected-volume-brief.yaml
-[ -s /tmp/exam/q1/projected-volume-brief.yaml ]
-[ -s /tmp/exam/q1/projected-volume-checklist.txt ]
+  name: bundle-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bundle-api
+  template:
+    metadata:
+      labels:
+        app: bundle-api
+    spec:
+      volumes:
+        - name: bundle-data
+          projected:
+            sources:
+              - configMap:
+                  name: bundle-config
+                  items:
+                    - key: app.conf
+                      path: config/app.conf
+              - secret:
+                  name: bundle-secret
+                  items:
+                    - key: token
+                      path: secret/token
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -Fx 'mode=production' /etc/bundle/config/app.conf && grep -Fx 'token=stable' /etc/bundle/secret/token && sleep 3600
+          volumeMounts:
+            - name: bundle-data
+              mountPath: /etc/bundle
+              readOnly: true
+EOF
+kubectl rollout status deployment/bundle-api -n projectedvolume-lab
+kubectl exec -n projectedvolume-lab deploy/bundle-api -- cat /etc/bundle/config/app.conf | grep -Fx 'mode=production' >/dev/null
+kubectl exec -n projectedvolume-lab deploy/bundle-api -- cat /etc/bundle/secret/token | grep -Fx 'token=stable' >/dev/null
 COMMAND
       ;;
     cka-045)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n envfrom-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: envfrom-diagnostics-brief
-  namespace: envfrom-lab
-data:
-  targetDeployment: env-bundle
-  deploymentInventory: kubectl get deployment env-bundle -n envfrom-lab -o wide
-  configMapEnvFromCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].configMapRef.name}'
-  secretEnvFromCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].secretRef.name}'
-  prefixCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].prefix}'
-  containerNameCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-  imageCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  eventCheck: kubectl get events -n envfrom-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm envFrom source order, secret prefix, and container name before changing the Deployment manifest
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/envfrom-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment env-bundle -n envfrom-lab -o wide
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-
-EnvFrom Checks
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].configMapRef.name}'
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].secretRef.name}'
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].prefix}'
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-- kubectl get events -n envfrom-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment env-bundle -n envfrom-lab -o yaml
-- confirm envFrom source order, secret prefix, and container name before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap envfrom-diagnostics-brief -n envfrom-lab -o yaml > /tmp/exam/q1/envfrom-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/envfrom-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/envfrom-diagnostics-checklist.txt ]
+  name: env-bundle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env-bundle
+  template:
+    metadata:
+      labels:
+        app: env-bundle
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - test "${MODE}" = "production" && test "${SECRET_API_KEY}" = "stable-key" && sleep 3600
+          envFrom:
+            - configMapRef:
+                name: app-env
+            - secretRef:
+                name: app-secret
+              prefix: SECRET_
+EOF
+kubectl rollout status deployment/env-bundle -n envfrom-lab
+kubectl exec -n envfrom-lab deploy/env-bundle -- env | grep -Fx 'MODE=production' >/dev/null
+kubectl exec -n envfrom-lab deploy/env-bundle -- env | grep -Fx 'SECRET_API_KEY=stable-key' >/dev/null
 COMMAND
       ;;
     cka-046)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n subpath-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: subpath-diagnostics-brief
-  namespace: subpath-lab
-data:
-  targetDeployment: subpath-api
-  deploymentInventory: kubectl get deployment subpath-api -n subpath-lab -o wide
-  configMapNameCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.name}'
-  itemPathCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.items[0].path}'
-  mountPathCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  subPathCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].subPath}'
-  readOnlyCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
-  containerNameCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-  imageCheck: kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  eventCheck: kubectl get events -n subpath-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm ConfigMap item path, subPath, and target mount path before changing the Deployment manifest
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/subpath-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment subpath-api -n subpath-lab -o wide
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-
-subPath Checks
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.name}'
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.items[0].path}'
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].subPath}'
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'
-- kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-- kubectl get events -n subpath-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment subpath-api -n subpath-lab -o yaml
-- confirm ConfigMap item path, subPath, and target mount path before changing the Deployment manifest
-EOF_CHECKLIST
-kubectl get configmap subpath-diagnostics-brief -n subpath-lab -o yaml > /tmp/exam/q1/subpath-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/subpath-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/subpath-diagnostics-checklist.txt ]
+  name: subpath-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subpath-api
+  template:
+    metadata:
+      labels:
+        app: subpath-api
+    spec:
+      volumes:
+        - name: app-config
+          configMap:
+            name: app-config
+            items:
+              - key: app.conf
+                path: config/app.conf
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -q '^mode=production$' /etc/app/app.conf && grep -q '^feature=stable$' /etc/app/app.conf && sleep 3600
+          volumeMounts:
+            - name: app-config
+              mountPath: /etc/app/app.conf
+              subPath: config/app.conf
+              readOnly: true
+EOF
+kubectl rollout status deployment/subpath-api -n subpath-lab --timeout=180s
 COMMAND
       ;;
     cka-047)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n rwop-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: rwop-diagnostics-brief
-  namespace: rwop-lab
-data:
-  targetClaim: data-claim
-  claimInventory: kubectl get pvc data-claim -n rwop-lab -o wide
-  accessModeCheck: kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.accessModes[0]}'
-  storageClassCheck: kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.storageClassName}'
-  volumeNameCheck: kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.volumeName}'
-  readerPodCheck: kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.volumes[0].persistentVolumeClaim.claimName}'
-  mountPathCheck: kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.containers[0].volumeMounts[0].mountPath}'
-  storageClassExpansionCheck: kubectl get storageclass rwop-hostpath -o jsonpath='{.allowVolumeExpansion}'
-  eventCheck: kubectl get events -n rwop-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm PVC access mode, claim consumer, and mount path before changing workload or storage manifests
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/rwop-diagnostics-checklist.txt
-Claim Inventory
-- kubectl get pvc data-claim -n rwop-lab -o wide
-- kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.accessModes[0]}'
-
-Access Mode Checks
-- kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.storageClassName}'
-- kubectl get pvc data-claim -n rwop-lab -o jsonpath='{.spec.volumeName}'
-- kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.volumes[0].persistentVolumeClaim.claimName}'
-- kubectl get pod rwop-reader -n rwop-lab -o jsonpath='{.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get storageclass rwop-hostpath -o jsonpath='{.allowVolumeExpansion}'
-- kubectl get events -n rwop-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get pvc data-claim -n rwop-lab -o yaml
-- confirm PVC access mode, claim consumer, and mount path before changing workload or storage manifests
-EOF_CHECKLIST
-kubectl get configmap rwop-diagnostics-brief -n rwop-lab -o yaml > /tmp/exam/q1/rwop-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/rwop-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/rwop-diagnostics-checklist.txt ]
+  name: rwop-reader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rwop-reader
+  template:
+    metadata:
+      labels:
+        app: rwop-reader
+    spec:
+      containers:
+        - name: reader
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - echo reader-ready > /data/app/reader.txt && sleep 3600
+          volumeMounts:
+            - name: data
+              mountPath: /data/app
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-claim
+EOF
+kubectl rollout status deployment/rwop-reader -n rwop-lab --timeout=180s
 COMMAND
       ;;
     cka-048)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n dnspolicy-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: dns-diagnostics-brief
-  namespace: dnspolicy-lab
-data:
-  targetWorkload: dns-client
-  podInventory: kubectl get pod dns-client -n dnspolicy-lab -o wide
-  dnsPolicyCheck: kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsPolicy}'
-  dnsNameserverCheck: kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.nameservers[0]}'
-  dnsSearchCheck: kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.searches[0]}'
-  dnsOptionCheck: kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.options[0].name}'
-  resolverFileCheck: kubectl exec -n dnspolicy-lab dns-client -- cat /etc/resolv.conf
-  eventCheck: kubectl get events -n dnspolicy-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm dnsPolicy, dnsConfig nameservers, searches, and options before changing workload manifests or cluster DNS services
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/dns-diagnostics-checklist.txt
-Pod DNS Inventory
-- kubectl get pod dns-client -n dnspolicy-lab -o wide
-- kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsPolicy}'
-
-dnsConfig Checks
-- kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.nameservers[0]}'
-- kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.searches[0]}'
-- kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.options[0].name}'
-- kubectl exec -n dnspolicy-lab dns-client -- cat /etc/resolv.conf
-- kubectl get events -n dnspolicy-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get pod dns-client -n dnspolicy-lab -o yaml
-- confirm dnsPolicy, dnsConfig nameservers, searches, and options before changing workload manifests or cluster DNS services
-EOF_CHECKLIST
-kubectl get configmap dns-diagnostics-brief -n dnspolicy-lab -o yaml > /tmp/exam/q1/dns-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/dns-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/dns-diagnostics-checklist.txt ]
+  name: dns-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns-client
+  template:
+    metadata:
+      labels:
+        app: dns-client
+    spec:
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 1.1.1.1
+        searches:
+          - lab.local
+        options:
+          - name: ndots
+            value: "2"
+      containers:
+        - name: toolbox
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -q '^nameserver 1.1.1.1$' /etc/resolv.conf && grep -q '^search lab.local$' /etc/resolv.conf && grep -q 'options ndots:2' /etc/resolv.conf && sleep 3600
+EOF
+kubectl rollout status deployment/dns-client -n dnspolicy-lab --timeout=180s
 COMMAND
       ;;
     cka-049)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: lifecycle-diagnostics-brief
-  namespace: lifecycle-lab
-data:
-  targetDeployment: lifecycle-api
-  deploymentInventory: kubectl get deployment lifecycle-api -n lifecycle-lab -o wide
-  terminationGraceCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'
-  preStopTypeCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]}'
-  preStopCommandCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}'
-  containerCommandCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].command[2]}'
-  imageCheck: kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  eventCheck: kubectl get events -n lifecycle-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm lifecycle preStop commands and termination grace period before changing workload manifests or forcing pod deletion
-EOF_BRIEF
 mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/lifecycle-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o wide
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'
-
-Lifecycle Hook Checks
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]}'
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}'
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].command[2]}'
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-- kubectl get events -n lifecycle-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment lifecycle-api -n lifecycle-lab -o yaml
-- confirm lifecycle preStop commands and termination grace period before changing workload manifests or forcing pod deletion
-EOF_CHECKLIST
-kubectl get configmap lifecycle-diagnostics-brief -n lifecycle-lab -o yaml > /tmp/exam/q1/lifecycle-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/lifecycle-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/lifecycle-diagnostics-checklist.txt ]
+kubectl apply -n lifecycle-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lifecycle-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lifecycle-api
+  template:
+    metadata:
+      labels:
+        app: lifecycle-api
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - while true; do sleep 30; done
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - sleep 5
+EOF
+kubectl rollout status deployment/lifecycle-api -n lifecycle-lab --timeout=180s | tee /tmp/exam/q1/lifecycle-rollout-status.txt
 COMMAND
       ;;
     cka-050)
       cat <<'COMMAND'
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n downwardapi-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: meta-diagnostics-brief
-  namespace: downwardapi-lab
-data:
-  targetDeployment: meta-api
-  deploymentInventory: kubectl get deployment meta-api -n downwardapi-lab -o wide
-  envNameCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'
-  fieldPathCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'
-  namespaceFieldCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'
-  containerNameCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-  imageCheck: kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  eventCheck: kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation
-EOF_BRIEF
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/meta-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment meta-api -n downwardapi-lab -o wide
-- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].name}'
-
-Downward API Checks
-- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath}'
-- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath}'
-- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-- kubectl get deployment meta-api -n downwardapi-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-- kubectl get events -n downwardapi-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment meta-api -n downwardapi-lab -o yaml
-- confirm downward API fieldRef paths and target env names before changing workload manifests or forcing pod recreation
-EOF_CHECKLIST
-kubectl get configmap meta-diagnostics-brief -n downwardapi-lab -o yaml > /tmp/exam/q1/meta-diagnostics-brief.yaml
-[ -s /tmp/exam/q1/meta-diagnostics-brief.yaml ]
-[ -s /tmp/exam/q1/meta-diagnostics-checklist.txt ]
+  name: meta-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meta-api
+  template:
+    metadata:
+      labels:
+        app: meta-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - test -n "$POD_NAME" && test -n "$POD_NAMESPACE" && sleep 3600
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+EOF
+kubectl rollout status deployment/meta-api -n downwardapi-lab --timeout=180s
+COMMAND
+      ;;
+    cka-051)
+      cat <<'COMMAND'
+kubectl apply -n taints-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taint-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taint-api
+  template:
+    metadata:
+      labels:
+        app: taint-api
+    spec:
+      nodeSelector:
+        workload: ops
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: ops
+          effect: NoExecute
+          tolerationSeconds: 60
+      containers:
+        - name: api
+          image: nginx:1.25.3
+EOF
+kubectl rollout status deployment/taint-api -n taints-lab --timeout=180s
 COMMAND
       ;;
     *)

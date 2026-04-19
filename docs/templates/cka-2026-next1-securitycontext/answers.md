@@ -1,52 +1,50 @@
-## Question 1701: Pod securityContext and fsGroup diagnostics
+# CKA 2026 Next SecurityContext Wave Answers
 
-Repair the security diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 1701
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n securitycontext-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: securitycontext-diagnostics-brief
-  namespace: securitycontext-lab
-data:
-  targetDeployment: secure-api
-  deploymentInventory: kubectl get deployment secure-api -n securitycontext-lab -o wide
-  runAsUserCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'
-  fsGroupCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'
-  seccompCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'
-  allowPrivilegeEscalationCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
-  capabilitiesDropCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'
-  mountPathCheck: kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest
-EOF_BRIEF
+  name: secure-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-api
+  template:
+    metadata:
+      labels:
+        app: secure-api
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 2000
+      volumes:
+        - name: data
+          emptyDir: {}
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - id -u | grep -Fx 1000 && echo secure > /data/secure.txt && sleep 3600
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /data
+EOF
 
-mkdir -p /tmp/exam/q1701
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1701/securitycontext-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment secure-api -n securitycontext-lab -o wide
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.runAsUser}'
-
-Security Context Checks
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.seccompProfile.type}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].securityContext.capabilities.drop[0]}'
-- kubectl get deployment secure-api -n securitycontext-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n securitycontext-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment secure-api -n securitycontext-lab -o yaml
-- confirm runAsUser, fsGroup, seccomp, capability drop, and mount path before changing the Deployment manifest
-EOF_CHECKLIST
-
-kubectl get configmap securitycontext-diagnostics-brief -n securitycontext-lab -o yaml > /tmp/exam/q1701/securitycontext-diagnostics-brief.yaml
+kubectl rollout status deployment/secure-api -n securitycontext-lab
+kubectl exec -n securitycontext-lab deploy/secure-api -- sh -c 'id -u && cat /data/secure.txt'
 ```
-
-Expected checks:
-
-- `securitycontext-diagnostics-brief` contains the intended Deployment target, exact securityContext inspection commands, events check, and safe manifest guidance
-- `/tmp/exam/q1701/securitycontext-diagnostics-checklist.txt` contains the required sections and exact deployment inventory and workload security troubleshooting commands
-- `/tmp/exam/q1701/securitycontext-diagnostics-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as restarting the Deployment, deleting pods, or patching the live securityContext fields are removed

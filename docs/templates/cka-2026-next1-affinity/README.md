@@ -2,29 +2,24 @@
 
 These drafts cover the next recommended workload-placement pack from the `cka-034+` roadmap:
 
-1. Pod anti-affinity and topology spread diagnostics
+1. pod anti-affinity and topology spread repair
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `1501` pod anti-affinity and topology spread repair
 
-- Question `1501` (`Pod anti-affinity and topology spread diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `1501` (pod anti-affinity and topology spread repair) now mirrors the promoted hands-on facilitator pack `cka-034`.
 - Question `1501` has now been promoted into facilitator pack `cka-034`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `1501` should stay in the `planning + evidence export` lane. It should validate exact pod anti-affinity inventory, topology spread checks, event evidence, and safe manifest review without patching the live Deployment.
-- Question `1501` should export exact evidence files instead of restarting the Deployment, deleting pods, or force-patching live placement rules as a workaround.
-- Question `1501` should avoid `kubectl rollout restart`, `kubectl delete pod`, `kubectl scale deployment`, and ad hoc `kubectl patch deployment ...` remediation commands in the expected answer.
+- Keep the runtime deterministic by validating the exact node selector, anti-affinity selector, topology spread settings, and rollout success.
+- Question 1501 should avoid deleting pods, scaling the Deployment, or stripping the placement rules entirely in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q1501` -> `facilitator/assets/exams/cka/034`
+1. Question `1501` is already promoted; the next work is keeping runtime smoke and contract coverage green.

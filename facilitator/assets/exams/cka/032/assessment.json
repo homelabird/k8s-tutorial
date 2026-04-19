@@ -4,7 +4,7 @@
       "id": "1",
       "namespace": "probe-lab",
       "machineHostname": "ckad9999",
-      "question": "An application probe diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `probe-diagnostics-brief` already exists in namespace `probe-lab`. Repair it so that:\n- `targetDeployment` is `health-api`\n- `deploymentInventory` is `kubectl get deployment health-api -n probe-lab -o wide`\n- `startupProbeCheck` is `kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'`\n- `livenessProbeCheck` is `kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'`\n- `readinessProbeCheck` is `kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'`\n- `portCheck` is `kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'`\n- `eventCheck` is `kubectl get events -n probe-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/probe-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/probe-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Probe Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch the live probe fields during this drill.",
+      "question": "A Deployment named `health-api` in namespace `probe-lab` is failing because its HTTP probe wiring is wrong.\n\nFix the workload so that:\n- the container keeps port `8080`\n- `startupProbe`, `livenessProbe`, and `readinessProbe` all check path `/healthz`\n- each HTTP probe targets port `8080`\n- the Deployment becomes Available\n- the running container serves `ok` at `http://127.0.0.1:8080/healthz`\n\nDo not replace the container image. Fix the Deployment probe configuration in place.",
       "concepts": [
         "readinessProbe",
         "livenessProbe",
@@ -15,22 +15,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The probe diagnostics brief ConfigMap uses the intended workload target, probe inspection commands, events check, and safe manifest guidance",
-          "verificationScriptFile": "q1_s1_validate_probe_brief_contract.sh",
+          "description": "Deployment health-api uses the intended container port and HTTP probe paths",
+          "verificationScriptFile": "q1_s1_validate_probe_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact deployment inventory, probe checks, and safe manifest review commands",
-          "verificationScriptFile": "q1_s2_validate_probe_checklist_export.sh",
+          "description": "Deployment health-api becomes Available after the probe wiring is repaired",
+          "verificationScriptFile": "q1_s2_validate_probe_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe probe remediation guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_probe_manifest_export_and_safety.sh",
+          "description": "The running container serves ok at the repaired /healthz endpoint",
+          "verificationScriptFile": "q1_s3_validate_probe_endpoint.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

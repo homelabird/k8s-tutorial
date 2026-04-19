@@ -1,14 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 NAMESPACE="init-lab"
-OUTPUT_DIR="/tmp/exam/q1"
 
-kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-mkdir -p "$OUTPUT_DIR"
-rm -f "$OUTPUT_DIR/init-diagnostics-brief.yaml" "$OUTPUT_DIR/init-diagnostics-checklist.txt"
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+kubectl delete deployment report-api -n "${NAMESPACE}" --ignore-not-found >/dev/null
 
-cat <<'EOF_DEPLOYMENT' | kubectl apply -n "$NAMESPACE" -f - >/dev/null
+cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,44 +22,28 @@ spec:
         app: report-api
     spec:
       volumes:
-      - name: bootstrap
-        emptyDir: {}
+        - name: shared-data
+          emptyDir: {}
+        - name: seed-data
+          emptyDir: {}
       initContainers:
-      - name: bootstrap-config
-        image: busybox:1.36
-        command:
-        - sh
-        - -c
-        - echo ready > /work/status.txt
-        volumeMounts:
         - name: bootstrap
-          mountPath: /work
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - mkdir -p /seed && echo broken=1 > /seed/report.txt
+          volumeMounts:
+            - name: seed-data
+              mountPath: /seed
       containers:
-      - name: api
-        image: busybox:1.36
-        command:
-        - sh
-        - -c
-        - while true; do cat /work/status.txt >/dev/null 2>&1; sleep 30; done
-        volumeMounts:
-        - name: bootstrap
-          mountPath: /work
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -Fx 'ready=1' /work/report.txt && sleep 3600
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
 EOF_DEPLOYMENT
-
-cat <<'EOF_BRIEF' | kubectl apply -f - >/dev/null
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: init-diagnostics-brief
-  namespace: init-lab
-data:
-  targetDeployment: report-worker
-  deploymentInventory: kubectl get deployment report-api -n init-lab
-  initContainerInventory: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[*].name}'
-  initCommandCheck: kubectl describe deployment report-api -n init-lab
-  sharedVolumeCheck: kubectl get pvc -n init-lab
-  initMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].image}'
-  appMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  eventCheck: kubectl get pods -n init-lab
-  safeManifestNote: restart the deployment and patch the init command until the pod becomes ready
-EOF_BRIEF

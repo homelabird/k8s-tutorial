@@ -1,50 +1,48 @@
-## Question 1: ServiceAccount identity and projected token diagnostics
+# CKA 2026 Single Domain Drill 035 Answers
 
-Repair the identity diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 1
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n identity-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: identity-diagnostics-brief
-  namespace: identity-lab
-data:
-  targetDeployment: metrics-api
-  deploymentInventory: kubectl get deployment metrics-api -n identity-lab -o wide
-  serviceAccountCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
-  automountCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'
-  projectedTokenPathCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'
-  projectedAudienceCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'
-  mountPathCheck: kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n identity-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest
-EOF_BRIEF
+  name: metrics-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-api
+  template:
+    metadata:
+      labels:
+        app: metrics-api
+    spec:
+      serviceAccountName: metrics-sa
+      automountServiceAccountToken: false
+      volumes:
+        - name: identity-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  audience: metrics-api
+                  expirationSeconds: 3600
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - test -s /var/run/metrics/token && sleep 3600
+          volumeMounts:
+            - name: identity-token
+              mountPath: /var/run/metrics
+              readOnly: true
+EOF
 
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/identity-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment metrics-api -n identity-lab -o wide
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'
-
-Identity Checks
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.automountServiceAccountToken}'
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.path}'
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].serviceAccountToken.audience}'
-- kubectl get deployment metrics-api -n identity-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n identity-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment metrics-api -n identity-lab -o yaml
-- confirm serviceAccountName, projected token audience, and mount path before changing the Deployment manifest
-EOF_CHECKLIST
-
-kubectl get configmap identity-diagnostics-brief -n identity-lab -o yaml > /tmp/exam/q1/identity-diagnostics-brief.yaml
+kubectl rollout status deployment/metrics-api -n identity-lab
+kubectl exec -n identity-lab deploy/metrics-api -- test -s /var/run/metrics/token
 ```
-
-Expected checks:
-
-- `identity-diagnostics-brief` contains the intended Deployment target, exact ServiceAccount and projected token inspection commands, events check, and safe manifest guidance
-- `/tmp/exam/q1/identity-diagnostics-checklist.txt` contains the required sections and exact deployment inventory and workload identity troubleshooting commands
-- `/tmp/exam/q1/identity-diagnostics-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as restarting the Deployment, deleting pods, or patching the live ServiceAccount fields are removed

@@ -2,14 +2,17 @@
 set -euo pipefail
 
 NAMESPACE="pv-resize-lab"
-OUTPUT_DIR="/tmp/exam/q1"
 
-kubectl delete namespace "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
-kubectl create namespace "${NAMESPACE}" >/dev/null
-mkdir -p "${OUTPUT_DIR}"
+kubectl delete deployment analytics-api -n "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
+kubectl delete pvc analytics-data -n "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
+kubectl delete pv analytics-pv --ignore-not-found >/dev/null 2>&1 || true
+kubectl delete storageclass expandable-reports --ignore-not-found >/dev/null 2>&1 || true
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+
+rm -rf /tmp/pv-resize-lab-data
 mkdir -p /tmp/pv-resize-lab-data
 
-cat <<'EOF_STORAGECLASS' | kubectl apply -f -
+cat <<'EOF_STORAGECLASS' | kubectl apply -f - >/dev/null
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -19,7 +22,7 @@ volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 EOF_STORAGECLASS
 
-cat <<'EOF_PV' | kubectl apply -f -
+cat <<'EOF_PV' | kubectl apply -f - >/dev/null
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -35,7 +38,7 @@ spec:
     path: /tmp/pv-resize-lab-data
 EOF_PV
 
-cat <<'EOF_PVC' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_PVC' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -50,7 +53,7 @@ spec:
   volumeName: analytics-pv
 EOF_PVC
 
-cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -67,33 +70,16 @@ spec:
     spec:
       containers:
         - name: api
-          image: nginx:1.25.3
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - echo resize-ready > /var/lib/analytics/resize-ready.txt && sleep 3600
           volumeMounts:
             - name: data
-              mountPath: /var/lib/analytics
+              mountPath: /var/lib/legacy
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: analytics-data
+            claimName: analytics-legacy
 EOF_DEPLOYMENT
-
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: resize-diagnostics-brief
-  namespace: pv-resize-lab
-data:
-  targetPvc: edge-data
-  pvcInventory: kubectl get pods -n pv-resize-lab
-  requestedSizeCheck: kubectl edit pvc analytics-data -n pv-resize-lab
-  currentCapacityCheck: kubectl delete pvc analytics-data -n pv-resize-lab
-  storageClassCheck: kubectl get storageclass
-  allowExpansionCheck: kubectl patch storageclass expandable-reports --type merge -p '{"allowVolumeExpansion":true}'
-  conditionCheck: kubectl rollout restart deployment/analytics-api -n pv-resize-lab
-  mountPathCheck: kubectl get deployment analytics-api -n pv-resize-lab
-  eventCheck: kubectl get pvc analytics-data -n pv-resize-lab
-  safeManifestNote: edit the pvc and restart the workload until the resize clears
-EOF_BRIEF
-
-rm -f "${OUTPUT_DIR}/resize-diagnostics-brief.yaml" "${OUTPUT_DIR}/resize-diagnostics-checklist.txt"

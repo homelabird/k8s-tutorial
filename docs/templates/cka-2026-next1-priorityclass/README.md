@@ -2,29 +2,24 @@
 
 These drafts cover the next recommended scheduling-operations pack from the `cka-037+` roadmap:
 
-1. PriorityClass and preemption diagnostics
+1. PriorityClass workload wiring repair
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `1801` PriorityClass workload wiring repair
 
-- Question `1801` (`PriorityClass and preemption diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `1801` (PriorityClass workload wiring repair) now mirrors the promoted hands-on facilitator pack `cka-037`.
 - Question `1801` has now been promoted into facilitator pack `cka-037`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `1801` should stay in the `planning + evidence export` lane. It should validate exact PriorityClass inventory, workload priority wiring, preemption-policy evidence, scheduler events, and safe manifest review without patching the live Deployment or PriorityClass.
-- Question `1801` should export exact evidence files instead of restarting the Deployment, deleting pods, or force-patching live PriorityClass fields as a workaround.
-- Question `1801` should avoid `kubectl rollout restart`, `kubectl delete pod`, `kubectl patch priorityclass`, and ad hoc `kubectl patch deployment ...` remediation commands in the expected answer.
+- Keep the runtime deterministic by validating the exact PriorityClass reference, preserved priority value and preemption policy, rollout success, and running Pod priority.
+- Question 1801 should avoid mutating the existing PriorityClass, deleting pods, or creating a replacement PriorityClass in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q1801` -> `facilitator/assets/exams/cka/037`
+1. Question `1801` is already promoted; the next work is keeping runtime smoke and contract coverage green.

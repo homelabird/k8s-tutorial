@@ -4,7 +4,7 @@
       "id": "1",
       "namespace": "dnspolicy-lab",
       "machineHostname": "ckad9999",
-      "question": "A pod DNS diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `dns-diagnostics-brief` already exists in namespace `dnspolicy-lab`. Repair it so that:\n- `targetWorkload` is `dns-client`\n- `podInventory` is `kubectl get pod dns-client -n dnspolicy-lab -o wide`\n- `dnsPolicyCheck` is `kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsPolicy}'`\n- `dnsNameserverCheck` is `kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.nameservers[0]}'`\n- `dnsSearchCheck` is `kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.searches[0]}'`\n- `dnsOptionCheck` is `kubectl get pod dns-client -n dnspolicy-lab -o jsonpath='{.spec.dnsConfig.options[0].name}'`\n- `resolverFileCheck` is `kubectl exec -n dnspolicy-lab dns-client -- cat /etc/resolv.conf`\n- `eventCheck` is `kubectl get events -n dnspolicy-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm dnsPolicy, dnsConfig nameservers, searches, and options before changing workload manifests or cluster DNS services`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/dns-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/dns-diagnostics-checklist.txt` with the sections `Pod DNS Inventory`, `dnsConfig Checks`, and `Safe Manifest Review`\n\nDo not delete the Pod, do not restart the Deployment, and do not patch cluster DNS services during this drill.",
+      "question": "A Deployment named `dns-client` in namespace `dnspolicy-lab` is not starting with the intended pod-level DNS settings.\n\nFix the workload so that:\n- `dnsPolicy` is `None`\n- `dnsConfig.nameservers[0]` is `1.1.1.1`\n- `dnsConfig.searches[0]` is `lab.local`\n- `dnsConfig.options[0]` uses name `ndots` with value `2`\n- the Deployment becomes Available\n- the running Pod shows the corrected resolver settings in `/etc/resolv.conf`\n\nDo not modify cluster DNS services such as CoreDNS. Fix the workload DNS configuration only.",
       "concepts": [
         "dnsPolicy",
         "dnsConfig",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The DNS diagnostics brief ConfigMap uses the intended pod target, exact dnsPolicy and dnsConfig inspection commands, event evidence, and safe manifest guidance",
-          "verificationScriptFile": "q1_s1_validate_dnspolicy_brief_contract.sh",
+          "description": "Deployment dns-client uses the intended dnsPolicy and dnsConfig values",
+          "verificationScriptFile": "q1_s1_validate_dnspolicy_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact pod DNS and resolver inspection commands",
-          "verificationScriptFile": "q1_s2_validate_dnspolicy_checklist_export.sh",
+          "description": "Deployment dns-client becomes Available after the DNS settings are repaired",
+          "verificationScriptFile": "q1_s2_validate_dnspolicy_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe DNS remediation guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_dnspolicy_manifest_export_and_safety.sh",
+          "description": "The running Pod resolver file contains the expected nameserver, search, and ndots settings",
+          "verificationScriptFile": "q1_s3_validate_dnspolicy_resolver.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

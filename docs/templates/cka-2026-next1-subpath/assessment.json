@@ -4,32 +4,32 @@
       "id": "2701",
       "namespace": "subpath-lab",
       "machineHostname": "ckad9999",
-      "question": "A subPath mount diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `subpath-diagnostics-brief` already exists in namespace `subpath-lab`. Repair it so that:\n- `targetDeployment` is `subpath-api`\n- `deploymentInventory` is `kubectl get deployment subpath-api -n subpath-lab -o wide`\n- `configMapNameCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.name}'`\n- `itemPathCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.volumes[0].configMap.items[0].path}'`\n- `mountPathCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `subPathCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].subPath}'`\n- `readOnlyCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'`\n- `containerNameCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].name}'`\n- `imageCheck` is `kubectl get deployment subpath-api -n subpath-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n subpath-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm ConfigMap item path, subPath, and target mount path before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q2701/subpath-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q2701/subpath-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `subPath Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live ConfigMap or Deployment during this drill.",
+      "question": "A Deployment named `subpath-api` in namespace `subpath-lab` is not starting with its intended ConfigMap-backed file mount.\n\nFix the workload so that:\n- it mounts ConfigMap `app-config`\n- the ConfigMap item path is `config/app.conf`\n- the container mount path is `/etc/app/app.conf`\n- the volume mount uses `subPath: config/app.conf`\n- the mount stays read-only\n- the Deployment becomes Available\n- the running container can read `/etc/app/app.conf`\n\nDo not replace the ConfigMap with an inline file. Fix the Deployment wiring.",
       "concepts": [
         "configMap",
         "subPath",
-        "volumeMount",
+        "volumeMounts",
         "troubleshooting"
       ],
       "verification": [
         {
           "id": "1",
-          "description": "The subPath diagnostics brief ConfigMap uses the intended workload target, exact ConfigMap and mount inspection commands, event evidence, and safe manifest guidance",
-          "verificationScriptFile": "q2701_s1_validate_subpath_brief_contract.sh",
+          "description": "Deployment subpath-api uses the intended ConfigMap item path, subPath, mount path, and readOnly mount",
+          "verificationScriptFile": "q2701_s1_validate_subpath_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact ConfigMap item path, subPath, and mount inspection commands",
-          "verificationScriptFile": "q2701_s2_validate_subpath_checklist_export.sh",
+          "description": "Deployment subpath-api becomes Available after the mount wiring is repaired",
+          "verificationScriptFile": "q2701_s2_validate_subpath_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe subPath remediation guidance is removed",
-          "verificationScriptFile": "q2701_s3_validate_subpath_manifest_export_and_safety.sh",
+          "description": "The running container reads the expected ConfigMap-backed file at /etc/app/app.conf",
+          "verificationScriptFile": "q2701_s3_validate_subpath_file.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

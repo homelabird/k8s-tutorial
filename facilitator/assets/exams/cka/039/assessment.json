@@ -4,7 +4,7 @@
       "id": "1",
       "namespace": "registry-auth-lab",
       "machineHostname": "ckad9999",
-      "question": "A private registry diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `pull-auth-diagnostics-brief` already exists in namespace `registry-auth-lab`. Repair it so that:\n- `targetDeployment` is `private-api`\n- `deploymentInventory` is `kubectl get deployment private-api -n registry-auth-lab -o wide`\n- `serviceAccountCheck` is `kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.serviceAccountName}'`\n- `imagePullSecretsCheck` is `kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}'`\n- `imageReferenceCheck` is `kubectl get deployment private-api -n registry-auth-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `secretTypeCheck` is `kubectl get secret regcred -n registry-auth-lab -o jsonpath='{.type}'`\n- `serviceAccountSecretCheck` is `kubectl get serviceaccount puller -n registry-auth-lab -o jsonpath='{.imagePullSecrets[*].name}'`\n- `eventCheck` is `kubectl get events -n registry-auth-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm imagePullSecrets, ServiceAccount wiring, secret type, and image reference before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/pull-auth-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/pull-auth-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Pull Secret Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live ServiceAccount or Deployment during this drill.",
+      "question": "A Deployment named `private-api` in namespace `registry-auth-lab` is failing because its pull-secret wiring to the ServiceAccount is wrong.\n\nFix the workload so that:\n- it uses ServiceAccount `puller`\n- the Deployment imagePullSecrets contains `regcred`\n- the image reference remains `busybox:1.36`\n- the existing Secret `regcred` keeps type `kubernetes.io/dockerconfigjson`\n- the Deployment becomes Available\n- the running Pod uses ServiceAccount `puller` and imagePullSecret `regcred`\n\nDo not create a replacement Secret. Fix the Deployment to use the existing pull credentials.",
       "concepts": [
         "serviceaccount",
         "imagePullSecrets",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The private registry diagnostics brief ConfigMap uses the intended Deployment target, exact ServiceAccount and imagePullSecrets inspection commands, secret-type evidence, event check, and safe manifest guidance",
-          "verificationScriptFile": "q1_s1_validate_identity_brief_contract.sh",
+          "description": "Deployment private-api uses the intended ServiceAccount, imagePullSecret, image reference, and existing Secret type",
+          "verificationScriptFile": "q1_s1_validate_registryauth_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact deployment inventory, ServiceAccount, imagePullSecrets, and secret inspection commands",
-          "verificationScriptFile": "q1_s2_validate_identity_checklist_export.sh",
+          "description": "Deployment private-api becomes Available after the pull-secret wiring is repaired",
+          "verificationScriptFile": "q1_s2_validate_registryauth_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe registry-auth remediation guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_identity_manifest_export_and_safety.sh",
+          "description": "The running Pod uses ServiceAccount puller and imagePullSecret regcred",
+          "verificationScriptFile": "q1_s3_validate_registryauth_runtime.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

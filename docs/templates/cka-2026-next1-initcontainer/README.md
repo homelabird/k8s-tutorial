@@ -2,29 +2,24 @@
 
 These drafts cover the next recommended workload-startup pack from the `cka-033+` roadmap:
 
-1. InitContainer and shared volume diagnostics
+1. init-container shared volume repair
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `1401` init-container shared volume repair
 
-- Question `1401` (`InitContainer and shared volume diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `1401` (init-container shared volume repair) now mirrors the promoted hands-on facilitator pack `cka-033`.
 - Question `1401` has now been promoted into facilitator pack `cka-033`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `1401` should stay in the `planning + evidence export` lane. It should validate exact init container inventory, shared volume checks, command inspection, events, and safe manifest review without patching the live Deployment.
-- Question `1401` should export exact evidence files instead of restarting the Deployment, deleting pods, or force-patching init container commands as a workaround.
-- Question `1401` should avoid `kubectl rollout restart`, `kubectl delete pod`, and ad hoc `kubectl patch deployment ...` remediation commands in the expected answer.
+- Keep the runtime deterministic by validating the exact init command, shared-volume mounts, rollout success, and seeded file instead of rebuilding the image.
+- Question 1401 should avoid rollout restarts, deleting pods, or replacing the init-container workflow with baked-in image content.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q1401` -> `facilitator/assets/exams/cka/033`
+1. Question `1401` is already promoted; the next work is keeping runtime smoke and contract coverage green.

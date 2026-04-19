@@ -36,6 +36,7 @@ TEMPLATE_README_NEXT1_RWOP="$ROOT_DIR/docs/templates/cka-2026-next1-rwop/README.
 TEMPLATE_README_NEXT1_DNSPOLICY="$ROOT_DIR/docs/templates/cka-2026-next1-dnspolicy/README.md"
 TEMPLATE_README_NEXT1_LIFECYCLE="$ROOT_DIR/docs/templates/cka-2026-next1-lifecycle/README.md"
 TEMPLATE_README_NEXT1_DOWNWARDAPI="$ROOT_DIR/docs/templates/cka-2026-next1-downwardapi/README.md"
+TEMPLATE_README_NEXT1_TAINTS="$ROOT_DIR/docs/templates/cka-2026-next1-taints/README.md"
 
 mapfile -t EXPECTED_SUITES < <(bash "$INVENTORY" --all)
 
@@ -136,6 +137,7 @@ grep -Fq 'Question `2801` has now been promoted into facilitator pack `cka-047`.
 grep -Fq 'Question `4801` has now been promoted into facilitator pack `cka-048`.' "$TEMPLATE_README_NEXT1_DNSPOLICY"
 grep -Fq 'Question `4901` has now been promoted into facilitator pack `cka-049`.' "$TEMPLATE_README_NEXT1_LIFECYCLE"
 grep -Fq 'Question `5001` has now been promoted into facilitator pack `cka-050`.' "$TEMPLATE_README_NEXT1_DOWNWARDAPI"
+grep -Fq 'Question `5101` has now been promoted into facilitator pack `cka-051`.' "$TEMPLATE_README_NEXT1_TAINTS"
 grep -Fq './scripts/verify/run-cka-2026-single-domain-drills.sh --list' "$ROOT_DIR/scripts/verify/README.md"
 
 echo 'cka-2026 single-domain contract smoke passed'

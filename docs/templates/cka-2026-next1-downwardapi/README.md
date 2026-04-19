@@ -2,23 +2,24 @@
 
 These drafts cover the next recommended workload-configuration pack from the `cka-050+` roadmap:
 
-1. Downward API env and metadata diagnostics
+1. Downward API env wiring repair
 
 ## Scope
 
-This template adds one planning-focused single-domain drill:
+This template adds one hands-on single-domain drill:
 
-- `5001` Downward API env and metadata diagnostics
+- `5001` Downward API env wiring repair
 
 ## Status
 
-- Question `5001` (`Downward API env and metadata diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `5001` (`Downward API env wiring repair`) now mirrors the promoted hands-on facilitator pack `cka-050`.
 - Question `5001` has now been promoted into facilitator pack `cka-050`.
 
 ## Promotion Notes
 
-- Keep the runtime deterministic by validating exact `fieldRef`, env name, container target, and metadata evidence instead of relying on live pod restarts.
-- Question `5001` should avoid `kubectl delete pod meta-api`, `kubectl rollout restart deployment meta-api`, `kubectl patch deployment meta-api`, and ad hoc edits to live pods in the expected answer.
+- Keep the runtime deterministic by fixing the Deployment env names and `fieldRef` paths instead of replacing the workload.
+- Question `5001` should validate the exact env names, `metadata.name` and `metadata.namespace` references, rollout success, and printed env values from the running container.
+- Question `5001` should avoid one-off Pods, rollout restarts, or direct live pod edits in the expected answer.
 
 ## Suggested Promotion Order
 

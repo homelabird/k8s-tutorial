@@ -2,29 +2,24 @@
 
 These drafts cover the next recommended workload-configuration pack from the `cka-044+` roadmap:
 
-1. Projected ConfigMap and Secret volume diagnostics
+1. projected ConfigMap and Secret volume repair
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `2501` projected ConfigMap and Secret volume repair
 
-- Question `2501` (`Projected ConfigMap and Secret volume diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `2501` (projected ConfigMap and Secret volume repair) now mirrors the promoted hands-on facilitator pack `cka-044`.
 - Question `2501` has now been promoted into facilitator pack `cka-044`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `2501` should stay in the `planning + evidence export` lane. It should validate exact projected-volume source inspection, ConfigMap and Secret item-path checks, mount-path evidence, and safe manifest guidance without mutating the live Deployment or source objects.
-- Question `2501` should export exact evidence files instead of restarting the Deployment, deleting pods, or patching the live ConfigMap, Secret, or Deployment as a shortcut.
-- Question `2501` should avoid `kubectl rollout restart deployment/bundle-api`, `kubectl delete pod -n projectedvolume-lab -l app=bundle-api`, `kubectl patch configmap app-config`, and ad hoc `kubectl patch deployment bundle-api ...` commands in the expected answer.
+- Keep the runtime deterministic by validating the exact projected source names, item paths, read-only mount, rollout success, and mounted files.
+- Question 2501 should avoid patching the live ConfigMap or Secret, deleting pods, or replacing the projected volume with inline data in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q2501` -> `facilitator/assets/exams/cka/044`
+1. Question `2501` is already promoted; the next work is keeping runtime smoke and contract coverage green.

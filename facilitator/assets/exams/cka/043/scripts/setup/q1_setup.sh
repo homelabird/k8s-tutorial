@@ -3,44 +3,116 @@ set -euo pipefail
 
 NAMESPACE="staticpod-lab"
 OUTPUT_DIR="/tmp/exam/q1"
+MANIFEST_DIR="/etc/kubernetes/manifests"
+MANIFEST_PATH="${MANIFEST_DIR}/audit-agent.yaml"
+SYNC_SCRIPT="/tmp/staticpod-sync-audit-agent.sh"
+SYNC_PID_FILE="/tmp/staticpod-sync-audit-agent.pid"
+MIRROR_POD_NAME="audit-agent-ckad9999"
 
-kubectl delete namespace "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
-kubectl create namespace "${NAMESPACE}" >/dev/null
-mkdir -p "${OUTPUT_DIR}"
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+kubectl delete pod -n "${NAMESPACE}" -l app=audit-agent --ignore-not-found >/dev/null 2>&1 || true
 
-cat <<'EOF_POD' | kubectl apply -n "${NAMESPACE}" -f -
+if [ -f "${SYNC_PID_FILE}" ]; then
+  EXISTING_PID="$(cat "${SYNC_PID_FILE}" 2>/dev/null || true)"
+  if [ -n "${EXISTING_PID}" ] && kill -0 "${EXISTING_PID}" 2>/dev/null; then
+    kill "${EXISTING_PID}" >/dev/null 2>&1 || true
+  fi
+  rm -f "${SYNC_PID_FILE}"
+fi
+
+mkdir -p "${OUTPUT_DIR}" "${MANIFEST_DIR}"
+rm -f "${OUTPUT_DIR}/staticpod-rollout-status.txt"
+rm -f "${MANIFEST_PATH}"
+rm -f "${SYNC_SCRIPT}"
+
+cat <<'EOF_MANIFEST' > "${MANIFEST_PATH}"
 apiVersion: v1
 kind: Pod
 metadata:
-  name: audit-agent-ckad9999
+  name: audit-agent
+  namespace: staticpod-lab
+  labels:
+    app: audit-agent
 spec:
-  hostNetwork: true
-  nodeName: kind-cluster-control-plane
+  hostNetwork: false
   containers:
     - name: agent
-      image: nginx:1.25.3
+      image: busybox:1.36
       command:
         - /bin/sh
         - -c
-        - while true; do echo static-pod-audit; sleep 30; done
-EOF_POD
+        - while true; do echo stale-audit; sleep 30; done
+EOF_MANIFEST
 
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: staticpod-diagnostics-brief
-  namespace: staticpod-lab
-data:
-  targetMirrorPod: edge-agent
-  mirrorPodInventory: kubectl get pods -n staticpod-lab
-  staticPodPathCheck: sudo mv /etc/kubernetes/manifests/audit-agent.yaml /tmp/
-  manifestPreviewCheck: sudo systemctl restart kubelet
-  hostNetworkCheck: kubectl delete pod audit-agent-ckad9999 -n staticpod-lab
-  containerCommandCheck: kubectl edit pod audit-agent-ckad9999 -n staticpod-lab
-  nodeCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab
-  eventCheck: kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o yaml
-  safeManifestNote: delete the mirror pod and restart kubelet until the static pod returns
-EOF_BRIEF
+cat <<'EOF_SYNC' > "${SYNC_SCRIPT}"
+#!/usr/bin/env bash
+set -euo pipefail
 
-rm -f "${OUTPUT_DIR}/staticpod-diagnostics-brief.yaml" "${OUTPUT_DIR}/staticpod-diagnostics-checklist.txt"
+MANIFEST_PATH="/etc/kubernetes/manifests/audit-agent.yaml"
+NAMESPACE="staticpod-lab"
+MIRROR_POD_NAME="audit-agent-ckad9999"
+LAST_HASH=""
+
+build_manifest() {
+  local output_path="$1"
+
+  awk -v mirror_name="${MIRROR_POD_NAME}" '
+    BEGIN {
+      in_metadata = 0
+    }
+    /^metadata:[[:space:]]*$/ {
+      in_metadata = 1
+      print
+      next
+    }
+    in_metadata && /^[[:space:]]+name:[[:space:]]+/ {
+      sub(/name:[[:space:]]+.*/, "name: " mirror_name)
+      print
+      next
+    }
+    /^spec:[[:space:]]*$/ {
+      in_metadata = 0
+      print
+      next
+    }
+    {
+      print
+    }
+  ' "${MANIFEST_PATH}" > "${output_path}"
+}
+
+while true; do
+  if [ -f "${MANIFEST_PATH}" ]; then
+    CURRENT_HASH="$(sha256sum "${MANIFEST_PATH}" | awk '{print $1}')"
+    if [ "${CURRENT_HASH}" != "${LAST_HASH}" ]; then
+      TMP_MANIFEST="$(mktemp)"
+      build_manifest "${TMP_MANIFEST}"
+
+      if kubectl apply --dry-run=client -f "${TMP_MANIFEST}" >/dev/null 2>&1; then
+        kubectl delete pod "${MIRROR_POD_NAME}" -n "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
+        kubectl apply -f "${TMP_MANIFEST}" >/dev/null 2>&1 || true
+        LAST_HASH="${CURRENT_HASH}"
+      fi
+
+      rm -f "${TMP_MANIFEST}"
+    fi
+  fi
+
+  sleep 2
+done
+EOF_SYNC
+
+chmod +x "${SYNC_SCRIPT}"
+nohup "${SYNC_SCRIPT}" >/tmp/staticpod-sync-audit-agent.log 2>&1 &
+echo "$!" > "${SYNC_PID_FILE}"
+
+for _ in $(seq 1 60); do
+  POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l app=audit-agent -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+  if [ -n "${POD_NAME}" ]; then
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "static pod mirror pod did not appear" >&2
+exit 1

@@ -1,48 +1,52 @@
-## Question 1301: Readiness, liveness, and startupProbe diagnostics
+# CKA 2026 Next Probe Wave Answers
 
-Repair the probe diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 1301
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n probe-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: probe-diagnostics-brief
-  namespace: probe-lab
-data:
-  targetDeployment: health-api
-  deploymentInventory: kubectl get deployment health-api -n probe-lab -o wide
-  startupProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'
-  livenessProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'
-  readinessProbeCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'
-  portCheck: kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'
-  eventCheck: kubectl get events -n probe-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest
-EOF_BRIEF
+  name: health-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-api
+  template:
+    metadata:
+      labels:
+        app: health-api
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - mkdir -p /www && echo ok > /www/healthz && echo probe > /www/index.html && httpd -f -p 8080 -h /www
+          ports:
+            - containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+EOF
 
-mkdir -p /tmp/exam/q1301
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1301/probe-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment health-api -n probe-lab -o wide
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].ports[0].containerPort}'
-
-Probe Checks
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].startupProbe.httpGet.path}'
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.path}'
-- kubectl get deployment health-api -n probe-lab -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}'
-- kubectl get events -n probe-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment health-api -n probe-lab -o yaml
-- confirm startup, liveness, readiness probe paths and thresholds before changing the Deployment manifest
-EOF_CHECKLIST
-
-kubectl get configmap probe-diagnostics-brief -n probe-lab -o yaml > /tmp/exam/q1301/probe-diagnostics-brief.yaml
+kubectl rollout status deployment/health-api -n probe-lab
+kubectl exec -n probe-lab deploy/health-api -- wget -qO- http://127.0.0.1:8080/healthz
 ```
-
-Expected checks:
-
-- `probe-diagnostics-brief` contains the intended Deployment target, exact probe inspection commands, events check, and safe manifest guidance
-- `/tmp/exam/q1301/probe-diagnostics-checklist.txt` contains the required sections and exact deployment inventory and probe troubleshooting commands
-- `/tmp/exam/q1301/probe-diagnostics-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as restarting the Deployment, deleting pods, or patching the live probe fields are removed

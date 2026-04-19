@@ -1,50 +1,52 @@
-## Question 1: InitContainer and shared volume diagnostics
+# CKA 2026 Single Domain Drill 033 Answers
 
-Repair the init container diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 1
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n init-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: init-diagnostics-brief
-  namespace: init-lab
-data:
-  targetDeployment: report-api
-  deploymentInventory: kubectl get deployment report-api -n init-lab -o wide
-  initContainerInventory: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'
-  initCommandCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'
-  sharedVolumeCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'
-  initMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'
-  appMountCheck: kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-  eventCheck: kubectl get events -n init-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm init container command, shared volume name, and mount paths before changing the Deployment manifest
-EOF_BRIEF
+  name: report-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: report-api
+  template:
+    metadata:
+      labels:
+        app: report-api
+    spec:
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+        - name: seed-data
+          emptyDir: {}
+      initContainers:
+        - name: bootstrap
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - mkdir -p /work && echo ready=1 > /work/report.txt
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - grep -Fx 'ready=1' /work/report.txt && sleep 3600
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
+EOF
 
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/init-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment report-api -n init-lab -o wide
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'
-
-Init Container Checks
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'
-- kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'
-- kubectl get events -n init-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment report-api -n init-lab -o yaml
-- confirm init container command, shared volume name, and mount paths before changing the Deployment manifest
-EOF_CHECKLIST
-
-kubectl get configmap init-diagnostics-brief -n init-lab -o yaml > /tmp/exam/q1/init-diagnostics-brief.yaml
+kubectl rollout status deployment/report-api -n init-lab
+kubectl exec -n init-lab deploy/report-api -- cat /work/report.txt
 ```
-
-Expected checks:
-
-- `init-diagnostics-brief` contains the intended Deployment target, exact init container inspection commands, events check, and safe manifest guidance
-- `/tmp/exam/q1/init-diagnostics-checklist.txt` contains the required sections and exact deployment inventory and init container troubleshooting commands
-- `/tmp/exam/q1/init-diagnostics-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as restarting the Deployment, deleting pods, or patching the live init container command are removed

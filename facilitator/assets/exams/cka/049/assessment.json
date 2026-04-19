@@ -4,7 +4,7 @@
       "id": "1",
       "namespace": "lifecycle-lab",
       "machineHostname": "ckad9999",
-      "question": "A graceful-termination diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `lifecycle-diagnostics-brief` already exists in namespace `lifecycle-lab`. Repair it so that:\n- `targetDeployment` is `lifecycle-api`\n- `deploymentInventory` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o wide`\n- `terminationGraceCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'`\n- `preStopTypeCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]}'`\n- `preStopCommandCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}'`\n- `containerCommandCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].command[2]}'`\n- `imageCheck` is `kubectl get deployment lifecycle-api -n lifecycle-lab -o jsonpath='{.spec.template.spec.containers[0].image}'`\n- `eventCheck` is `kubectl get events -n lifecycle-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm lifecycle preStop commands and termination grace period before changing workload manifests or forcing pod deletion`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/lifecycle-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/lifecycle-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Lifecycle Hook Checks`, and `Safe Manifest Review`\n\nDo not delete pods, do not restart the Deployment, and do not patch the live Deployment during this drill.",
+      "question": "A Deployment named `lifecycle-api` in namespace `lifecycle-lab` does not use the intended graceful termination behavior.\n\nUpdate the Deployment so that:\n- `terminationGracePeriodSeconds` is `30`\n- the `preStop` hook is an exec command that runs `sleep 5`\n- the container image remains `busybox:1.36`\n- the main container command remains a long-running sleep loop\n- the Deployment rolls out successfully\n- save the output of `kubectl rollout status deployment/lifecycle-api -n lifecycle-lab` to `/tmp/exam/q1/lifecycle-rollout-status.txt`\n\nDo not delete Pods manually and do not force-delete the workload.",
       "concepts": [
         "lifecycle",
         "preStop",
@@ -14,24 +14,24 @@
       "verification": [
         {
           "id": "1",
-          "description": "The lifecycle diagnostics brief ConfigMap uses the intended deployment target, exact lifecycle inspection commands, event evidence, and safe manifest guidance",
-          "verificationScriptFile": "q1_s1_validate_lifecycle_brief_contract.sh",
+          "description": "Deployment lifecycle-api keeps the intended graceful termination spec",
+          "verificationScriptFile": "q1_s1_validate_lifecycle_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact lifecycle and termination inspection commands",
-          "verificationScriptFile": "q1_s2_validate_lifecycle_checklist_export.sh",
+          "description": "The rollout-status output is saved to the expected file",
+          "verificationScriptFile": "q1_s2_validate_lifecycle_rollout_file.sh",
           "expectedOutput": "0",
-          "weightage": 3
+          "weightage": 2
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe lifecycle remediation guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_lifecycle_manifest_export_and_safety.sh",
+          "description": "Deployment lifecycle-api becomes Available on the updated Pod template",
+          "verificationScriptFile": "q1_s3_validate_lifecycle_rollout.sh",
           "expectedOutput": "0",
-          "weightage": 2
+          "weightage": 3
         }
       ]
     }

@@ -47,14 +47,14 @@ mapfile -t nightly_lanes < <(bash "$INVENTORY_SCRIPT" --nightly-lanes)
 nightly_describe="$(bash "$INVENTORY_SCRIPT" --nightly-describe)"
 grep -Fq 'rbac-storage | cka-006 cka-010 | namespace auth plus persistent volume repair hands-on coverage' <<<"$nightly_describe"
 grep -Fq 'traffic-observability | cka-014 cka-015 | gateway routing plus logs and kubectl top hands-on coverage' <<<"$nightly_describe"
-grep -Fq 'host-dns | cka-043 cka-048 | static pod manifest review plus pod DNS policy coverage' <<<"$nightly_describe"
+grep -Fq 'host-dns | cka-043 cka-048 cka-051 | static pod repair plus pod DNS policy and NoExecute scheduling coverage' <<<"$nightly_describe"
 
 matrix_output="$(LANE_INPUT='rbac-storage host-dns' bash "$INVENTORY_SCRIPT" --nightly-matrix-json)"
 grep -Fq 'lanes_text=rbac-storage host-dns' <<<"$matrix_output"
 grep -Fq '"lane":"rbac-storage"' <<<"$matrix_output"
 grep -Fq '"suites":"cka-006 cka-010"' <<<"$matrix_output"
 grep -Fq '"lane":"host-dns"' <<<"$matrix_output"
-grep -Fq '"suites":"cka-043 cka-048"' <<<"$matrix_output"
+grep -Fq '"suites":"cka-043 cka-048 cka-051"' <<<"$matrix_output"
 
 require_fixed 'name: CKA 2026 Single-Domain Nightly'
 require_fixed 'workflow_dispatch:'

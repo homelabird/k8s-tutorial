@@ -1,46 +1,26 @@
-## Question 1: StatefulSet identity and headless service diagnostics
+# CKA 2026 Single Domain Drill 028 Answers
 
-Repair the StatefulSet diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 1
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
+kubectl apply -n stateful-lab -f - <<'EOF_SERVICE'
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: stateful-identity-brief
-  namespace: stateful-lab
-data:
-  targetStatefulSet: web
-  headlessService: web-svc
-  statefulSetInventory: kubectl get statefulset web -n stateful-lab -o wide
-  serviceInspection: kubectl get svc web-svc -n stateful-lab -o yaml
-  podInventory: kubectl get pods -n stateful-lab -l app=web -o wide
-  ordinalDnsCheck: kubectl exec -n stateful-lab dns-debug -- nslookup web-0.web-svc.stateful-lab.svc.cluster.local
-  pvcInventory: kubectl get pvc -n stateful-lab
-  safeManifestNote: "confirm serviceName: web-svc and stable pod ordinals before changing manifests"
-EOF_BRIEF
+  name: web-svc
+spec:
+  clusterIP: None
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+EOF_SERVICE
 
-mkdir -p /tmp/exam/q1
-cat <<'EOF_CHECKLIST' > /tmp/exam/q1/stateful-identity-checklist.txt
-StatefulSet Inventory
-- kubectl get statefulset web -n stateful-lab -o wide
-- kubectl get pods -n stateful-lab -l app=web -o wide
-
-Stable Network Identity
-- kubectl get svc web-svc -n stateful-lab -o yaml
-- kubectl exec -n stateful-lab dns-debug -- nslookup web-0.web-svc.stateful-lab.svc.cluster.local
-
-Safe Manifest Review
-- kubectl get pvc -n stateful-lab
-- confirm serviceName: web-svc and stable pod ordinals before changing manifests
-EOF_CHECKLIST
-
-kubectl get configmap stateful-identity-brief -n stateful-lab -o yaml > /tmp/exam/q1/stateful-identity-brief.yaml
+kubectl rollout status statefulset/web -n stateful-lab
+kubectl exec -n stateful-lab dns-debug -- nslookup web-0.web-svc.stateful-lab.svc.cluster.local
+kubectl get pvc -n stateful-lab
 ```
-
-Expected checks:
-
-- `stateful-identity-brief` contains the intended StatefulSet target, headless Service inspection commands, pod inventory, ordinal DNS guidance, and safe manifest note
-- `/tmp/exam/q1/stateful-identity-checklist.txt` contains the required sections and exact StatefulSet, headless Service, DNS, and PVC troubleshooting commands
-- `/tmp/exam/q1/stateful-identity-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as deleting the StatefulSet, deleting PVCs, or converting the Service into a NodePort are removed

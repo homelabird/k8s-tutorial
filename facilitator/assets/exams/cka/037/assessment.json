@@ -4,7 +4,7 @@
       "id": "1",
       "namespace": "priority-lab",
       "machineHostname": "ckad9999",
-      "question": "A workload priority diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `priority-diagnostics-brief` already exists in namespace `priority-lab`. Repair it so that:\n- `targetDeployment` is `batch-api`\n- `targetPriorityClass` is `ops-critical`\n- `priorityClassInventory` is `kubectl get priorityclass ops-critical -o yaml`\n- `deploymentInventory` is `kubectl get deployment batch-api -n priority-lab -o wide`\n- `priorityClassNameCheck` is `kubectl get deployment batch-api -n priority-lab -o jsonpath='{.spec.template.spec.priorityClassName}'`\n- `priorityValueCheck` is `kubectl get priorityclass ops-critical -o jsonpath='{.value}'`\n- `preemptionPolicyCheck` is `kubectl get priorityclass ops-critical -o jsonpath='{.preemptionPolicy}'`\n- `globalDefaultCheck` is `kubectl get priorityclass ops-critical -o jsonpath='{.globalDefault}'`\n- `schedulerCheck` is `kubectl get pods -n priority-lab -o wide`\n- `eventCheck` is `kubectl get events -n priority-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm priorityClassName, priority value, preemption policy, and scheduler events before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1/priority-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1/priority-diagnostics-checklist.txt` with the sections `PriorityClass Inventory`, `Workload Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live PriorityClass or Deployment fields during this drill.",
+      "question": "A Deployment named `batch-api` in namespace `priority-lab` is failing because its PriorityClass wiring is wrong.\n\nFix the workload so that:\n- it uses PriorityClass `ops-critical`\n- the existing PriorityClass keeps value `100000`\n- the existing PriorityClass keeps `preemptionPolicy: Never`\n- the Deployment becomes Available\n- the running Pod uses PriorityClass `ops-critical`\n\nDo not create a replacement PriorityClass. Fix the Deployment to use the existing one.",
       "concepts": [
         "PriorityClass",
         "preemptionPolicy",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The priority diagnostics brief ConfigMap uses the intended workload target, PriorityClass inspection commands, scheduler evidence, event check, and safe manifest guidance",
-          "verificationScriptFile": "q1_s1_validate_priority_brief_contract.sh",
+          "description": "Deployment batch-api uses the intended PriorityClass and the existing PriorityClass value and preemption policy remain correct",
+          "verificationScriptFile": "q1_s1_validate_priority_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact PriorityClass inventory, workload checks, and safe manifest review commands",
-          "verificationScriptFile": "q1_s2_validate_priority_checklist_export.sh",
+          "description": "Deployment batch-api becomes Available after the PriorityClass wiring is repaired",
+          "verificationScriptFile": "q1_s2_validate_priority_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe priority remediation guidance is removed",
-          "verificationScriptFile": "q1_s3_validate_priority_manifest_export_and_safety.sh",
+          "description": "The running Pod uses PriorityClass ops-critical with the expected numeric priority",
+          "verificationScriptFile": "q1_s3_validate_priority_runtime.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

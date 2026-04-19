@@ -2,29 +2,24 @@
 
 These drafts cover the next recommended workload-configuration pack from the `cka-045+` roadmap:
 
-1. ConfigMap and Secret envFrom diagnostics
+1. ConfigMap and Secret envFrom repair
 
-## Intended Use
+## Scope
 
-- Use `assessment.json` as the authoring baseline for the next facilitator expansion wave.
-- Use `answers.md`, `scripts/setup/`, and `scripts/validation/` as the implementation contract for the drill.
-- Keep this drill single-domain and deterministic before promoting it into a real facilitator pack.
+This template adds one hands-on single-domain drill:
 
-## Current Template State
+- `2601` ConfigMap and Secret envFrom repair
 
-- Question `2601` (`ConfigMap and Secret envFrom diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+## Status
+
+- Question `2601` (ConfigMap and Secret envFrom repair) now mirrors the promoted hands-on facilitator pack `cka-045`.
 - Question `2601` has now been promoted into facilitator pack `cka-045`.
 
-## Important Constraints
+## Promotion Notes
 
-- Question `2601` should stay in the `planning + evidence export` lane. It should validate exact `envFrom` source wiring, prefix usage, event evidence, and safe manifest guidance without mutating the live Deployment, ConfigMap, or Secret.
-- Question `2601` should export exact evidence files instead of restarting the Deployment, deleting pods, or patching the live `envFrom` sources as a shortcut.
-- Question `2601` should avoid `kubectl rollout restart deployment/env-bundle`, `kubectl delete pod -n envfrom-lab -l app=env-bundle`, `kubectl patch configmap app-env`, and ad hoc `kubectl patch deployment env-bundle ...` commands in the expected answer.
+- Keep the runtime deterministic by validating the exact envFrom source names, secret prefix, rollout success, and printed environment variables.
+- Question 2601 should avoid inlining the values into env entries, deleting pods, or patching the live ConfigMap or Secret in the expected answer.
 
-## Recommended Promotion Order
+## Suggested Promotion Order
 
-1. No further promotion work remains in this template set.
-
-## Planned Facilitator Mapping
-
-- `q2601` -> `facilitator/assets/exams/cka/045`
+1. Question `2601` is already promoted; the next work is keeping runtime smoke and contract coverage green.

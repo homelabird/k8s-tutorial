@@ -1,50 +1,40 @@
-## Question 2601: ConfigMap and Secret envFrom diagnostics
+# CKA 2026 Next EnvFrom Wave Answers
 
-Repair the envFrom diagnostics brief and export both the repaired manifest and a plain-text checklist.
+## Question 2601
+
+One valid repair flow is:
 
 ```bash
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
+kubectl apply -n envfrom-lab -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: envfrom-diagnostics-brief
-  namespace: envfrom-lab
-data:
-  targetDeployment: env-bundle
-  deploymentInventory: kubectl get deployment env-bundle -n envfrom-lab -o wide
-  configMapEnvFromCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].configMapRef.name}'
-  secretEnvFromCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].secretRef.name}'
-  prefixCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].prefix}'
-  containerNameCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-  imageCheck: kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-  eventCheck: kubectl get events -n envfrom-lab --sort-by=.lastTimestamp
-  safeManifestNote: confirm envFrom source order, secret prefix, and container name before changing the Deployment manifest
-EOF_BRIEF
+  name: env-bundle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env-bundle
+  template:
+    metadata:
+      labels:
+        app: env-bundle
+    spec:
+      containers:
+        - name: api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - test "${MODE}" = "production" && test "${SECRET_API_KEY}" = "stable-key" && sleep 3600
+          envFrom:
+            - configMapRef:
+                name: app-env
+            - secretRef:
+                name: app-secret
+              prefix: SECRET_
+EOF
 
-mkdir -p /tmp/exam/q2601
-cat <<'EOF_CHECKLIST' > /tmp/exam/q2601/envfrom-diagnostics-checklist.txt
-Deployment Inventory
-- kubectl get deployment env-bundle -n envfrom-lab -o wide
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].name}'
-
-EnvFrom Checks
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].configMapRef.name}'
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].secretRef.name}'
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].envFrom[1].prefix}'
-- kubectl get deployment env-bundle -n envfrom-lab -o jsonpath='{.spec.template.spec.containers[0].image}'
-- kubectl get events -n envfrom-lab --sort-by=.lastTimestamp
-
-Safe Manifest Review
-- kubectl get deployment env-bundle -n envfrom-lab -o yaml
-- confirm envFrom source order, secret prefix, and container name before changing the Deployment manifest
-EOF_CHECKLIST
-
-kubectl get configmap envfrom-diagnostics-brief -n envfrom-lab -o yaml > /tmp/exam/q2601/envfrom-diagnostics-brief.yaml
+kubectl rollout status deployment/env-bundle -n envfrom-lab
+kubectl exec -n envfrom-lab deploy/env-bundle -- env | grep -E '^(MODE|SECRET_API_KEY)='
 ```
-
-Expected checks:
-
-- `envfrom-diagnostics-brief` contains the intended Deployment target, exact envFrom ConfigMap and Secret source inspection commands, event evidence, and safe manifest guidance
-- `/tmp/exam/q2601/envfrom-diagnostics-checklist.txt` contains the required sections and exact envFrom troubleshooting commands
-- `/tmp/exam/q2601/envfrom-diagnostics-brief.yaml` exports the repaired manifest
-- stale unsafe actions such as restarting the Deployment, deleting pods, or patching the live ConfigMap, Secret, or Deployment are removed

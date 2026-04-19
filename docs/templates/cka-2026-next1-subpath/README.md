@@ -2,7 +2,7 @@
 
 These drafts cover the next recommended workload-configuration pack from the `cka-046+` roadmap:
 
-1. ConfigMap subPath mount diagnostics
+1. ConfigMap subPath mount troubleshooting
 
 ## Intended Use
 
@@ -12,14 +12,14 @@ These drafts cover the next recommended workload-configuration pack from the `ck
 
 ## Current Template State
 
-- Question `2701` (`ConfigMap subPath mount diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `2701` (`ConfigMap subPath mount troubleshooting`) now mirrors the promoted hands-on facilitator pack `cka-046`.
 - Question `2701` has now been promoted into facilitator pack `cka-046`.
 
 ## Important Constraints
 
-- Question `2701` should stay in the `planning + evidence export` lane. It should validate exact ConfigMap-backed volume inventory, item-path and `subPath` evidence, mount-path checks, and safe manifest guidance without mutating the live Deployment or ConfigMap.
-- Question `2701` should export exact evidence files instead of restarting the Deployment, deleting pods, or patching the live ConfigMap or Deployment as a shortcut.
-- Question `2701` should avoid `kubectl rollout restart deployment/subpath-api`, `kubectl delete pod -n subpath-lab -l app=subpath-api`, `kubectl patch configmap app-config`, and ad hoc `kubectl patch deployment subpath-api ...` commands in the expected answer.
+- Question `2701` should require fixing the Deployment mount wiring in place instead of replacing the ConfigMap with an inline file or recreating the workload from scratch.
+- Question `2701` should validate the exact ConfigMap item path, `subPath`, mount path, read-only flag, rollout success, and file contents inside the running container.
+- Question `2701` should keep the runtime deterministic by using a single Deployment and ConfigMap pair rather than rollout restarts or ad hoc pod deletion.
 
 ## Recommended Promotion Order
 

@@ -4,32 +4,32 @@
       "id": "2401",
       "namespace": "staticpod-lab",
       "machineHostname": "ckad9999",
-      "question": "A static pod diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `staticpod-diagnostics-brief` already exists in namespace `staticpod-lab`. Repair it so that:\n- `targetMirrorPod` is `audit-agent-ckad9999`\n- `mirrorPodInventory` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o wide`\n- `staticPodPathCheck` is `sudo ls -l /etc/kubernetes/manifests/audit-agent.yaml`\n- `manifestPreviewCheck` is `sudo sed -n '1,160p' /etc/kubernetes/manifests/audit-agent.yaml`\n- `hostNetworkCheck` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.hostNetwork}'`\n- `containerCommandCheck` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.containers[0].command}'`\n- `nodeCheck` is `kubectl get pod audit-agent-ckad9999 -n staticpod-lab -o jsonpath='{.spec.nodeName}'`\n- `eventCheck` is `kubectl get events -n staticpod-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm manifest path, mirror pod inventory, hostNetwork setting, and container command before changing static pod manifests`\n- save the repaired ConfigMap manifest to `/tmp/exam/q2401/staticpod-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q2401/staticpod-diagnostics-checklist.txt` with the sections `Mirror Pod Inventory`, `Static Pod Checks`, and `Safe Manifest Review`\n\nDo not delete the mirror pod, do not restart kubelet, and do not edit the live manifest path during this drill.",
+      "question": "A static pod manifest already exists at `/etc/kubernetes/manifests/audit-agent.yaml`, but it is not configured for the intended host-network audit workload.\n\nUpdate the static pod manifest so that:\n- the Pod name remains `audit-agent`\n- the Pod runs in namespace `staticpod-lab`\n- the container image remains `busybox:1.36`\n- `hostNetwork` is set to `true`\n- the container command continuously prints `static-pod-audit` every 30 seconds\n- the mirror Pod becomes Running in namespace `staticpod-lab`\n\nDo not replace this with a normal Pod or Deployment. Fix the static pod manifest in place.",
       "concepts": [
-        "staticpod",
-        "mirrorpod",
-        "kubelet",
+        "static pods",
+        "mirror pods",
+        "hostNetwork",
         "troubleshooting"
       ],
       "verification": [
         {
           "id": "1",
-          "description": "The static pod diagnostics brief ConfigMap uses the intended mirror pod target, exact manifest path and pod inspection commands, event evidence, and safe manifest guidance",
-          "verificationScriptFile": "q2401_s1_validate_staticpod_brief_contract.sh",
+          "description": "The static pod manifest keeps the intended Pod identity and host-network command configuration",
+          "verificationScriptFile": "q2401_s1_validate_staticpod_manifest_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact mirror pod inventory, static pod manifest, and safe review commands",
-          "verificationScriptFile": "q2401_s2_validate_staticpod_checklist_export.sh",
+          "description": "The mirror Pod for audit-agent is Running in staticpod-lab with host networking enabled",
+          "verificationScriptFile": "q2401_s2_validate_staticpod_running.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe static-pod remediation guidance is removed",
-          "verificationScriptFile": "q2401_s3_validate_staticpod_manifest_export_and_safety.sh",
+          "description": "The static pod emits the expected audit log line from the corrected command loop",
+          "verificationScriptFile": "q2401_s3_validate_staticpod_logs.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

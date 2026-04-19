@@ -2,19 +2,17 @@
 set -euo pipefail
 
 NAMESPACE="affinity-lab"
-OUTPUT_DIR="/tmp/exam/q1501"
 
-kubectl delete namespace "${NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
-kubectl create namespace "${NAMESPACE}" >/dev/null
-mkdir -p "${OUTPUT_DIR}"
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+kubectl delete deployment api-fleet -n "${NAMESPACE}" --ignore-not-found >/dev/null
 
-cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f -
+cat <<'EOF_DEPLOYMENT' | kubectl apply -n "${NAMESPACE}" -f - >/dev/null
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-fleet
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: api-fleet
@@ -23,44 +21,27 @@ spec:
       labels:
         app: api-fleet
     spec:
+      nodeSelector:
+        kubernetes.io/os: windows
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: api-fleet
-              topologyKey: kubernetes.io/hostname
+                  app: wrong-app
+              topologyKey: broken.topology/key
       topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
+        - maxSkew: 2
+          topologyKey: broken.topology/key
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: api-fleet
+              app: wrong-app
       containers:
         - name: api
-          image: nginx:1.25.3
-          ports:
-            - containerPort: 80
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - sleep 3600
 EOF_DEPLOYMENT
-
-cat <<'EOF_BRIEF' | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: placement-diagnostics-brief
-  namespace: affinity-lab
-data:
-  targetDeployment: edge-fleet
-  deploymentInventory: kubectl get pods -n affinity-lab
-  replicaCheck: kubectl scale deployment api-fleet -n affinity-lab --replicas=1
-  antiAffinityTopologyCheck: kubectl rollout restart deployment/api-fleet -n affinity-lab
-  antiAffinitySelectorCheck: kubectl get deployment api-fleet -n affinity-lab -o jsonpath='{.spec.template.spec.nodeSelector}'
-  topologySpreadKeyCheck: kubectl get nodes -o wide
-  maxSkewCheck: kubectl patch deployment api-fleet -n affinity-lab --type merge -p '{"spec":{"replicas":1}}'
-  whenUnsatisfiableCheck: kubectl delete pod -n affinity-lab -l app=api-fleet
-  eventCheck: kubectl get pods -n affinity-lab
-  safeManifestNote: restart the deployment, scale replicas down, and patch placement rules until the pods settle
-EOF_BRIEF
-
-rm -f "${OUTPUT_DIR}/placement-diagnostics-brief.yaml" "${OUTPUT_DIR}/placement-diagnostics-checklist.txt"

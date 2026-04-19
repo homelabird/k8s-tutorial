@@ -4,7 +4,7 @@
       "id": "1401",
       "namespace": "init-lab",
       "machineHostname": "ckad9999",
-      "question": "An init container diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `init-diagnostics-brief` already exists in namespace `init-lab`. Repair it so that:\n- `targetDeployment` is `report-api`\n- `deploymentInventory` is `kubectl get deployment report-api -n init-lab -o wide`\n- `initContainerInventory` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[*].name}'`\n- `initCommandCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].command}'`\n- `sharedVolumeCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.volumes[0].name}'`\n- `initMountCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.initContainers[0].volumeMounts[0].mountPath}'`\n- `appMountCheck` is `kubectl get deployment report-api -n init-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `eventCheck` is `kubectl get events -n init-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm init container command, shared volume name, and mount paths before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q1401/init-diagnostics-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q1401/init-diagnostics-checklist.txt` with the sections `Deployment Inventory`, `Init Container Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live init container command during this drill.",
+      "question": "A Deployment named `report-api` in namespace `init-lab` is failing because its init-container handoff is wrong.\n\nFix the workload so that:\n- the init container remains named `bootstrap`\n- the init container writes `ready=1` to `/work/report.txt`\n- the init container uses volume `shared-data`\n- the app container also uses volume `shared-data`\n- both containers mount the shared volume at `/work`\n- the Deployment becomes Available\n- the running container can read `/work/report.txt`\n\nDo not replace the init container with baked-in image content. Repair the shared-volume workflow in place.",
       "concepts": [
         "initContainers",
         "volumes",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The init diagnostics brief ConfigMap uses the intended workload target, init container inspection commands, event check, and safe manifest guidance",
-          "verificationScriptFile": "q1401_s1_validate_init_brief_contract.sh",
+          "description": "Deployment report-api uses the intended shared volume, mount paths, and init command",
+          "verificationScriptFile": "1401_s1_validate_init_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact deployment inventory, init container checks, and safe manifest review commands",
-          "verificationScriptFile": "q1401_s2_validate_init_checklist_export.sh",
+          "description": "Deployment report-api becomes Available after the init-container handoff is repaired",
+          "verificationScriptFile": "1401_s2_validate_init_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe init container remediation guidance is removed",
-          "verificationScriptFile": "q1401_s3_validate_init_manifest_export_and_safety.sh",
+          "description": "The running container reads the seeded report file from the shared volume",
+          "verificationScriptFile": "1401_s3_validate_init_file.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

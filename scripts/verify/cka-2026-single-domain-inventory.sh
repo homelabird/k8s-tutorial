@@ -10,7 +10,7 @@ Usage:
   LANE_INPUT="rbac-storage host-dns" ./scripts/verify/cka-2026-single-domain-inventory.sh --nightly-matrix-json
 
 Options:
-  --all                Print the promoted cka-006..cka-050 single-domain suites.
+  --all                Print the promoted cka-006..cka-051 single-domain suites.
   --nightly-lanes      Print the nightly sample lane names.
   --nightly-describe   Print the nightly sample lanes with suite coverage notes.
   --nightly-matrix-json
@@ -28,7 +28,8 @@ emit_all_suites() {
     cka-015 cka-016 cka-017 cka-018 cka-019 cka-020 cka-021 cka-022 cka-023 \
     cka-024 cka-025 cka-026 cka-027 cka-028 cka-029 cka-030 cka-031 cka-032 \
     cka-033 cka-034 cka-035 cka-036 cka-037 cka-038 cka-039 cka-040 cka-041 \
-    cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050
+    cka-042 cka-043 cka-044 cka-045 cka-046 cka-047 cka-048 cka-049 cka-050 \
+    cka-051
 }
 
 emit_nightly_records() {
@@ -38,7 +39,7 @@ traffic-observability	cka-014 cka-015	gateway routing plus logs and kubectl top 
 operator-controlplane	cka-017 cka-018	operator install checks plus etcd recovery planning coverage
 runtime-pki	cka-023 cka-025	PKI renewal guidance plus CRI endpoint diagnostics coverage
 workload-policy	cka-032 cka-037	probe contract review plus PriorityClass policy coverage
-host-dns	cka-043 cka-048	static pod manifest review plus pod DNS policy coverage
+host-dns	cka-043 cka-048 cka-051	static pod repair plus pod DNS policy and NoExecute scheduling coverage
 EOF
 }
 

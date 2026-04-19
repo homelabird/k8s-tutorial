@@ -63,7 +63,7 @@ describe_smoke() {
       printf '%s\n' 'diagnostics-pack | cka-2026-diagnostics-pack-smoke.sh | tarball packaging and extracted summary round-trip'
       ;;
     single-domain-contract)
-      printf '%s\n' 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-050 inventory, metadata completeness, facilitator listing, template promotion'
+      printf '%s\n' 'single-domain-contract | cka-2026-single-domain-contract-smoke.sh | promoted cka-006..cka-051 inventory, metadata completeness, facilitator listing, template promotion'
       ;;
     summary-renderer)
       printf '%s\n' 'summary-renderer | cka-2026-summary-renderer-smoke.sh | markdown rendering, host ordering, verdict-aware summary sections'

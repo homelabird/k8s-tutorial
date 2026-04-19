@@ -4,7 +4,7 @@
       "id": "2501",
       "namespace": "projectedvolume-lab",
       "machineHostname": "ckad9999",
-      "question": "A projected volume diagnostics brief is incomplete and contains stale or unsafe remediation guidance.\n\nA ConfigMap named `projected-volume-brief` already exists in namespace `projectedvolume-lab`. Repair it so that:\n- `targetDeployment` is `bundle-api`\n- `deploymentInventory` is `kubectl get deployment bundle-api -n projectedvolume-lab -o wide`\n- `configMapNameCheck` is `kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.name}'`\n- `configMapItemPathCheck` is `kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[0].configMap.items[0].path}'`\n- `secretNameCheck` is `kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.name}'`\n- `secretItemPathCheck` is `kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.volumes[0].projected.sources[1].secret.items[0].path}'`\n- `mountPathCheck` is `kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}'`\n- `readOnlyCheck` is `kubectl get deployment bundle-api -n projectedvolume-lab -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].readOnly}'`\n- `eventCheck` is `kubectl get events -n projectedvolume-lab --sort-by=.lastTimestamp`\n- `safeManifestNote` is `confirm projected sources, item paths, and readOnly mount before changing the Deployment manifest`\n- save the repaired ConfigMap manifest to `/tmp/exam/q2501/projected-volume-brief.yaml`\n- save a plain-text checklist to `/tmp/exam/q2501/projected-volume-checklist.txt` with the sections `Deployment Inventory`, `Projected Volume Checks`, and `Safe Manifest Review`\n\nDo not restart the Deployment, do not delete pods, and do not patch the live ConfigMap, Secret, or Deployment during this drill.",
+      "question": "A Deployment named `bundle-api` in namespace `projectedvolume-lab` is failing because its projected ConfigMap and Secret volume wiring is wrong.\n\nFix the workload so that:\n- it projects ConfigMap `bundle-config`\n- it projects Secret `bundle-secret`\n- the ConfigMap item path is `config/app.conf`\n- the Secret item path is `secret/token`\n- the projected volume mounts read-only at `/etc/bundle`\n- the Deployment becomes Available\n- the running container can read `/etc/bundle/config/app.conf` and `/etc/bundle/secret/token`\n\nDo not replace the projected sources with inline data. Repair the Deployment volume wiring in place.",
       "concepts": [
         "configMap",
         "secret",
@@ -14,22 +14,22 @@
       "verification": [
         {
           "id": "1",
-          "description": "The projected volume diagnostics brief ConfigMap uses the intended workload target, exact projected source inspection commands, event evidence, and safe manifest guidance",
-          "verificationScriptFile": "q2501_s1_validate_projected_brief_contract.sh",
+          "description": "Deployment bundle-api uses the intended projected source names, item paths, and mount settings",
+          "verificationScriptFile": "2501_s1_validate_projectedvolume_spec.sh",
           "expectedOutput": "0",
           "weightage": 2
         },
         {
           "id": "2",
-          "description": "The exported checklist contains the required sections and exact projected ConfigMap, Secret, and mount inspection commands",
-          "verificationScriptFile": "q2501_s2_validate_projected_checklist_export.sh",
+          "description": "Deployment bundle-api becomes Available after the projected volume repair",
+          "verificationScriptFile": "2501_s2_validate_projectedvolume_rollout.sh",
           "expectedOutput": "0",
           "weightage": 3
         },
         {
           "id": "3",
-          "description": "The repaired ConfigMap manifest is exported and stale unsafe projected-volume remediation guidance is removed",
-          "verificationScriptFile": "q2501_s3_validate_projected_manifest_export_and_safety.sh",
+          "description": "The running container reads the projected ConfigMap and Secret files from /etc/bundle",
+          "verificationScriptFile": "2501_s3_validate_projectedvolume_files.sh",
           "expectedOutput": "0",
           "weightage": 2
         }

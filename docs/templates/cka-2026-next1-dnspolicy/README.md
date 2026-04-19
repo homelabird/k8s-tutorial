@@ -2,23 +2,24 @@
 
 These drafts cover the next recommended networking-observability pack from the `cka-048+` roadmap:
 
-1. Pod DNS policy and dnsConfig diagnostics
+1. Pod DNS policy repair
 
 ## Scope
 
-This template adds one planning-focused single-domain drill:
+This template adds one hands-on single-domain drill:
 
-- `4801` Pod DNS policy and dnsConfig diagnostics
+- `4801` Pod DNS policy repair
 
 ## Status
 
-- Question `4801` (`Pod DNS policy and dnsConfig diagnostics`) is now fully scaffolded with `answers.md`, `scripts/setup/`, and validation scripts.
+- Question `4801` (`Pod DNS policy repair`) now mirrors the promoted hands-on facilitator pack `cka-048`.
 - Question `4801` has now been promoted into facilitator pack `cka-048`.
 
 ## Promotion Notes
 
-- Keep the runtime deterministic by validating exact `dnsPolicy`, `dnsConfig`, resolver search/order evidence, and safe manifest review instead of requiring a live CoreDNS or node-level mutation.
-- Question `4801` should avoid `kubectl delete pod dns-client`, `kubectl rollout restart deployment dns-client`, `kubectl patch deployment dns-client`, and ad hoc edits to cluster DNS services in the expected answer.
+- Keep the runtime deterministic by fixing only Deployment-level `dnsPolicy` and `dnsConfig` fields.
+- Question `4801` should validate the exact nameserver, search, and `ndots` values plus the resolver file observed from the running Pod.
+- Question `4801` should avoid any CoreDNS or cluster DNS mutation in the expected answer.
 
 ## Suggested Promotion Order
 
